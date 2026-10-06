@@ -8,6 +8,7 @@ import argparse
 import asyncio
 import json
 import os
+import shutil
 import urllib.request
 import sys
 import time
@@ -26,6 +27,22 @@ from kolbot.store import Store  # noqa: E402
 from kolbot.stream import listen  # noqa: E402
 from kolbot.watch import Watch  # noqa: E402
 from kolbot.web import build_state, make_routes, serve  # noqa: E402
+
+
+def storage_info(db_path: str) -> dict:
+    """Where the database lives and how full that disk is (the dashboard warns from 80 %)."""
+    p = Path(db_path).resolve()
+    try:
+        du = shutil.disk_usage(p.parent)
+        used_pct = round(100 * du.used / du.total, 1)
+        free_gb = round(du.free / 1e9, 2)
+    except OSError:
+        used_pct = free_gb = None
+    size = sum(f.stat().st_size for f in p.parent.glob(p.name + "*") if f.is_file())
+    on_render = bool(os.environ.get("RENDER"))
+    durable = (not on_render) or Path(db_path).as_posix().startswith("/var/data/")
+    return {"db_path": str(p), "db_mb": round(size / 1e6, 1), "disk_used_pct": used_pct, "disk_free_gb": free_gb,
+            "durable": durable, "warn": bool(used_pct is not None and used_pct >= 80) or not durable}
 
 
 def load_roster(path: Path) -> dict[str, dict]:
@@ -71,6 +88,9 @@ def main():
         print(report(eng, names))
         return
     print(f"[kol] PAPER bot · {len(names)} KOL wallets · settings {cfg.as_dict()}")
+    st_info = storage_info(a.db)
+    print(f"[kol] database {st_info['db_path']} ({st_info['db_mb']} MB, disk {st_info['disk_used_pct']}% used) · "
+          + ("persistent" if st_info["durable"] else "WARNING: NOT persistent (wiped on every deploy/restart)"))
     stop = asyncio.Event()
     db = eng.store.db
     devs = DevTracker(db)
@@ -110,7 +130,7 @@ def main():
     def health():
         return {"ok": True, "paper": True, "connected": status["connected"],
                 "last_event_age_s": round(time.time() - status["last_event"]) if status["last_event"] else None,
-                "closed": len(eng.closed), "open": len(eng.positions)}
+                "closed": len(eng.closed), "open": len(eng.positions), "storage": storage_info(a.db)}
 
     async def keep_alive():
         """Render free plan sleeps after 15 min without inbound traffic: ping our own public URL."""

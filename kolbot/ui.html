@@ -126,6 +126,7 @@ tr.click{cursor:pointer}
   </nav>
   <div class="right"><span id="sol"></span><span class="hm" id="stream"></span></div>
 </div></header>
+<div id="banner" class="alert bad" style="display:none;max-width:1500px;margin:10px auto 0"></div>
 <main id="app"><div class="empty">Đang tải…</div></main>
 <div class="tip" id="tip"></div>
 <script>
@@ -182,6 +183,8 @@ async function api(path,params={}){
 async function status(){try{STATUS=await api('/api/status');SOLUSD=STATUS.sol_usd;
   const live=STATUS.live&&STATUS.connected&&STATUS.last_event_age_s!=null&&STATUS.last_event_age_s<60;
   $('dot').className='dot'+(live?' on':'');$('sol').textContent=SOLUSD?'SOL $'+SOLUSD.toFixed(2):'';
+  const sg=STATUS.storage,bn=$('banner');
+  if(sg&&sg.warn){bn.style.display='block';bn.innerHTML=!sg.durable?'⚠ Database KHÔNG nằm trên ổ bền: dữ liệu sẽ mất khi deploy/restart. Gắn Persistent Disk và đặt KOL_DB=/var/data/paper.db.':`⚠ Disk đã dùng ${sg.disk_used_pct}% (còn ${sg.disk_free_gb} GB). Giải phóng hoặc tăng dung lượng disk (Render: Disks → Size) trước khi đầy.`}else bn.style.display='none';
   $('stream').textContent=!STATUS.live?'stream tắt (chế độ xem dữ liệu)':live?`stream live · ${(STATUS.events||0).toLocaleString()} sự kiện`:'stream mất kết nối'}catch(e){}}
 
 /* ---------- charts (inline SVG, single series each, hover on every chart) ---------- */
@@ -237,7 +240,8 @@ async function viewKols(){
    <div class="kpi"><div class="k">Sample size</div><div class="v">${badge(S.status)}</div><div class="s">n = ${S.n} / ${S.min_n_required} · CI95 theo KOL ${S.ci95_by_kol?S.ci95_by_kol.join('% → ')+'%':'–'}</div>
      <div style="height:5px;background:var(--chip);border-radius:3px;margin-top:6px"><div style="height:5px;width:${prog}%;background:var(--accent);border-radius:3px"></div></div></div>
    <div class="kpi"><div class="k">Thời gian dữ liệu</div><div class="v" style="font-size:15px">${span(S.first_ts,S.last_ts)}</div><div class="s">${dt(S.first_ts)} → ${dt(S.last_ts)}</div></div>
-   <div class="kpi"><div class="k">Recorder (stream)</div><div class="v" style="font-size:15px">${!st.live?'<span class="mut">TẮT</span>':st.connected?'<span class="up">● LIVE</span>':'<span class="down">● MẤT KẾT NỐI</span>'}</div><div class="s">${(st.events||0).toLocaleString()} sự kiện · ${st.gaps||0} lần gián đoạn</div></div></div>`;
+   <div class="kpi"><div class="k">Recorder (stream)</div><div class="v" style="font-size:15px">${!st.live?'<span class="mut">TẮT</span>':st.connected?'<span class="up">● LIVE</span>':'<span class="down">● MẤT KẾT NỐI</span>'}</div><div class="s">${(st.events||0).toLocaleString()} sự kiện · ${st.gaps||0} lần gián đoạn</div>
+     ${st.storage?`<div class="s" title="${esc(st.storage.db_path)}">DB ${st.storage.db_mb} MB · disk ${st.storage.disk_used_pct??'?'}% · ${st.storage.durable?'<span class="up">lưu bền</span>':'<span class="down">KHÔNG bền</span>'}</div>`:''}</div></div>`;
   const podium=(arr)=>arr.length?`<div class="podium">${arr.slice(0,3).map((r,i)=>`<div class="pod" onclick="location.hash='#/kol/${r.kol}'">
      <div class="m">${['🥇','🥈','🥉'][i]} <span class="rank">#${r.rank}</span></div><div class="n">${esc(r.name)} ${lowN(r.n)}</div>
      <div class="mono faint" title="${r.kol}">${sh(r.kol)}</div><div class="p">${solPlain(r.pnl_sol,3)} SOL</div>

@@ -66,3 +66,18 @@ def test_all_routes_return_json(tmp_path):
     assert json.loads(routes["/api/trades"](q)[1])["total"] == 1
     ctype, body = routes["/api/export.csv"]({})
     assert ctype.startswith("text/csv") and body.count(b"\n") == 2
+
+
+def test_storage_info_durability(tmp_path, monkeypatch):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("kolmain", Path(__file__).resolve().parents[1] / "main.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    db = tmp_path / "p.db"
+    db.write_bytes(b"x" * 2_000_000)
+    monkeypatch.delenv("RENDER", raising=False)
+    info = m.storage_info(str(db))
+    assert info["durable"] and info["db_mb"] == 2.0 and 0 <= info["disk_used_pct"] <= 100
+    monkeypatch.setenv("RENDER", "true")                      # on Render only the mounted disk is durable
+    assert not m.storage_info(str(db))["durable"] and m.storage_info(str(db))["warn"]
+    assert m.storage_info("/var/data/paper.db")["durable"]
