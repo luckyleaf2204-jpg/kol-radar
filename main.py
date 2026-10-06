@@ -22,6 +22,7 @@ from kolbot.devs import DevTracker  # noqa: E402
 from kolbot.kolhist import KolHistory  # noqa: E402
 from kolbot.smart import SmartTracker  # noqa: E402
 from kolbot.signals import SignalEngine, refuse_auto_trade  # noqa: E402
+from kolbot.signal_paper import SignalPaper  # noqa: E402
 from kolbot.engine import Engine  # noqa: E402
 from kolbot.meta import Meta  # noqa: E402
 from kolbot.report import by_kol, summarize  # noqa: E402
@@ -101,6 +102,8 @@ def main():
     smart = SmartTracker(db, roster)               # research only: never feeds the paper bot
     signals = SignalEngine(db, roster)             # Top 10 buys -> display-only signals
     watch, meta = Watch(names), Meta(on_creator=devs.ingest_api, on_coin=devs.ingest_coin)
+    sigpaper = SignalPaper(Path(a.db).with_name("signal_paper.db"), lambda: meta.sol_usd,   # own file, paper only
+                           log=lambda m: print(m.replace("[kol] COPY", "[sigpaper] PAPER BUY"), flush=True))
     status = {"connected": False, "last_event": 0.0, "events": 0}
 
     def on_event(ev):
@@ -110,7 +113,8 @@ def main():
         is_kol = ev.get("user") in names
         devs.on_event(ev, is_kol=is_kol)
         smart.on_event(ev)
-        signals.on_event(ev)
+        sig = signals.on_event(ev)
+        sigpaper.on_event(ev, sig)
         if is_kol and ev["kind"] == "trade":
             hist.on_kol_event(ev["user"], ev["ts"])
 
@@ -132,6 +136,7 @@ def main():
             hist.tick()
             smart.tick()
             signals.tick()
+            sigpaper.tick()
             if time.time() - last >= 600:
                 last = time.time()
                 print(time.strftime("[kol] %Y-%m-%d %H:%M:%S\n") + report(eng, names))
@@ -164,6 +169,7 @@ def main():
                                                  kols_tracked=len(names)),
                          symbols=lambda: {m: c.get("symbol") for m, c in meta.coins.items() if c.get("symbol")},
                          want_creator=meta.want_creator, signal_engine=signals, want_coin=meta.want,
+                         signal_paper=sigpaper,
                          now_mc=lambda: {m: c.vsol / c.vtok * 1e6 for m, c in list(eng.curves.items())})
 
     signals.refresh(force=True)
@@ -187,6 +193,8 @@ def main():
         hist.tick(force=True)
         smart.flush()
         eng.store.save(eng)
+        if sigpaper.eng:
+            sigpaper.store.save(sigpaper.eng)
 
 
 if __name__ == "__main__":

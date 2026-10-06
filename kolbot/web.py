@@ -69,7 +69,7 @@ def build_state(eng, watch, meta, names: dict[str, str], status: dict) -> dict:
 
 
 def make_routes(db, roster: dict, get_live=None, get_status=None, symbols=None, want_creator=None,
-                signal_engine=None, now_mc=None, want_coin=None) -> dict:
+                signal_engine=None, now_mc=None, want_coin=None, signal_paper=None) -> dict:
     """path -> handler(query) returning (content_type, body). All handlers only read."""
     def q1(q, k, d=""):
         return (q.get(k) or [d])[0]
@@ -174,7 +174,16 @@ def make_routes(db, roster: dict, get_live=None, get_status=None, symbols=None, 
         ok = SG.set_state(db, intq(q, "id", 0), q1(q, "state"))
         return js({"ok": ok})
 
-    routes = {"/api/signals": sigs, "/api/signals/top": sigs_top, "/api/signals/state": ("POST", sig_state),
+    def sig_paper(q):
+        if not signal_paper:
+            return js({"started": False})
+        e = signal_paper.eng
+        mints = list({p.mint for p in e.positions.values()} | {c["mint"] for c in e.closed[-50:]}) if e else []
+        sym = dict(db.execute(f"SELECT mint, symbol FROM tokens WHERE mint IN ({','.join('?' * len(mints))})",
+                              mints).fetchall()) if mints and api._has(db, "tokens") else {}
+        return js(signal_paper.report(sym))
+
+    routes = {"/api/signals/paper": sig_paper, "/api/signals": sigs, "/api/signals/top": sigs_top, "/api/signals/state": ("POST", sig_state),
               "/api/smart": smart, "/api/smart/summary": smart_summary, "/api/smart/wallet": smart_wallet,
               "/api/summary": summary, "/api/kols": kols, "/api/winrate": winrate, "/api/kol": kol, "/api/devs": devs, "/api/dev": dev,
               "/api/tokens": tokens, "/api/token": token, "/api/trades": trades,
