@@ -1,5 +1,6 @@
-"""Local dashboard: a tiny HTTP server (stdlib asyncio) serving ui.html and /api/state as JSON. Binds to 127.0.0.1
-only. Read-only: there is nothing to click that trades."""
+"""Dashboard server: a tiny HTTP server (stdlib asyncio) serving ui.html and read-only JSON endpoints. Nothing
+here trades or writes data. With an access code (env APP_ACCESS_CODE) every /api/* route needs header
+X-Access-Code; the page itself and /healthz carry no data and stay open."""
 from __future__ import annotations
 
 import asyncio
@@ -7,19 +8,34 @@ import hmac
 import json
 import time
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 
+from kolbot import api
+from kolbot import devs as devs_mod
 from kolbot.engine import Curve, sell_sol
 from kolbot.report import by_kol, summarize
 from kolbot.watch import SUPPLY_TOKENS
 
 UI = Path(__file__).with_name("ui.html")
 RAW_SUPPLY = SUPPLY_TOKENS * 10 ** 6
+_sum_cache: dict = {}
+
+
+def _summary_cached(closed: list[dict]) -> dict:
+    key = (len(closed), closed[-1]["id"] if closed else None)
+    if _sum_cache.get("key") != key:
+        _sum_cache.update(key=key, value=summarize(closed))
+    return _sum_cache["value"]
 
 
 def build_state(eng, watch, meta, names: dict[str, str], status: dict) -> dict:
+    """Live tab: what the KOLs are buying right now, the live feed and the paper book."""
     sol_usd = meta.sol_usd
     tokens = []
-    for r in watch.rows():
+    rows = watch.rows()
+    db = eng.store.db if eng.store else None
+    devmap = api._token_devs(db, [r["mint"] for r in rows]) if db else {}
+    for r in rows:
         meta.want(r["mint"])
         coin = meta.coins.get(r["mint"]) or {}
         creator = coin.get("creator")
@@ -31,12 +47,16 @@ def build_state(eng, watch, meta, names: dict[str, str], status: dict) -> dict:
             now_sol = max(0.0, sell_sol(c, pos.tokens, eng.cfg)) if c else 0.0
             paper = {"entry_mc_sol": pos.entry_px * RAW_SUPPLY, "spend_sol": pos.spend_sol,
                      "pct": 100 * (now_sol / pos.spend_sol - 1), "kol": names.get(pos.kol, pos.kol[:8]),
-                     "selling": pos.sell_due_ts is not None}
+                     "kol_wallet": pos.kol, "selling": pos.sell_due_ts is not None}
         r = {k: v for k, v in r.items() if k != "net"}
+        for k in r["kols"]:
+            k["wallet_url"] = api.solscan("wallet", k["kol"])
         r.update({"coin": coin, "creator": creator, "creator_rating": meta.creators.get(creator) if creator else None,
-                  "dev_sold": dev_net is not None and dev_net > 0, "paper": paper})
+                  "creator_url": api.solscan("wallet", creator) if creator else None,
+                  "dev_sold": dev_net is not None and dev_net > 0, "paper": paper,
+                  "dev": devmap.get(r["mint"]) or (devs_mod.dev_badge(db, creator) if db and creator else None)})
         tokens.append(r)
-    s = summarize(eng.closed)
+    s = _summary_cached(eng.closed)
     closed = [dict(c, kol_name=names.get(c["kol"], c["kol"][:8]),
                    symbol=(meta.coins.get(c["mint"]) or {}).get("symbol")) for c in eng.closed[-40:]][::-1]
     return {"now": time.time(), "sol_usd": sol_usd, "status": status, "tokens": tokens,
@@ -48,15 +68,75 @@ def build_state(eng, watch, meta, names: dict[str, str], status: dict) -> dict:
             "kols_tracked": len(names)}
 
 
+def make_routes(db, roster: dict, get_live=None, get_status=None, symbols=None, want_creator=None) -> dict:
+    """path -> handler(query) returning (content_type, body). All handlers only read."""
+    def q1(q, k, d=""):
+        return (q.get(k) or [d])[0]
+
+    def intq(q, k, d):
+        try:
+            return int(q1(q, k, d))
+        except ValueError:
+            return d
+
+    def js(obj):
+        return "application/json", json.dumps(obj, default=str).encode()
+
+    def summary(q):
+        out = api.summary(db, roster, q1(q, "range", "all"), intq(q, "min_n", 1))
+        out["stream"] = get_status() if get_status else None
+        out["now"] = time.time()
+        return js(out)
+
+    def kols(q):
+        return js(api.kol_table(db, roster, q1(q, "range", "all"), intq(q, "min_n", 1), q1(q, "pnl"),
+                                q1(q, "status"), q1(q, "sort", "pnl"), q1(q, "dir", "desc"), intq(q, "page", 1),
+                                intq(q, "size", 25), q1(q, "group", "kol")))
+
+    def kol(q):
+        d = api.kol_detail(db, roster, q1(q, "wallet"), q1(q, "range", "all"), intq(q, "page", 1),
+                           intq(q, "size", 25), symbols() if symbols else None)
+        return js(d if d is not None else {"error": "not_found"})
+
+    def devs(q):
+        return js(api.dev_table(db, intq(q, "min_tokens", 2), q1(q, "risk"), q1(q, "sort", "tokens"),
+                                q1(q, "dir", "desc"), intq(q, "page", 1), intq(q, "size", 25), q1(q, "q")))
+
+    def dev(q):
+        w = q1(q, "wallet")
+        if want_creator and w:
+            want_creator(w)                      # fetch the dev's pump.fun history in the background
+        d = api.dev_detail(db, w, intq(q, "page", 1), intq(q, "size", 25))
+        return js(d if d is not None else {"error": "not_found", "wallet": w,
+                                           "wallet_url": api.solscan("wallet", w) if w else None})
+
+    def tokens(q):
+        return js(api.token_table(db, q1(q, "scope", "kol"), intq(q, "page", 1), intq(q, "size", 25), q1(q, "q")))
+
+    def token(q):
+        d = api.token_detail(db, q1(q, "mint"), roster)
+        return js(d if d is not None else {"error": "not_found"})
+
+    def trades(q):
+        return js(api.trade_table(db, roster, q1(q, "range", "all"), q1(q, "kol"), q1(q, "exit"), q1(q, "pnl"),
+                                  intq(q, "page", 1), intq(q, "size", 25)))
+
+    routes = {"/api/summary": summary, "/api/kols": kols, "/api/kol": kol, "/api/devs": devs, "/api/dev": dev,
+              "/api/tokens": tokens, "/api/token": token, "/api/trades": trades,
+              "/api/status": lambda q: js(dict(get_status() if get_status else {}, now=time.time())),
+              "/api/export.csv": lambda q: ("text/csv; charset=utf-8", api.export_csv(db))}
+    if get_live:
+        routes["/api/state"] = lambda q: js(get_live())
+    return routes
+
+
 def _reply(writer, code: str, ctype: str, body: bytes, head_only: bool = False) -> None:
     writer.write(f"HTTP/1.1 {code}\r\nContent-Type: {ctype}\r\nContent-Length: {len(body)}\r\n"
                  "Cache-Control: no-store\r\nConnection: close\r\n\r\n".encode() + (b"" if head_only else body))
 
 
-async def serve(get_state, host: str = "127.0.0.1", port: int = 8780, log=print, access_code: str | None = None,
+async def serve(routes: dict, host: str = "127.0.0.1", port: int = 8780, log=print, access_code: str | None = None,
                 health=None):
-    """access_code set (env APP_ACCESS_CODE on a server): /api/state needs header X-Access-Code. The page and
-    /healthz carry no data and stay open."""
     async def handle(reader, writer):
         try:
             line = (await reader.readline()).decode("latin-1")
@@ -65,13 +145,18 @@ async def serve(get_state, host: str = "127.0.0.1", port: int = 8780, log=print,
                 k, _, v = h.decode("latin-1").partition(":")
                 headers[k.strip().lower()] = v.strip()
             parts = line.split(" ")
-            method, path = (parts[0], parts[1].split("?")[0]) if len(parts) > 1 else ("GET", "/")
+            method, target = (parts[0], parts[1]) if len(parts) > 1 else ("GET", "/")
+            u = urlsplit(target)
+            path, query = u.path, parse_qs(u.query)
             head = method == "HEAD"
-            if path == "/api/state":
+            if path.startswith("/api/"):
                 if access_code and not hmac.compare_digest(headers.get("x-access-code", ""), access_code):
                     _reply(writer, "401 Unauthorized", "application/json", b'{"error":"code"}', head)
+                elif path in routes:
+                    ctype, body = routes[path](query)
+                    _reply(writer, "200 OK", ctype, body, head)
                 else:
-                    _reply(writer, "200 OK", "application/json", json.dumps(get_state(), default=str).encode(), head)
+                    _reply(writer, "404 Not Found", "application/json", b'{"error":"route"}', head)
             elif path == "/healthz":
                 _reply(writer, "200 OK", "application/json", json.dumps(health() if health else {"ok": True}).encode(),
                        head)
@@ -81,6 +166,10 @@ async def serve(get_state, host: str = "127.0.0.1", port: int = 8780, log=print,
                 _reply(writer, "404 Not Found", "text/plain", b"", head)
         except Exception as e:
             log(f"[web] {type(e).__name__}: {e}")
+            try:
+                _reply(writer, "500 Internal Server Error", "application/json", b'{"error":"server"}')
+            except Exception:
+                pass
         finally:
             try:
                 await writer.drain()

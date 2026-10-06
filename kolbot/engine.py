@@ -81,6 +81,8 @@ class Engine:
 
     # --- events -------------------------------------------------------------------------------------------------
     def on_event(self, ev: dict) -> None:
+        if ev["kind"] not in ("trade", "complete"):        # create events: dev history only, not trading
+            return
         if ev["kind"] == "complete":
             self._on_complete(ev)
             return

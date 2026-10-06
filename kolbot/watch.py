@@ -23,6 +23,8 @@ class Watch:
 
     def on_event(self, ev: dict) -> None:
         mint = ev["mint"]
+        if ev["kind"] not in ("trade", "complete"):
+            return
         if ev["kind"] == "complete":
             if mint in self.mints:
                 self.mints[mint]["completed"] = True

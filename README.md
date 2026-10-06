@@ -21,6 +21,36 @@ run.bat                   # như trên, trên Windows
   luận và trạng thái livestream.
 * Bên phải giao diện: kết quả bot giấy, luồng lệnh KOL realtime, và các lệnh giấy đã đóng.
 
+## Dashboard (KOLs · Devs · Tokens · Trades · Live)
+* **KOLs:**
+  * Mở trang là thấy ngay **Top KOL / Top losers since first seen**.
+  * Dải KPI gồm: số KOL, tổng lệnh, P&L, ROI, win rate, sample size (status), thời gian dữ liệu, trạng thái stream.
+  * Bảng KOL phân trang: Rank, First seen, Trades, Win rate, Cumulative P&L, ROI, 7D, 30D, Avg, Status.
+  * Bộ lọc: nhóm, khoảng thời gian, min n, lời/lỗ, status, sắp xếp.
+  * 4 chart: P&L tích lũy, phân bố ROI, thắng/thua, số lệnh theo thời gian.
+* **Chi tiết KOL:**
+  * Performance since first seen: P&L, ROI, trades, win rate, median, best/worst, streak.
+  * Chart P&L tích lũy, snapshot theo ngày, lịch sử giao dịch phân trang, breakdown theo token.
+  * Link ví sang Solscan.
+* **Status:**
+  * n < 100 → INCONCLUSIVE.
+  * n ≥ 100 và CI95 > 0 → PROVISIONAL. Chưa thể là PASS vì bot paper không có nhóm control.
+  * n ≥ 100 và CI95 ≤ 0 → REJECT.
+* **Devs:**
+  * Mỗi token gắn với creator (lấy từ CreateEvent/TradeEvent). Lịch sử trước đó lấy từ pump.fun.
+  * Outcome: PENDING (< 24 giờ), MIGRATED, FAILED, DEAD.
+  * Rug chỉ gán khi có bằng chứng: theo dõi từ lúc tạo, dev bán ≥ 90%, MC giảm ≥ 80%, không migrate.
+  * Risk: UNKNOWN / LOW / MEDIUM / HIGH / REPEAT FAILURE / SUSPICIOUS, có lý do, bằng chứng và thời điểm tính, kèm lịch sử thay đổi.
+  * Nhãn KNOWN DEV / NEW DEV hiển thị trên token, trong lệnh và trên thẻ Live.
+* **Lưu trữ bền** (SQLite `data/paper.db`, hoặc đường dẫn trong biến môi trường `KOL_DB`):
+  * Sổ lệnh có khóa chống trùng `uid` = kol:mint:trigger.
+  * Bảng `kols`: wallet là khóa chính, first_seen không bao giờ reset.
+  * `kol_daily`: tính lại từ sổ lệnh.
+  * `tokens`, `devs`, `dev_risk_log`, `wallet_links` (chỉ lưu quan hệ ví có nguồn rõ ràng).
+* Gói free của Render **xóa ổ đĩa mỗi lần deploy hoặc restart**. Muốn giữ lịch sử thì gắn Persistent Disk và đặt `KOL_DB` trỏ vào đó, hoặc chạy local.
+* Trước mỗi lần deploy nên **tải CSV** sổ lệnh ở tab Trades.
+* Test giao diện với dữ liệu giả: `python tools/demo_db.py`, rồi `python main.py --no-stream --db data/demo.db --port 8781`.
+
 ## Cách khớp lệnh giấy (giống thật nhất có thể)
 * **Lúc mua:** lệnh của mình coi như vào sau KOL `delay_s` = 3 giây. Giá khớp tính trên reserves thật của curve,
   lấy theo lệnh đầu tiên trên coin đó sau mốc 3 giây. Nếu coin im lặng thì dùng trạng thái curve mới nhất.

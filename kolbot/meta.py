@@ -41,40 +41,59 @@ def creator_rating(coins: list[dict], current_mint: str | None = None) -> dict:
 
 
 class Meta:
-    def __init__(self, log=print):
-        self.log = log
+    def __init__(self, log=print, on_creator=None):
+        self.log, self.on_creator = log, on_creator      # on_creator(wallet, coins): persist a dev's history
         self.coins: dict[str, dict] = {}
         self.creators: dict[str, dict] = {}
         self.sol_usd: float | None = None
         self.queue: asyncio.Queue | None = None
         self.queued: set[str] = set()
+        self.creator_at: dict[str, float] = {}
 
     def want(self, mint: str) -> None:
         if mint not in self.coins and mint not in self.queued and self.queue is not None:
             self.queued.add(mint)
-            self.queue.put_nowait(mint)
+            self.queue.put_nowait(("mint", mint))
+
+    def want_creator(self, wallet: str, max_age_s: float = 3600) -> None:
+        key = "creator:" + wallet
+        fresh = time.time() - self.creator_at.get(wallet, 0) < max_age_s
+        if not fresh and key not in self.queued and self.queue is not None:
+            self.queued.add(key)
+            self.queue.put_nowait(("creator", wallet))
+
+    async def _creator(self, cr: str, current_mint: str | None = None) -> None:
+        lst = await asyncio.to_thread(_get, f"{PUMP_API}/coins?creator={cr}&limit=50&offset=0&includeNsfw=true")
+        lst = lst if isinstance(lst, list) else []
+        self.creators[cr] = creator_rating(lst, current_mint)
+        self.creator_at[cr] = time.time()
+        if self.on_creator:
+            self.on_creator(cr, lst)
 
     async def run(self, stop: asyncio.Event) -> None:
         self.queue = asyncio.Queue()
         asyncio.get_running_loop().create_task(self._price_loop(stop))
         while not stop.is_set():
-            mint = await self.queue.get()
+            kind, key = await self.queue.get()
             try:
-                d = await asyncio.to_thread(_get, f"{PUMP_API}/coins-v2/{mint}")
-                self.coins[mint] = {k: d.get(k) for k in ("name", "symbol", "image_uri", "creator", "twitter",
-                                                          "telegram", "website", "reply_count", "is_currently_live",
-                                                          "created_timestamp", "ath_market_cap")}
-                cr = d.get("creator")
-                if cr and cr not in self.creators:
-                    await asyncio.sleep(GAP_S)
-                    lst = await asyncio.to_thread(
-                        _get, f"{PUMP_API}/coins?creator={cr}&limit=50&offset=0&includeNsfw=true")
-                    self.creators[cr] = creator_rating(lst if isinstance(lst, list) else [], mint)
+                if kind == "creator":
+                    await self._creator(key)
+                else:
+                    d = await asyncio.to_thread(_get, f"{PUMP_API}/coins-v2/{key}")
+                    self.coins[key] = {k: d.get(k) for k in ("name", "symbol", "image_uri", "creator", "twitter",
+                                                             "telegram", "website", "reply_count",
+                                                             "is_currently_live", "created_timestamp",
+                                                             "ath_market_cap")}
+                    cr = d.get("creator")
+                    if cr and cr not in self.creators:
+                        await asyncio.sleep(GAP_S)
+                        await self._creator(cr, key)
             except Exception as e:
-                self.log(f"[meta] {mint[:8]}.. {type(e).__name__}: {str(e)[:80]}")
-                self.coins.setdefault(mint, {})
+                self.log(f"[meta] {kind} {key[:8]}.. {type(e).__name__}: {str(e)[:80]}")
+                if kind == "mint":
+                    self.coins.setdefault(key, {})
             finally:
-                self.queued.discard(mint)
+                self.queued.discard(key if kind == "mint" else "creator:" + key)
             await asyncio.sleep(GAP_S)
 
     async def _price_loop(self, stop: asyncio.Event) -> None:

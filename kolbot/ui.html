@@ -6,179 +6,486 @@
 <title>KOL Radar</title>
 <style>
 :root{
-  --bg:#0b0d12;--panel:#12151d;--panel2:#171b25;--line:#232838;--text:#e7eaf2;--muted:#8a91a6;--faint:#5c6378;
-  --accent:#7c5cff;--good:#2fd38a;--bad:#ff5d6c;--warn:#f5b84b;--chip:#1d2230;
+  --bg:#0b0d12;--panel:#12151d;--panel2:#171b25;--line:#232838;--text:#e7eaf2;--muted:#8a91a6;--faint:#5f6679;
+  --accent:#7c5cff;--gain:#3ecf8e;--loss:#ff6b72;--warn:#f5b84b;--chip:#1d2230;
+  --gainbar:#3987e5;--lossbar:#e5484d;--neutral:#5c6378;
   --mono:ui-monospace,SFMono-Regular,Consolas,monospace;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+html,body{background:var(--bg)}
+body{margin:0;color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 a{color:inherit;text-decoration:none}
-header{position:sticky;top:0;z-index:5;background:rgba(11,13,18,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-.bar{max-width:1500px;margin:0 auto;padding:12px 16px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
-.brand{font-weight:750;font-size:17px;letter-spacing:.2px;display:flex;align-items:center;gap:8px}
-.dot{width:9px;height:9px;border-radius:50%;background:var(--faint)}
-.dot.on{background:var(--good);box-shadow:0 0 0 4px rgba(47,211,138,.15)}
-.tag{font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(124,92,255,.18);color:#b9a8ff;letter-spacing:.4px}
-.stats{display:flex;gap:18px;flex-wrap:wrap;margin-left:auto}
-.stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.stat .v{font-weight:650;font-variant-numeric:tabular-nums}
-main{max-width:1500px;margin:0 auto;padding:16px;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px}
-@media (max-width:1050px){main{grid-template-columns:1fr}}
-h2{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:4px 0 10px;font-weight:650;display:flex;justify-content:space-between}
+a.lk{color:#b9a8ff}a.lk:hover{text-decoration:underline}
+button,select,input{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 9px}
+button{cursor:pointer}button:hover{border-color:var(--accent)}
+button:disabled{opacity:.4;cursor:default}
+header{position:sticky;top:0;z-index:10;background:rgba(11,13,18,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.bar{max-width:1500px;margin:0 auto;padding:10px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.brand{font-weight:750;font-size:17px;display:flex;align-items:center;gap:8px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--faint)}.dot.on{background:var(--gain);box-shadow:0 0 0 4px rgba(62,207,142,.15)}
+.tag{font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(124,92,255,.18);color:#b9a8ff}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav a{padding:6px 12px;border-radius:8px;color:var(--muted);font-weight:600}
+nav a.on{background:var(--panel2);color:var(--text)}
+.right{margin-left:auto;color:var(--muted);font-size:12.5px;display:flex;gap:12px;align-items:center}
+main{max-width:1500px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0}
+h2{font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:0 0 10px;font-weight:650;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.kpi .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.kpi .v{font-size:20px;font-weight:750;font-variant-numeric:tabular-nums;margin-top:2px}
+.kpi .s{font-size:11.5px;color:var(--faint);margin-top:2px}
+.up{color:var(--gain)}.down{color:var(--loss)}.mut{color:var(--muted)}.faint{color:var(--faint)}
+.mono{font-family:var(--mono);font-size:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+@media (max-width:1100px){.grid4{grid-template-columns:1fr 1fr}}
+@media (max-width:760px){.grid2,.grid4{grid-template-columns:1fr}}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.filters label{font-size:11.5px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;background:transparent;padding:6px 10px;color:var(--muted)}
+.seg button.on{background:var(--accent);color:#fff}
+.tw{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;font-variant-numeric:tabular-nums}
+th{position:sticky;top:0;background:var(--panel2);color:var(--muted);font-weight:600;font-size:11.5px;z-index:1;cursor:default}
+th.s{cursor:pointer}th.s:hover{color:var(--text)}
+td.num,th.num{text-align:right}
+tbody tr:hover{background:rgba(124,92,255,.06)}
+tr.click{cursor:pointer}
+.rank{font-weight:750;color:var(--muted)}
+.big{font-weight:750}
+.b{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;letter-spacing:.3px;cursor:help;border:1px solid transparent}
+.b.PASS{background:rgba(62,207,142,.15);color:var(--gain);border-color:rgba(62,207,142,.4)}
+.b.PROVISIONAL{background:rgba(124,92,255,.16);color:#c3b5ff;border-color:rgba(124,92,255,.4)}
+.b.INCONCLUSIVE{background:rgba(245,184,75,.13);color:var(--warn);border-color:rgba(245,184,75,.35)}
+.b.REJECT{background:rgba(255,107,114,.13);color:var(--loss);border-color:rgba(255,107,114,.35)}
+.r{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;cursor:help}
+.r.u{background:var(--chip);color:var(--muted)}.r.l{background:rgba(62,207,142,.14);color:var(--gain)}
+.r.m{background:rgba(245,184,75,.14);color:var(--warn)}.r.h{background:rgba(255,107,114,.14);color:var(--loss)}
+.r.x{background:rgba(255,107,114,.28);color:#ffd0d3}
+.kd{display:inline-block;font-size:10.5px;font-weight:750;padding:1px 6px;border-radius:5px;margin-right:4px}
+.kd.known{background:rgba(245,184,75,.16);color:var(--warn)}.kd.new{background:var(--chip);color:var(--muted)}
+.lown{font-size:10.5px;color:var(--warn);margin-left:4px}
+.pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:10px;color:var(--muted);font-size:12.5px}
+.podium{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (max-width:760px){.podium{grid-template-columns:1fr}}
+.pod{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer}
+.pod:hover{border-color:var(--accent)}
+.pod .m{font-size:22px}.pod .n{font-weight:700;margin:4px 0 2px}.pod .p{font-size:18px;font-weight:750}
+.list .it{display:flex;justify-content:space-between;gap:8px;padding:7px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+.list .it:last-child{border:0}
+.chart{position:relative;height:190px}
+.chart svg{width:100%;height:100%;display:block}
+.tip{position:fixed;z-index:30;pointer-events:none;background:#0f121a;border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12px;display:none;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.note{color:var(--faint);font-size:12px;line-height:1.5}
+.empty{color:var(--muted);padding:26px;text-align:center;border:1px dashed var(--line);border-radius:12px}
+.alert{border:1px solid rgba(245,184,75,.45);background:rgba(245,184,75,.08);border-radius:12px;padding:10px 12px;margin:8px 0}
+.alert.bad{border-color:rgba(255,107,114,.5);background:rgba(255,107,114,.08)}
+.wl{display:flex;height:16px;border-radius:6px;overflow:hidden;gap:2px;margin:10px 0 6px}
+.wl div{height:100%}
+.back{color:var(--muted);font-size:13px}
+.hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:10px}
+.hero .kpi{background:var(--panel2)}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(340px,100%),1fr));gap:12px}
-@media (max-width:520px){.grid{grid-template-columns:repeat(2,1fr)}.stats{margin-left:0;gap:12px}}
-#gate{position:fixed;inset:0;z-index:20;background:var(--bg);display:none;align-items:center;justify-content:center;padding:16px}
-#gate form{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px}
-#gate input,#gate button{font:inherit;padding:10px 12px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--text)}
-#gate button{background:var(--accent);border:0;font-weight:650;cursor:pointer}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;transition:border-color .3s}
-.card.fresh{border-color:var(--accent)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:9px}
 .card.held{box-shadow:inset 3px 0 0 var(--accent)}
 .top{display:flex;gap:11px;align-items:center}
-.img{width:46px;height:46px;border-radius:12px;background:var(--chip) center/cover no-repeat;flex:none}
-.name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sub{color:var(--muted);font-size:12px;display:flex;gap:8px;flex-wrap:wrap}
-.mc{margin-left:auto;text-align:right}
-.mc .v{font-size:18px;font-weight:750;font-variant-numeric:tabular-nums}
-.chg{font-size:12px;font-weight:650}
-.up{color:var(--good)}.down{color:var(--bad)}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.m{background:var(--panel2);border-radius:9px;padding:7px 8px}
-.m .k{font-size:10.5px;color:var(--muted)}
-.m .v{font-weight:650;font-variant-numeric:tabular-nums}
-.kols{display:flex;flex-wrap:wrap;gap:6px}
-.kc{background:var(--chip);border:1px solid var(--line);border-radius:9px;padding:5px 8px;font-size:12px}
-.kc b{font-weight:650}
-.kc .x{color:var(--muted)}
-.kc.sold{border-color:rgba(255,93,108,.5)}
-.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.badge{font-size:11.5px;font-weight:650;padding:3px 8px;border-radius:999px;background:var(--chip);color:var(--muted)}
-.badge.good{background:rgba(47,211,138,.14);color:var(--good)}
-.badge.bad{background:rgba(255,93,108,.14);color:var(--bad)}
-.badge.warn{background:rgba(245,184,75,.14);color:var(--warn)}
-.badge.live{background:rgba(255,93,108,.18);color:#ff8b96}
-.paper{background:rgba(124,92,255,.10);border:1px solid rgba(124,92,255,.35);border-radius:9px;padding:7px 9px;font-size:12.5px;display:flex;justify-content:space-between}
-aside{display:flex;flex-direction:column;gap:16px}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
-.feed{max-height:520px;overflow:auto;display:flex;flex-direction:column}
-.fi{display:grid;grid-template-columns:44px 1fr auto;gap:8px;padding:7px 2px;border-bottom:1px solid var(--line);font-size:12.5px;align-items:center}
-.fi:last-child{border:0}
+.img{width:44px;height:44px;border-radius:11px;background:var(--chip) center/cover no-repeat;flex:none}
+.cg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.cg .m{background:var(--panel2);border-radius:9px;padding:6px 8px}.cg .k{font-size:10.5px;color:var(--muted)}.cg .v{font-weight:650}
+.chip{background:var(--chip);border:1px solid var(--line);border-radius:9px;padding:4px 8px;font-size:12px;display:inline-block;margin:0 4px 4px 0}
+.fi{display:grid;grid-template-columns:44px 1fr auto;gap:8px;padding:6px 2px;border-bottom:1px solid var(--line);font-size:12.5px;align-items:center}
 .side{font-size:10.5px;font-weight:750;padding:2px 0;border-radius:6px;text-align:center}
-.side.buy{background:rgba(47,211,138,.15);color:var(--good)}
-.side.sell{background:rgba(255,93,108,.15);color:var(--bad)}
-.t{color:var(--faint);font-size:11px}
-table{width:100%;border-collapse:collapse;font-size:12.5px}
-td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left;font-variant-numeric:tabular-nums}
-th{color:var(--muted);font-weight:600;font-size:11px}
-.mono{font-family:var(--mono);font-size:11.5px}
-.note{color:var(--faint);font-size:11.5px;margin-top:8px}
-.empty{color:var(--muted);padding:30px;text-align:center;border:1px dashed var(--line);border-radius:14px}
-.big{font-size:22px;font-weight:750}
+.side.buy{background:rgba(62,207,142,.15);color:var(--gain)}.side.sell{background:rgba(255,107,114,.15);color:var(--loss)}
+#gate{position:fixed;inset:0;z-index:40;background:var(--bg);display:none;align-items:center;justify-content:center;padding:16px}
+#gate form{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px}
+#gate button{background:var(--accent);border:0;font-weight:650}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+@media (max-width:760px){
+  .hm{display:none}
+  .cg{grid-template-columns:repeat(2,1fr)}
+  th,td{padding:7px 6px}
+  .right .hm{display:none}
+}
 </style>
 </head>
 <body>
 <div id="gate"><form onsubmit="return saveCode(event)"><div class="brand">KOL Radar <span class="tag">PAPER</span></div>
-  <div class="t">Nhập mã truy cập</div><input id="code" type="password" autocomplete="current-password" required>
-  <button type="submit">Vào</button><div class="t" id="gateMsg"></div></form></div>
+  <div class="mut">Nhập mã truy cập</div><input id="code" type="password" autocomplete="current-password" required>
+  <button type="submit">Vào</button><div class="faint" id="gateMsg"></div></form></div>
 <header><div class="bar">
   <div class="brand"><span class="dot" id="dot"></span>KOL Radar <span class="tag">PAPER</span></div>
-  <div class="t" id="sub">đang kết nối…</div>
-  <div class="stats">
-    <div class="stat"><div class="k">SOL</div><div class="v" id="sol">–</div></div>
-    <div class="stat"><div class="k">Equity giấy</div><div class="v" id="eq">–</div></div>
-    <div class="stat"><div class="k">PnL đã chốt</div><div class="v" id="pnl">–</div></div>
-    <div class="stat"><div class="k">Lệnh đóng</div><div class="v" id="n">–</div></div>
-    <div class="stat"><div class="k">Đang giữ</div><div class="v" id="open">–</div></div>
-  </div>
+  <nav id="nav">
+    <a href="#/kols" data-t="kols">KOLs</a><a href="#/devs" data-t="devs">Devs</a><a href="#/tokens" data-t="tokens">Tokens</a>
+    <a href="#/trades" data-t="trades">Trades</a><a href="#/live" data-t="live">Live</a>
+  </nav>
+  <div class="right"><span id="sol"></span><span class="hm" id="stream"></span></div>
 </div></header>
-<main>
-  <section>
-    <h2><span>KOL đang bắt coin nào</span><span id="cnt"></span></h2>
-    <div class="cards" id="cards"><div class="empty">Chưa có KOL nào mua trong lúc bot chạy. Chờ vài giây…</div></div>
-    <div class="note">Số người trade / mua / bán / volume đếm từ lúc KOL đầu tiên vào coin. "Người đang xem" pump.fun không công khai:
-      hiển thị thay bằng số ví trade trong 5 phút, số bình luận và trạng thái livestream. Đánh giá dev là heuristic từ lịch sử coin dev đã tạo.</div>
-  </section>
-  <aside>
-    <div class="panel"><h2><span>Kết quả bot giấy</span></h2><div id="summary"></div></div>
-    <div class="panel"><h2><span>Luồng lệnh KOL</span><span class="t">live</span></h2><div class="feed" id="feed"></div></div>
-    <div class="panel"><h2><span>Lệnh giấy đã đóng</span></h2><div style="max-height:360px;overflow:auto"><table id="closed"></table></div></div>
-  </aside>
-</main>
+<main id="app"><div class="empty">Đang tải…</div></main>
+<div class="tip" id="tip"></div>
 <script>
-const $=id=>document.getElementById(id);
-let S=null, seen=new Set();
+'use strict';
+const $=id=>document.getElementById(id), app=$('app'), tip=$('tip');
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function usd(x){if(x==null)return'–';const a=Math.abs(x);return(x<0?'-':'')+'$'+(a>=1e6?(a/1e6).toFixed(2)+'M':a>=1e3?(a/1e3).toFixed(1)+'K':a.toFixed(0))}
-function mc(sol){return S&&S.sol_usd?usd(sol*S.sol_usd):(sol?sol.toFixed(1)+' SOL':'–')}
-function ago(ts){const s=Math.max(0,Math.round(S.now-ts));return s<60?s+'s':s<3600?Math.floor(s/60)+'p':Math.floor(s/3600)+'h'+String(Math.floor(s%3600/60)).padStart(2,'0')}
-function pct(x,d=1){if(x==null||!isFinite(x))return'–';return`<span class="${x>=0?'up':'down'}">${x>=0?'+':''}${x.toFixed(d)}%</span>`}
-function sh(a){return a?a.slice(0,4)+'…'+a.slice(-4):''}
+let SOLUSD=null, STATUS=null, timer=null, ROUTE='';
+const BADIMG=new Set();   // image hosts that refuse cross-origin loads: never retried
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+             set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const F=Object.assign({group:'kol',range:'all',min_n:1,pnl:'',status:'',sort:'pnl',dir:'desc',page:1},store.get('kolF',{}));
 
-function card(t){
-  const c=t.coin||{}, r=t.creator_rating, first=t.kols.length?Math.min(...t.kols.map(k=>k.first_mc_sol)):t.mc_sol;
-  const chg=first?100*(t.mc_sol/first-1):null, fresh=S.now-t.last_kol_ts<20;
-  const kols=t.kols.map(k=>`<div class="kc ${k.sold_sol>0?'sold':''}"><b>${esc(k.name)}</b> <span class="x">${k.sol} SOL @ ${mc(k.first_mc_sol)}${k.sold_sol>0?' · đã bán '+k.sold_sol:''}</span></div>`).join('');
-  const rep=r?`<span class="badge ${r.tone}" title="${r.coins}${r.more?'+':''} coin trước, ${r.graduated} tốt nghiệp, ATH tốt nhất ${usd(r.best_ath_usd)}">Dev: ${esc(r.label)} · ${r.coins}${r.more?'+':''} coin / ${r.graduated} tốt nghiệp</span>`
-          :(t.creator?'<span class="badge">Dev: đang tra…</span>':'<span class="badge">Dev: đang tải…</span>');
-  const socials=[c.twitter&&`<a class="badge" href="${esc(c.twitter)}" target="_blank" rel="noopener">X</a>`,
-                 c.telegram&&`<a class="badge" href="${esc(c.telegram)}" target="_blank" rel="noopener">TG</a>`,
-                 c.website&&`<a class="badge" href="${esc(c.website)}" target="_blank" rel="noopener">Web</a>`].filter(Boolean).join('');
-  const p=t.paper?`<div class="paper"><span>Bot giấy đang giữ (copy ${esc(t.paper.kol)}) · vào ${mc(t.paper.entry_mc_sol)}${t.paper.selling?' · đang thoát':''}</span><b>${pct(t.paper.pct)}</b></div>`:'';
-  return `<div class="card ${fresh?'fresh':''} ${t.paper?'held':''}">
-   <div class="top"><div class="img" style="background-image:url('${esc(c.image_uri||'')}')"></div>
-     <div style="min-width:0"><div class="name">${esc(c.name||sh(t.mint))} <span class="t">${esc(c.symbol?'$'+c.symbol:'')}</span></div>
-       <div class="sub"><a href="https://pump.fun/coin/${t.mint}" target="_blank" rel="noopener" class="mono">${sh(t.mint)}</a>
-       <span>coin ${c.created_timestamp?ago(c.created_timestamp/1000):'?'} tuổi</span><span>KOL vào ${ago(t.first_ts)} trước</span></div></div>
-     <div class="mc"><div class="v">${mc(t.mc_sol)}</div><div class="chg">${pct(chg)} từ KOL đầu</div></div></div>
-   <div class="kols">${kols}</div>
-   <div class="grid">
-     <div class="m"><div class="k">Người trade</div><div class="v">${t.traders}</div></div>
-     <div class="m"><div class="k">Trade 5 phút</div><div class="v">${t.traders_5m}</div></div>
-     <div class="m"><div class="k">Mua / bán</div><div class="v">${t.buys} / ${t.sells}</div></div>
-     <div class="m"><div class="k">Volume</div><div class="v">${S.sol_usd?usd(t.vol_sol*S.sol_usd):t.vol_sol+' SOL'}</div></div>
-     <div class="m"><div class="k">ATH (từ lúc xem)</div><div class="v">${mc(t.ath_mc_sol)}</div></div>
-     <div class="m"><div class="k">Bình luận</div><div class="v">${c.reply_count??'–'}</div></div>
-     <div class="m" style="grid-column:span 2"><div class="k">Trạng thái</div><div class="v">${t.completed?'Đã tốt nghiệp → PumpSwap':'Trên bonding curve'}</div></div>
-   </div>
-   <div class="row">${rep}${t.dev_sold?'<span class="badge bad">Dev đã bán</span>':''}${c.is_currently_live?'<span class="badge live">● LIVE</span>':''}${socials}</div>
-   ${p}</div>`;
-}
+/* ---------- formatting ---------- */
+function sh(a,n=4){return a?a.slice(0,n)+'…'+a.slice(-4):''}
+function num(x,d=2){return x==null||!isFinite(x)?'–':Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d})}
+function sol(x,d=3){if(x==null||!isFinite(x))return'<span class="faint">–</span>';const c=x>0?'up':x<0?'down':'mut';
+  const u=SOLUSD?` <span class="faint">≈ ${usd(x*SOLUSD)}</span>`:'';
+  return `<span class="${c}">${x>0?'▲ +':x<0?'▼ −':''}${num(Math.abs(x),d)} SOL</span>${u}`}
+function solPlain(x,d=3){if(x==null||!isFinite(x))return'–';return `<span class="${x>0?'up':x<0?'down':'mut'}">${x>0?'+':x<0?'−':''}${num(Math.abs(x),d)}</span>`}
+function usd(x){if(x==null||!isFinite(x))return'–';const a=Math.abs(x);return(x<0?'−':'')+'$'+(a>=1e6?(a/1e6).toFixed(2)+'M':a>=1e3?(a/1e3).toFixed(1)+'K':a.toFixed(a<10?2:0))}
+function pct(x,d=1){if(x==null||!isFinite(x))return'<span class="faint">–</span>';return `<span class="${x>0?'up':x<0?'down':'mut'}">${x>0?'+':x<0?'−':''}${num(Math.abs(x),d)}%</span>`}
+function rate(x){return x==null?'<span class="faint">–</span>':num(100*x,0)+'%'}
+function mc(s){return s==null?'–':SOLUSD?usd(s*SOLUSD):num(s,1)+' SOL'}
+function dt(ts){if(!ts)return'–';const d=new Date(ts*1000);return d.toLocaleDateString('vi-VN')+' '+d.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}
+function day(ts){return ts?new Date(ts*1000).toLocaleDateString('vi-VN'):'–'}
+function ago(ts,now){if(!ts)return'–';const s=Math.max(0,Math.round((now||Date.now()/1000)-ts));return s<60?s+'s':s<3600?Math.floor(s/60)+' phút':s<86400?Math.floor(s/3600)+' giờ':Math.floor(s/86400)+' ngày'}
+function span(a,b){if(!a||!b)return'–';const s=b-a;return s<3600?Math.round(s/60)+' phút':s<86400?(s/3600).toFixed(1)+' giờ':(s/86400).toFixed(1)+' ngày'}
+const SDESC={PASS:'PASS: đạt tiêu chí đã đăng ký (n ≥ 100, CI 95% > 0 VÀ thắng nhóm control p < 0.05). Dashboard không tự gán PASS vì bot paper chưa có nhóm control.',
+  PROVISIONAL:'PROVISIONAL: n ≥ 100 và cận dưới CI 95% > 0, nhưng thiếu nhóm control ngẫu nhiên nên CHƯA phải PASS.',
+  INCONCLUSIVE:'INCONCLUSIVE: n < 100 lệnh — chưa đủ mẫu để kết luận, kể cả khi đang lãi.',
+  REJECT:'REJECT: n ≥ 100 nhưng cận dưới CI 95% ≤ 0 — không chứng minh được lãi sau chi phí.'};
+function badge(s){return `<span class="b ${s}" title="${esc(SDESC[s]||s)}" onclick="alert(this.title)">${s}</span>`}
+const RCLS={'UNKNOWN':'u','LOW RISK':'l','MEDIUM RISK':'m','HIGH RISK':'h','REPEAT FAILURE':'h','SUSPICIOUS / RUG HISTORY':'x'};
+function risk(r,why){return `<span class="r ${RCLS[r]||'u'}" title="${esc(why||r)}">${esc(r||'UNKNOWN')}</span>`}
+function devTag(d){if(!d||!d.creator)return'<span class="faint">–</span>';
+  return `<span class="kd ${d.known_dev?'known':'new'}">${d.known_dev?'KNOWN DEV':'NEW DEV'}</span><a class="lk mono" href="#/dev/${d.creator}" onclick="event.stopPropagation()" title="${esc(d.creator)}">${sh(d.creator)}</a> ${risk(d.risk,d.risk_reason)}`}
+function lowN(n){return n<10?`<span class="lown" title="Mẫu rất nhỏ (n < 10): con số dao động mạnh, không đáng tin">n thấp</span>`:''}
+function walletLinks(w,url){return `<span class="mono" title="${esc(w)}">${sh(w,6)}</span> <button onclick="navigator.clipboard&&navigator.clipboard.writeText('${esc(w)}');this.textContent='✓'" title="Copy">⧉</button> <a class="lk" href="${esc(url)}" target="_blank" rel="noopener">Solscan ↗</a>`}
+function pager(p,fn){if(!p||p.pages<=1)return `<div class="pager">${p?p.total.toLocaleString()+' dòng':''}</div>`;
+  return `<div class="pager"><span>${p.total.toLocaleString()} dòng · trang ${p.page}/${p.pages}</span>
+   <button ${p.page<=1?'disabled':''} onclick="${fn}(1)">«</button><button ${p.page<=1?'disabled':''} onclick="${fn}(${p.page-1})">‹</button>
+   <button ${p.page>=p.pages?'disabled':''} onclick="${fn}(${p.page+1})">›</button><button ${p.page>=p.pages?'disabled':''} onclick="${fn}(${p.pages})">»</button></div>`}
+function seg(name,opts,cur,fn){return `<div class="seg" role="group" aria-label="${name}">${opts.map(([v,l])=>`<button class="${String(v)===String(cur)?'on':''}" onclick="${fn}('${v}')">${l}</button>`).join('')}</div>`}
 
-function render(){
-  const P=S.paper, s=P.summary, live=S.status.connected&&S.now-S.status.last_event<30;
-  $('dot').className='dot'+(live?' on':'');
-  $('sub').textContent=`${S.kols_tracked} ví KOL · ${live?'stream live':'mất kết nối'} · ${S.status.events.toLocaleString()} sự kiện`;
-  $('sol').textContent=S.sol_usd?'$'+S.sol_usd.toFixed(2):'–';
-  $('eq').innerHTML=`${P.equity.toFixed(3)} <span class="t">/ ${P.start} SOL</span>`;
-  $('pnl').innerHTML=s.n?`<span class="${s.pnl_sol>=0?'up':'down'}">${s.pnl_sol>=0?'+':''}${s.pnl_sol.toFixed(3)} SOL</span>`:'–';
-  $('n').textContent=s.n; $('open').textContent=P.open;
-  $('cnt').textContent=S.tokens.length+' coin';
-  $('cards').innerHTML=S.tokens.length?S.tokens.map(card).join(''):'<div class="empty">Chưa có KOL nào mua trong lúc bot chạy. Chờ vài giây…</div>';
-  $('feed').innerHTML=S.feed.map(a=>`<div class="fi"><span class="side ${a.side}">${a.side==='buy'?'MUA':'BÁN'}</span>
-     <div><b>${esc(a.name)}</b> <span class="x">${a.sol} SOL</span><br><span class="t">${esc(a.symbol?'$'+a.symbol:sh(a.mint))} · MC ${mc(a.mc_sol)}</span></div>
-     <span class="t">${ago(a.ts)}</span></div>`).join('')||'<div class="t">Chưa có lệnh.</div>';
-  const st=P.settings;
-  $('summary').innerHTML=`<div class="row" style="justify-content:space-between"><div><div class="t">Trung bình / lệnh (sau phí)</div><div class="big">${s.n?pct(s.mean_net_pct,2):'–'}</div></div>
-     <div style="text-align:right"><div class="t">Thắng</div><div class="big">${s.n?s.win_rate_pct+'%':'–'}</div></div></div>
-     <div class="row" style="margin-top:8px"><span class="badge ${s.status==='OK'?(s.ci95_by_kol&&s.ci95_by_kol[0]>0?'good':'bad'):'warn'}">${s.status} · n=${s.n}</span>
-     <span class="badge">${esc(s.verdict||'Chưa có lệnh đóng')}</span></div>
-     ${s.ci95_by_kol?`<div class="note">CI 95% theo KOL: ${s.ci95_by_kol[0]}% → ${s.ci95_by_kol[1]}% · thoát: ${Object.entries(s.exit_kinds).map(([k,v])=>k+' '+v).join(', ')}</div>`:''}
-     <div class="note">Mỗi lệnh ${st.position_sol} SOL · trễ ${st.delay_s}s · trượt thêm ${st.extra_slippage_pct}%/chiều · KOL mua ≥ ${st.min_kol_buy_sol} SOL · tối đa ${st.max_open} lệnh.
-     KOL thấy ${P.counts.kol_buys} lần mua · copy ${P.counts.copied} · bỏ qua ${Object.entries(P.counts.skipped).map(([k,v])=>k+' '+v).join(', ')||0}</div>`;
-  $('closed').innerHTML='<tr><th>Coin</th><th>KOL</th><th>Thoát</th><th>%</th><th>SOL</th></tr>'+P.closed.map(c=>
-    `<tr><td>${esc(c.symbol?'$'+c.symbol:sh(c.mint))}</td><td>${esc(c.kol_name)}</td><td class="t">${esc(c.exit_kind)}</td><td>${pct(c.net_pct)}</td><td class="${c.pnl_sol>=0?'up':'down'}">${c.pnl_sol.toFixed(4)}</td></tr>`).join('');
-}
+/* ---------- api ---------- */
 function getCode(){try{return localStorage.getItem('kolCode')||''}catch(e){return window._code||''}}
 function saveCode(e){e.preventDefault();const v=$('code').value;try{localStorage.setItem('kolCode',v)}catch(_){window._code=v}
-  $('gate').style.display='none';clearTimeout(window._t);poll();return false}
-async function poll(){
-  try{const r=await fetch('/api/state',{cache:'no-store',headers:{'X-Access-Code':getCode()}});
-    if(r.status===401){$('gate').style.display='flex';$('gateMsg').textContent=getCode()?'Mã không đúng':'';return}
-    S=await r.json();render()}
-  catch(e){$('dot').className='dot';$('sub').textContent='không kết nối được bot'}
-  window._t=setTimeout(poll,2000)
+  $('gate').style.display='none';route();return false}
+async function api(path,params={}){
+  const q=new URLSearchParams(Object.entries(params).filter(([k,v])=>v!==''&&v!=null)).toString();
+  const r=await fetch(path+(q?'?'+q:''),{cache:'no-store',headers:{'X-Access-Code':getCode()}});
+  if(r.status===401){$('gate').style.display='flex';$('gateMsg').textContent=getCode()?'Mã không đúng':'';throw new Error('auth')}
+  return r.json()}
+async function status(){try{STATUS=await api('/api/status');SOLUSD=STATUS.sol_usd;
+  const live=STATUS.live&&STATUS.connected&&STATUS.last_event_age_s!=null&&STATUS.last_event_age_s<60;
+  $('dot').className='dot'+(live?' on':'');$('sol').textContent=SOLUSD?'SOL $'+SOLUSD.toFixed(2):'';
+  $('stream').textContent=!STATUS.live?'stream tắt (chế độ xem dữ liệu)':live?`stream live · ${(STATUS.events||0).toLocaleString()} sự kiện`:'stream mất kết nối'}catch(e){}}
+
+/* ---------- charts (inline SVG, single series each, hover on every chart) ---------- */
+function showTip(ev,html){tip.innerHTML=html;tip.style.display='block';const x=Math.min(ev.clientX+14,innerWidth-tip.offsetWidth-8);tip.style.left=x+'px';tip.style.top=(ev.clientY+14)+'px'}
+function hideTip(){tip.style.display='none'}
+function lineChart(el,pts,title){
+  if(!pts||pts.length<2){el.innerHTML='<div class="empty">Chưa đủ dữ liệu để vẽ</div>';return}
+  const W=el.clientWidth||600,H=el.clientHeight||190,L=56,R=10,T=10,B=22;
+  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);let y0=Math.min(0,...ys),y1=Math.max(0,...ys);if(y0===y1)y1=y0+1;
+  const x0=xs[0],x1=xs[xs.length-1]||x0+1;const X=t=>L+(W-L-R)*((t-x0)/((x1-x0)||1)),Y=v=>T+(H-T-B)*(1-(v-y0)/(y1-y0));
+  const d=pts.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ');
+  const last=ys[ys.length-1],col=last>=0?'var(--gainbar)':'var(--lossbar)';
+  const ticks=[y0,(y0+y1)/2,y1];
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(title)}">
+   ${ticks.map(v=>`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L-6}" y="${Y(v)+4}" fill="var(--faint)" font-size="10.5" text-anchor="end">${num(v,2)}</text>`).join('')}
+   <line x1="${L}" x2="${W-R}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--neutral)" stroke-width="1" stroke-dasharray="3 3"/>
+   <path d="${d}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round"/>
+   <text x="${L}" y="${H-5}" fill="var(--faint)" font-size="10.5">${day(x0)}</text><text x="${W-R}" y="${H-5}" fill="var(--faint)" font-size="10.5" text-anchor="end">${day(x1)}</text>
+   <line id="xh" x1="0" x2="0" y1="${T}" y2="${H-B}" stroke="var(--muted)" stroke-width="1" visibility="hidden"/>
+   <circle id="xd" r="4" fill="${col}" stroke="var(--panel)" stroke-width="2" visibility="hidden"/>
+   <rect x="${L}" y="0" width="${W-L-R}" height="${H}" fill="transparent"/></svg>`;
+  const svg=el.querySelector('svg'),xh=svg.querySelector('#xh'),xd=svg.querySelector('#xd');
+  svg.onmousemove=e=>{const r=svg.getBoundingClientRect(),mx=(e.clientX-r.left)*W/r.width;let i=0,b=1e18;
+    pts.forEach((p,k)=>{const dd=Math.abs(X(p[0])-mx);if(dd<b){b=dd;i=k}});const p=pts[i];
+    xh.setAttribute('x1',X(p[0]));xh.setAttribute('x2',X(p[0]));xh.setAttribute('visibility','visible');
+    xd.setAttribute('cx',X(p[0]));xd.setAttribute('cy',Y(p[1]));xd.setAttribute('visibility','visible');
+    showTip(e,`${dt(p[0])}<br>P&L tích lũy: ${solPlain(p[1],4)} SOL`)};
+  svg.onmouseleave=()=>{xh.setAttribute('visibility','hidden');xd.setAttribute('visibility','hidden');hideTip()}}
+function barChart(el,bars,opt){
+  if(!bars||!bars.length){el.innerHTML='<div class="empty">Chưa có dữ liệu</div>';return}
+  const W=el.clientWidth||600,H=el.clientHeight||190,L=40,R=8,T=10,B=22,n=bars.length,mx=Math.max(...bars.map(b=>b.v),1);
+  const bw=Math.max(2,(W-L-R)/n-2),Y=v=>T+(H-T-B)*(1-v/mx);
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.title)}">
+   ${[0,mx/2,mx].map(v=>`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${Y(v)+4}" fill="var(--faint)" font-size="10.5" text-anchor="end">${Math.round(v)}</text>`).join('')}
+   ${bars.map((b,i)=>{const x=L+i*(W-L-R)/n+1,h=Math.max(0,H-B-Y(b.v)),r=Math.min(4,bw/2,h);
+     return `<path data-i="${i}" d="M${x},${H-B} v${-(h-r)} q0,${-r} ${r},${-r} h${bw-2*r} q${r},0 ${r},${r} v${h-r} z" fill="${b.c}"/>`}).join('')}
+   <text x="${L}" y="${H-5}" fill="var(--faint)" font-size="10.5">${esc(opt.left||'')}</text><text x="${W-R}" y="${H-5}" fill="var(--faint)" font-size="10.5" text-anchor="end">${esc(opt.right||'')}</text>
+   ${bars.map((b,i)=>`<rect data-i="${i}" x="${L+i*(W-L-R)/n}" y="${T}" width="${(W-L-R)/n}" height="${H-T-B}" fill="transparent"/>`).join('')}</svg>`;
+  el.querySelectorAll('rect[data-i]').forEach(r=>{r.onmousemove=e=>showTip(e,bars[+r.dataset.i].tip);r.onmouseleave=hideTip})}
+
+/* ---------- KOLs ---------- */
+function setF(k,v){F[k]=v;if(k!=='page')F.page=1;store.set('kolF',F);viewKols()}
+async function viewKols(){
+  const [S,T]=await Promise.all([api('/api/summary',{range:F.range,min_n:F.min_n}),api('/api/kols',F)]);
+  if(ROUTE!=='kols')return;
+  const st=S.stream||{}, prog=Math.min(100,100*S.n/S.min_n_required);
+  const kpis=`<div class="kpis">
+   <div class="kpi"><div class="k">KOL</div><div class="v">${S.kols_active}</div><div class="s">có lệnh / ${S.roster} ví theo dõi</div></div>
+   <div class="kpi"><div class="k">Tổng lệnh</div><div class="v">${S.n.toLocaleString()}</div><div class="s">${S.excluded_gap?S.excluded_gap+' lệnh loại (mất stream)':'không lệnh nào bị loại'}</div></div>
+   <div class="kpi"><div class="k">Tổng P&L</div><div class="v">${solPlain(S.pnl_sol,3)} <span class="faint" style="font-size:13px">SOL</span></div><div class="s">${SOLUSD?'≈ '+usd(S.pnl_sol*SOLUSD):''} · vốn ${num(S.spend_sol,2)} SOL</div></div>
+   <div class="kpi"><div class="k">ROI</div><div class="v">${pct(S.roi_pct,2)}</div><div class="s">P&L / tổng vốn vào lệnh</div></div>
+   <div class="kpi"><div class="k">Win rate</div><div class="v">${S.win_rate_pct==null?'–':S.win_rate_pct+'%'}</div><div class="s">${S.wins} thắng / ${S.losses} thua</div></div>
+   <div class="kpi"><div class="k">Sample size</div><div class="v">${badge(S.status)}</div><div class="s">n = ${S.n} / ${S.min_n_required} · CI95 theo KOL ${S.ci95_by_kol?S.ci95_by_kol.join('% → ')+'%':'–'}</div>
+     <div style="height:5px;background:var(--chip);border-radius:3px;margin-top:6px"><div style="height:5px;width:${prog}%;background:var(--accent);border-radius:3px"></div></div></div>
+   <div class="kpi"><div class="k">Thời gian dữ liệu</div><div class="v" style="font-size:15px">${span(S.first_ts,S.last_ts)}</div><div class="s">${dt(S.first_ts)} → ${dt(S.last_ts)}</div></div>
+   <div class="kpi"><div class="k">Recorder (stream)</div><div class="v" style="font-size:15px">${!st.live?'<span class="mut">TẮT</span>':st.connected?'<span class="up">● LIVE</span>':'<span class="down">● MẤT KẾT NỐI</span>'}</div><div class="s">${(st.events||0).toLocaleString()} sự kiện · ${st.gaps||0} lần gián đoạn</div></div></div>`;
+  const podium=(arr)=>arr.length?`<div class="podium">${arr.slice(0,3).map((r,i)=>`<div class="pod" onclick="location.hash='#/kol/${r.kol}'">
+     <div class="m">${['🥇','🥈','🥉'][i]} <span class="rank">#${r.rank}</span></div><div class="n">${esc(r.name)} ${lowN(r.n)}</div>
+     <div class="mono faint" title="${r.kol}">${sh(r.kol)}</div><div class="p">${solPlain(r.pnl_sol,3)} SOL</div>
+     <div class="mut" style="font-size:12px">ROI ${pct(r.roi_pct)} · n = ${r.n} · ${badge(r.status)}</div></div>`).join('')}</div>`:'<div class="empty">Chưa có KOL nào có lệnh đóng</div>';
+  const losers=(arr)=>arr.length?`<div class="list">${arr.map(r=>`<div class="it" onclick="location.hash='#/kol/${r.kol}'"><span><span class="rank">#${r.rank}</span> ${esc(r.name)} ${lowN(r.n)} <span class="faint">n=${r.n}</span></span><span>${solPlain(r.pnl_sol,3)} SOL · ${pct(r.roi_pct)}</span></div>`).join('')}</div>`:'<div class="empty">Chưa có KOL lỗ</div>';
+  const landing=`<div class="grid2"><div class="panel"><h2><span>🏆 Top KOL since first seen</span><span class="faint">min n = ${F.min_n}</span></h2>${podium(S.top_all)}</div>
+     <div class="panel"><h2><span>Top losers since first seen</span></h2>${losers(S.losers_all)}</div></div>`;
+  const filt=`<div class="filters">
+   <label>Nhóm ${seg('group',[['kol','KOL'],['control','Control']],F.group,'setGroup')}</label>
+   <label>Khoảng thời gian ${seg('range',[['today','Hôm nay'],['7d','7D'],['30d','30D'],['all','Since first seen']],F.range,'setRange')}</label>
+   <label>Min n ${seg('min_n',[[1,'1'],[3,'3'],[10,'10'],[30,'30'],[100,'100']],F.min_n,'setMinN')}</label>
+   <label>Lời / lỗ ${seg('pnl',[['','Tất cả'],['pos','Chỉ lãi'],['neg','Chỉ lỗ']],F.pnl,'setPnl')}</label>
+   <label>Status <select onchange="setF('status',this.value)">${['','PASS','PROVISIONAL','INCONCLUSIVE','REJECT'].map(s=>`<option value="${s}" ${F.status===s?'selected':''}>${s||'Tất cả'}</option>`).join('')}</select></label>
+   <label>Sắp xếp <select onchange="setF('sort',this.value)">${[['pnl','Cumulative P&L'],['roi','ROI'],['win','Win rate'],['trades','Trades'],['avg','Avg P&L'],['pnl7','7D P&L'],['pnl30','30D P&L'],['first','First seen']].map(([v,l])=>`<option value="${v}" ${F.sort===v?'selected':''}>${l}</option>`).join('')}</select></label>
+   <label>&nbsp;<button onclick="setF('dir',F.dir==='desc'?'asc':'desc')">${F.dir==='desc'?'↓ Giảm dần':'↑ Tăng dần'}</button></label></div>`;
+  const charts=`<div class="grid4">
+   <div class="panel"><h2><span>P&L tích lũy (SOL)</span></h2><div class="chart" id="c1"></div></div>
+   <div class="panel"><h2><span>Phân bố ROI mỗi lệnh</span></h2><div class="chart" id="c2"></div><div class="legend"><span><i class="sw" style="background:var(--gainbar)"></i>lãi</span><span><i class="sw" style="background:var(--lossbar)"></i>lỗ</span></div></div>
+   <div class="panel"><h2><span>Thắng / thua</span></h2><div class="big" style="font-size:26px;margin-top:20px">${S.wins} <span class="faint" style="font-size:16px">/</span> ${S.losses}</div>
+     <div class="wl" title="${S.wins} thắng, ${S.losses} thua"><div style="flex:${S.wins||0};background:var(--gainbar)"></div><div style="flex:${S.losses||0};background:var(--lossbar)"></div></div>
+     <div class="legend"><span><i class="sw" style="background:var(--gainbar)"></i>thắng ${S.win_rate_pct??'–'}%</span><span><i class="sw" style="background:var(--lossbar)"></i>thua</span></div></div>
+   <div class="panel"><h2><span>Lệnh theo ${S.bucket_s>=86400?'ngày':'giờ'}</span></h2><div class="chart" id="c4"></div></div></div>`;
+  let table;
+  if(T.group==='control'){table=`<div class="empty">${esc(T.note)}</div>`}
+  else if(!T.rows.length){table='<div class="empty">Không có KOL nào khớp bộ lọc</div>'}
+  else table=`<div class="tw"><table><thead><tr><th>Rank</th><th>KOL</th><th class="hm">First seen</th><th class="num">Trades</th><th class="num hm">Win rate</th>
+     <th class="num">Cumulative P&L</th><th class="num">ROI</th><th class="num hm">7D P&L</th><th class="num hm">30D P&L</th><th class="num hm">Avg P&L/trade</th><th class="hm">Status</th><th class="hm"></th></tr></thead><tbody>
+     ${T.rows.map(r=>`<tr class="click" onclick="location.hash='#/kol/${r.kol}'"><td class="rank">#${r.rank}</td>
+      <td><b>${esc(r.name)}</b> ${lowN(r.n)}<div class="mono faint" title="${r.kol}">${sh(r.kol)}</div></td>
+      <td class="hm" title="${r.first_seen_source==='ledger'?'Theo lệnh copy đầu tiên (trước khi có bảng theo dõi)':'Lần đầu stream thấy KOL giao dịch'}">${r.first_seen_at?day(r.first_seen_at):'<span class="faint">UNKNOWN</span>'}</td>
+      <td class="num">${r.n}</td><td class="num hm">${r.win_rate_pct}%</td>
+      <td class="num big">${solPlain(r.pnl_sol,4)}</td><td class="num">${pct(r.roi_pct)}</td>
+      <td class="num hm">${solPlain(r.pnl_7d_sol,4)}</td><td class="num hm">${solPlain(r.pnl_30d_sol,4)}</td><td class="num hm">${solPlain(r.avg_pnl_sol,4)}</td>
+      <td class="hm">${badge(r.status)}</td><td class="hm"><a class="lk" href="#/kol/${r.kol}">View →</a></td></tr>`).join('')}</tbody></table></div>${pager(T,'kpage')}`;
+  app.innerHTML=kpis+landing+filt+charts+`<div class="panel"><h2><span>Bảng KOL</span><span class="faint">P&L tính bằng SOL sau toàn bộ chi phí mô phỏng</span></h2>${table}
+    <div class="note" style="margin-top:8px">Status theo methodology đã chốt: n &lt; 100 → INCONCLUSIVE; n ≥ 100 và CI95 &gt; 0 → PROVISIONAL (thiếu nhóm control nên chưa thể PASS); n ≥ 100 và CI95 ≤ 0 → REJECT. Di chuột/bấm vào badge để xem giải thích.</div></div>`;
+  lineChart($('c1'),S.cumulative,'P&L tích lũy');
+  barChart($('c2'),S.histogram.map(b=>({v:b.n,c:b.hi<=0?'var(--lossbar)':'var(--gainbar)',tip:`ROI ${b.lo}% → ${b.hi}%${b.hi>=300?'+':''}<br>${b.n} lệnh`})),{title:'Phân bố ROI',left:'−100%',right:'+300%'});
+  barChart($('c4'),S.over_time.map(b=>({v:b.n,c:'var(--accent)',tip:`${dt(b.t)}<br>${b.n} lệnh · ${b.wins} thắng`})),{title:'Lệnh theo thời gian',left:S.over_time.length?day(S.over_time[0].t):'',right:S.over_time.length?day(S.over_time[S.over_time.length-1].t):''});
 }
-poll();
+window.setGroup=v=>setF('group',v);window.setRange=v=>setF('range',v);window.setMinN=v=>setF('min_n',+v);window.setPnl=v=>setF('pnl',v);window.kpage=p=>setF('page',p);
+
+/* ---------- KOL detail ---------- */
+const KD={range:'all',page:1};
+async function viewKol(w){
+  const d=await api('/api/kol',{wallet:w,range:KD.range,page:KD.page});
+  if(ROUTE!=='kol')return;
+  if(d.error){app.innerHTML=`<a class="back" href="#/kols">← KOLs</a><div class="empty">Không tìm thấy KOL ${esc(w)}</div>`;return}
+  const H=d.since_first||{}, s=H.streaks||{};
+  app.innerHTML=`<a class="back" href="#/kols">← Tất cả KOL</a>
+   <div class="panel" style="margin-top:8px"><div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+     <h1>${d.rank?'#'+d.rank+' ':''}${esc(d.name)}</h1>${badge(d.status)}${d.twitter?`<a class="lk" href="${esc(d.twitter)}" target="_blank" rel="noopener">X ↗</a>`:''}
+     <span>${walletLinks(d.kol,d.wallet_url)}</span><a class="lk" href="#/trades?kol=${d.kol}">Tất cả lệnh →</a></div>
+     <div class="faint mono" style="margin-top:6px;word-break:break-all">${esc(d.kol)}</div></div>
+   <div class="panel" style="border-color:rgba(124,92,255,.45)"><h2><span>Performance since first seen</span>${H.history_status==='UNKNOWN'?'<span class="b INCONCLUSIVE">LỊCH SỬ UNKNOWN</span>':''}</h2>
+     <div class="hero">
+      <div class="kpi"><div class="k">First seen</div><div class="v" style="font-size:16px">${H.first_seen_at?day(H.first_seen_at):'UNKNOWN'}</div><div class="s">${H.first_seen_source==='ledger'?'theo lệnh copy đầu tiên':H.first_seen_source==='stream'?'stream thấy KOL lần đầu':''}</div></div>
+      <div class="kpi"><div class="k">Cumulative P&L</div><div class="v">${solPlain(H.total_pnl_sol,4)} <span class="faint" style="font-size:12px">SOL</span></div><div class="s">${SOLUSD&&H.total_pnl_sol!=null?'≈ '+usd(H.total_pnl_sol*SOLUSD):''}</div></div>
+      <div class="kpi"><div class="k">Cumulative ROI</div><div class="v">${pct(H.roi_pct,2)}</div></div>
+      <div class="kpi"><div class="k">Trades</div><div class="v">${H.total_trades??0}</div><div class="s">${H.winning_trades??0} thắng / ${H.losing_trades??0} thua</div></div>
+      <div class="kpi"><div class="k">Win rate</div><div class="v">${H.win_rate_pct==null?'–':H.win_rate_pct+'%'}</div></div>
+      <div class="kpi"><div class="k">Avg / median</div><div class="v" style="font-size:15px">${solPlain(H.avg_pnl_sol,4)} / ${solPlain(H.median_pnl_sol,4)}</div><div class="s">SOL mỗi lệnh</div></div>
+      <div class="kpi"><div class="k">Best / worst</div><div class="v" style="font-size:15px">${pct(H.best_trade_pct)} / ${pct(H.worst_trade_pct)}</div></div>
+      <div class="kpi"><div class="k">Streak</div><div class="v" style="font-size:15px">${s.current>0?'<span class="up">'+s.current+' thắng</span>':s.current<0?'<span class="down">'+(-s.current)+' thua</span>':'–'}</div><div class="s">dài nhất: ${s.longest_win||0} thắng · ${s.longest_loss||0} thua</div></div>
+      <div class="kpi"><div class="k">Token khác nhau</div><div class="v">${d.tokens??0}</div></div>
+      <div class="kpi"><div class="k">Thời gian hoạt động</div><div class="v" style="font-size:15px">${span(H.first_seen_at||d.first_ts,Math.max(H.last_seen_at||0,d.last_ts||0)||null)}</div><div class="s">hoạt động gần nhất ${dt(Math.max(H.last_seen_at||0,d.last_ts||0)||null)}</div></div>
+     </div></div>
+   <div class="filters"><label>Khung xem ${seg('kr',[['today','Today'],['7d','7D'],['30d','30D'],['all','Since first seen']],KD.range,'kdRange')}</label>
+     <span class="mut" style="font-size:12.5px">Trong khung: ${d.n||0} lệnh · P&L ${solPlain(d.pnl_sol,4)} SOL · ROI ${pct(d.roi_pct)} · win ${d.win_rate_pct??'–'}% · rank #${d.rank??'–'}/${d.ranked_of}</span></div>
+   <div class="grid2"><div class="panel"><h2><span>P&L tích lũy</span></h2><div class="chart" id="kc"></div></div>
+     <div class="panel"><h2><span>Snapshot theo ngày (UTC)</span></h2><div class="tw" style="max-height:200px"><table><thead><tr><th>Ngày</th><th class="num">Lệnh</th><th class="num">W/L</th><th class="num">P&L</th><th class="num">ROI</th><th class="num">Cum P&L</th><th class="num">Cum ROI</th></tr></thead><tbody>
+     ${(H.daily||[]).map(x=>`<tr><td>${x.date}</td><td class="num">${x.trades}</td><td class="num">${x.wins}/${x.losses}</td><td class="num">${solPlain(x.pnl_sol,4)}</td><td class="num">${pct(x.roi_pct)}</td><td class="num">${solPlain(x.cum_pnl_sol,4)}</td><td class="num">${pct(x.cum_roi_pct)}</td></tr>`).join('')||'<tr><td colspan="7" class="faint">Chưa có snapshot</td></tr>'}</tbody></table></div></div></div>
+   <div class="panel"><h2><span>Lịch sử giao dịch</span><span class="faint">mới nhất trước</span></h2>
+    <div class="tw"><table><thead><tr><th>Time</th><th>Token</th><th class="hm">Dev</th><th class="num">Buy</th><th class="num">Sell</th><th class="num">P&L</th><th class="num">ROI</th><th class="num hm">Delay</th><th class="hm">Status</th></tr></thead><tbody>
+    ${d.history.rows.map(h=>`<tr><td>${dt(h.exit_ts)}</td><td><a class="lk" href="#/token/${h.mint}">${esc(h.symbol?'$'+h.symbol:sh(h.mint))}</a> <a class="faint" href="${h.token_url}" target="_blank" rel="noopener" title="pump.fun">↗</a></td>
+      <td class="hm">${devTag(h.dev)}</td><td class="num">${num(h.buy_sol,3)}</td><td class="num">${num(h.sell_sol,4)}</td><td class="num big">${solPlain(h.pnl_sol,4)}</td><td class="num">${pct(h.roi_pct)}</td>
+      <td class="num hm" title="KOL mua → lệnh giấy khớp">${h.delay_s==null?'–':h.delay_s+'s'}</td><td class="hm">${esc(h.exit_kind)}${h.gap?' <span class="b INCONCLUSIVE" title="Trùng lúc mất stream > 5 phút: loại khỏi thống kê">gap</span>':''}</td></tr>`).join('')||'<tr><td colspan="9" class="faint">Không có lệnh trong khung này</td></tr>'}
+    </tbody></table></div>${pager(d.history,'kdPage')}</div>
+   <div class="panel"><h2><span>Theo token</span><span class="faint">top 100 theo P&L</span></h2><div class="tw" style="max-height:320px"><table><thead><tr><th>Token</th><th class="num">Lệnh</th><th class="num">Thắng</th><th class="num">P&L</th><th class="num">ROI</th></tr></thead><tbody>
+    ${(d.by_token||[]).map(t=>`<tr><td><a class="lk" href="#/token/${t.mint}">${esc(t.symbol?'$'+t.symbol:sh(t.mint))}</a></td><td class="num">${t.trades}</td><td class="num">${t.wins}</td><td class="num">${solPlain(t.pnl_sol,4)}</td><td class="num">${pct(t.roi_pct)}</td></tr>`).join('')||'<tr><td colspan="5" class="faint">–</td></tr>'}</tbody></table></div></div>`;
+  lineChart($('kc'),d.cumulative,'P&L tích lũy KOL');
+}
+window.kdRange=v=>{KD.range=v;KD.page=1;route()};window.kdPage=p=>{KD.page=p;route()};
+
+/* ---------- Devs ---------- */
+const DF=Object.assign({min_tokens:2,risk:'',sort:'tokens',dir:'desc',page:1,q:''},store.get('devF',{}));
+function setD(k,v){DF[k]=v;if(k!=='page')DF.page=1;store.set('devF',DF);route()}
+async function viewDevs(){
+  const T=await api('/api/devs',DF);if(ROUTE!=='devs')return;
+  app.innerHTML=`<div class="panel"><h2><span>Devs / creators</span><span class="faint">${T.total.toLocaleString()} dev khớp bộ lọc</span></h2>
+   <div class="filters"><label>Số token tối thiểu ${seg('mt',[[1,'1'],[2,'2'],[3,'3'],[5,'5'],[10,'10']],DF.min_tokens,'dMin')}</label>
+    <label>Risk <select onchange="setD('risk',this.value)">${['','UNKNOWN','LOW RISK','MEDIUM RISK','HIGH RISK','REPEAT FAILURE','SUSPICIOUS / RUG HISTORY'].map(s=>`<option ${DF.risk===s?'selected':''} value="${s}">${s||'Tất cả'}</option>`).join('')}</select></label>
+    <label>Sắp xếp <select onchange="setD('sort',this.value)">${[['tokens','Tokens created'],['rug','Rug rate'],['fail','Failure rate'],['median','Median outcome'],['success','Success rate'],['recent','Token gần nhất'],['pnl','Paper P&L']].map(([v,l])=>`<option value="${v}" ${DF.sort===v?'selected':''}>${l}</option>`).join('')}</select></label>
+    <label>&nbsp;<button onclick="setD('dir',DF.dir==='desc'?'asc':'desc')">${DF.dir==='desc'?'↓ Giảm dần':'↑ Tăng dần'}</button></label>
+    <label>Tìm ví <input value="${esc(DF.q)}" placeholder="địa chỉ dev…" onchange="setD('q',this.value)"></label></div>
+   ${T.rows.length?`<div class="tw"><table><thead><tr><th>Rank</th><th>Dev</th><th class="num">Tokens</th><th class="num">Success</th><th class="num">Fail</th><th class="num hm">Rug</th><th class="num">Rug rate</th><th class="num hm">Median outcome</th><th>Risk</th><th class="hm"></th></tr></thead><tbody>
+   ${T.rows.map(r=>`<tr class="click" onclick="location.hash='#/dev/${r.wallet}'"><td class="rank">#${r.rank}</td><td class="mono" title="${r.wallet}">${sh(r.wallet,6)}</td>
+     <td class="num">${r.created}<div class="faint" style="font-size:11px">${r.known} có kết quả · ${r.pending} chờ</div></td><td class="num">${r.migrated}</td><td class="num">${r.failed}</td>
+     <td class="num hm">${r.rug}<span class="faint">/${r.rug_checkable}</span></td><td class="num">${rate(r.rug_rate)}</td><td class="num hm">${r.outcome_n?pct(r.median_outcome_pct):'<span class="faint" title="Chưa có token nào theo dõi từ lúc tạo và đã có kết quả">–</span>'}</td>
+     <td>${risk(r.risk,r.risk_reason)}</td><td class="hm"><a class="lk" href="#/dev/${r.wallet}">View →</a></td></tr>`).join('')}</tbody></table></div>${pager(T,'dPage')}`:'<div class="empty">Chưa có dev nào khớp bộ lọc. Hồ sơ dev được tạo dần khi stream thấy token mới.</div>'}
+   <div class="note" style="margin-top:8px"><b>Định nghĩa:</b> Success = token đã migrate. Fail = ≥ 24 giờ tuổi và chưa migrate. Token &lt; 24 giờ là "chờ" — không tính thắng/thua.
+   Rug chỉ tính khi có bằng chứng: token được theo dõi từ lúc tạo, dev bán ≥ 90% số token dev mua, MC giảm ≥ 80% từ đỉnh và không migrate. Rug rate = rug / số token kiểm chứng được.
+   Median outcome = MC cuối / MC đầu của token theo dõi từ lúc tạo. Đây là tín hiệu thông tin, không thay đổi luật copy.</div></div>`;
+}
+window.dMin=v=>setD('min_tokens',+v);window.dPage=p=>setD('page',p);
+
+const DD={page:1};
+async function viewDev(w){
+  const d=await api('/api/dev',{wallet:w,page:DD.page});if(ROUTE!=='dev')return;
+  if(d.error){app.innerHTML=`<a class="back" href="#/devs">← Devs</a><div class="panel" style="margin-top:8px"><h1 class="mono">${sh(w,6)}</h1><div style="margin:8px 0">${walletLinks(w,d.wallet_url||'#')}</div>
+    <div class="empty">Chưa có dữ liệu về dev này (UNKNOWN / INSUFFICIENT DATA). Đã yêu cầu tải lịch sử từ pump.fun — tải lại trang sau ít giây.</div></div>`;return}
+  const p=d.profile||{},R=d.risk||{},ev=R.evidence||{};
+  const bad=['HIGH RISK','REPEAT FAILURE','SUSPICIOUS / RUG HISTORY'].includes(p.risk);
+  app.innerHTML=`<a class="back" href="#/devs">← Tất cả dev</a>
+   <div class="panel" style="margin-top:8px"><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><h1>Dev</h1>${risk(p.risk,p.risk_reason)}<span>${walletLinks(w,d.wallet_url)}</span></div>
+    <div class="faint mono" style="margin-top:6px;word-break:break-all">${esc(w)}</div>
+    <div class="alert ${bad?'bad':''}"><b>Risk: ${esc(p.risk||'UNKNOWN')}</b> — ${esc(p.risk_reason||'')}<div class="faint" style="font-size:12px;margin-top:3px">Tính lúc ${dt(p.risk_ts)} · bằng chứng: ${esc(JSON.stringify(Object.fromEntries(Object.entries(ev).filter(([k])=>k!=='rug_tokens'))))}</div>
+    ${(ev.rug_tokens||[]).map(t=>`<div style="font-size:12px;margin-top:3px">• <a class="lk" href="#/token/${t.mint}">${sh(t.mint)}</a>: ${esc(t.evidence)}</div>`).join('')}</div>
+    <div class="hero">
+     <div class="kpi"><div class="k">Token đã tạo</div><div class="v">${p.created}</div><div class="s">${p.observed} quan sát trực tiếp</div></div>
+     <div class="kpi"><div class="k">Có kết quả</div><div class="v">${p.known}</div><div class="s">${p.pending} đang chờ (&lt; 24h)</div></div>
+     <div class="kpi"><div class="k">Migrate (success)</div><div class="v">${p.migrated}</div><div class="s">success rate ${rate(p.success_rate)}</div></div>
+     <div class="kpi"><div class="k">Thất bại</div><div class="v">${p.failed}</div><div class="s">fail rate ${rate(p.fail_rate)} · ${p.dead} chết hẳn</div></div>
+     <div class="kpi"><div class="k">Rug (có bằng chứng)</div><div class="v">${p.rug}<span class="faint" style="font-size:13px">/${p.rug_checkable}</span></div><div class="s">rug rate ${rate(p.rug_rate)}</div></div>
+     <div class="kpi"><div class="k">Median outcome</div><div class="v">${p.outcome_n?pct(p.median_outcome_pct):'–'}</div><div class="s">${p.outcome_n?'avg '+num(p.avg_outcome_pct,1)+'% · n='+p.outcome_n:'INSUFFICIENT DATA'}</div></div>
+     <div class="kpi"><div class="k">Paper P&L (bot)</div><div class="v" style="font-size:16px">${solPlain(p.paper_pnl_sol,4)}</div><div class="s">${p.paper_trades} lệnh giấy trên token của dev</div></div>
+     <div class="kpi"><div class="k">Thời gian hoạt động</div><div class="v" style="font-size:15px">${span(p.first_seen_ts,p.last_token_ts)}</div><div class="s">token gần nhất ${dt(p.last_token_ts)}</div></div>
+     <div class="kpi"><div class="k">Token gần nhất / trước đó</div><div class="v" style="font-size:13px">${p.latest_mint?`<a class="lk" href="#/token/${p.latest_mint}">${sh(p.latest_mint)}</a>`:'–'} / ${p.prev_mint?`<a class="lk" href="#/token/${p.prev_mint}">${sh(p.prev_mint)}</a>`:'–'}</div></div>
+    </div></div>
+   <div class="panel"><h2><span>Token của dev</span><span class="faint">mới nhất trước</span></h2>
+    <div class="tw"><table><thead><tr><th>Token</th><th>Created</th><th>Migration</th><th class="num">Peak MC</th><th class="num">Final MC</th><th class="num hm">Outcome %</th><th class="num hm">P&L (bot)</th><th>Outcome</th><th>Rug / Fail</th><th class="hm">Link</th></tr></thead><tbody>
+    ${d.tokens.rows.map(t=>`<tr class="click" onclick="location.hash='#/token/${t.mint}'"><td><b>${esc(t.symbol?'$'+t.symbol:sh(t.mint))}</b><div class="faint" style="font-size:11px">${esc((t.name||'').slice(0,28))}</div></td>
+      <td>${dt(t.created_ts||t.first_seen_ts)}<div class="faint" style="font-size:11px">${t.source==='api'?'nguồn: pump.fun API':'nguồn: stream'}</div></td>
+      <td>${t.migrated?'<span class="up">✓ '+(t.migrated_ts?dt(t.migrated_ts):'đã migrate')+'</span>':'–'}</td>
+      <td class="num">${t.peak_mc_sol?mc(t.peak_mc_sol):t.api_ath_usd?usd(t.api_ath_usd)+' <span class="faint">ATH</span>':'–'}</td>
+      <td class="num">${t.last_mc_sol?mc(t.last_mc_sol):t.api_mc_usd?usd(t.api_mc_usd):'–'}</td>
+      <td class="num hm">${t.outcome_pct==null?'<span class="faint" title="Chỉ tính cho token theo dõi từ lúc tạo và đã có kết quả">–</span>':pct(t.outcome_pct)}</td>
+      <td class="num hm">${t.paper_pnl_sol==null?'–':solPlain(t.paper_pnl_sol,4)}</td>
+      <td>${{MIGRATED:'<span class="up">MIGRATED</span>',FAILED:'<span class="down">FAILED</span>',DEAD:'<span class="down">DEAD</span>',PENDING:'<span class="mut">PENDING</span>'}[t.outcome]}</td>
+      <td>${t.rug?'<span class="r x" title="'+esc(t.rug_evidence)+'">RUG (bằng chứng)</span>':t.rug_checkable?'<span class="faint">không</span>':'<span class="faint" title="Không theo dõi từ lúc tạo nên không kiểm chứng được">không kiểm chứng</span>'}</td>
+      <td class="hm"><a class="lk" href="${t.token_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">pump ↗</a> <a class="lk" href="${t.solscan_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">scan ↗</a></td></tr>`).join('')||'<tr><td colspan="10" class="faint">–</td></tr>'}
+    </tbody></table></div>${pager(d.tokens,'ddPage')}</div>
+   <div class="panel"><h2><span>Lịch sử risk</span></h2>${(R.history||[]).map(h=>`<div style="font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--line)">${dt(h.ts)} · ${risk(h.risk)} ${esc(h.reason)}</div>`).join('')||'<div class="faint">–</div>'}
+    ${d.links&&d.links.length?`<div class="note" style="margin-top:8px">Quan hệ ví có nguồn: ${d.links.map(l=>esc(l.relation+' ('+l.source+')')).join(', ')}</div>`:''}</div>`;
+}
+window.ddPage=p=>{DD.page=p;route()};
+
+/* ---------- Tokens ---------- */
+const TF=Object.assign({scope:'kol',page:1,q:''},store.get('tokF',{}));
+function setT(k,v){TF[k]=v;if(k!=='page')TF.page=1;store.set('tokF',TF);route()}
+async function viewTokens(){
+  const T=await api('/api/tokens',TF);if(ROUTE!=='tokens')return;
+  app.innerHTML=`<div class="panel"><h2><span>Tokens</span><span class="faint">${T.total.toLocaleString()} token</span></h2>
+   <div class="filters"><label>Phạm vi ${seg('sc',[['kol','KOL đã mua / bot đã copy'],['all','Tất cả token quan sát']],TF.scope,'tScope')}</label>
+    <label>Tìm <input value="${esc(TF.q)}" placeholder="mint / dev / symbol…" onchange="setT('q',this.value)"></label></div>
+   ${T.rows.length?`<div class="tw"><table><thead><tr><th>Token</th><th>Created</th><th>Dev</th><th class="num hm">Trades</th><th class="num">Peak MC</th><th class="num">Last MC</th><th>Outcome</th><th class="num">P&L (bot)</th><th class="hm">Link</th></tr></thead><tbody>
+   ${T.rows.map(t=>`<tr class="click" onclick="location.hash='#/token/${t.mint}'"><td><b>${esc(t.symbol?'$'+t.symbol:sh(t.mint))}</b> ${t.kol_buys?'<span class="chip">KOL ×'+t.kol_buys+'</span>':''}</td>
+     <td>${dt(t.created_ts||t.first_seen_ts)}</td><td>${devTag(t.dev)}</td><td class="num hm">${t.trades||0}</td>
+     <td class="num">${mc(t.peak_mc_sol)}</td><td class="num">${mc(t.last_mc_sol)}</td>
+     <td>${{MIGRATED:'<span class="up">MIGRATED</span>',FAILED:'<span class="down">FAILED</span>',DEAD:'<span class="down">DEAD</span>',PENDING:'<span class="mut">PENDING</span>'}[t.outcome]}</td>
+     <td class="num">${t.paper_pnl_sol==null?'–':solPlain(t.paper_pnl_sol,4)}</td>
+     <td class="hm"><a class="lk" href="${t.token_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">pump ↗</a></td></tr>`).join('')}</tbody></table></div>${pager(T,'tPage')}`:'<div class="empty">Chưa có token nào. Token được lưu khi stream thấy chúng.</div>'}</div>`;
+}
+window.tScope=v=>setT('scope',v);window.tPage=p=>setT('page',p);
+
+async function viewToken(m){
+  const t=await api('/api/token',{mint:m});if(ROUTE!=='token')return;
+  if(t.error){app.innerHTML=`<a class="back" href="#/tokens">← Tokens</a><div class="empty">Chưa có dữ liệu cho token ${esc(m)}</div>`;return}
+  const d=t.dev;const bad=d&&['HIGH RISK','REPEAT FAILURE','SUSPICIOUS / RUG HISTORY'].includes(d.risk);
+  app.innerHTML=`<a class="back" href="#/tokens">← Tokens</a>
+   <div class="panel" style="margin-top:8px"><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><h1>${esc(t.symbol?'$'+t.symbol:sh(m))}</h1><span class="mut">${esc(t.name||'')}</span>
+    <a class="lk" href="${t.token_url}" target="_blank" rel="noopener">pump.fun ↗</a><a class="lk" href="${t.solscan_url}" target="_blank" rel="noopener">Solscan ↗</a></div>
+    <div class="faint mono" style="margin-top:6px;word-break:break-all">${esc(m)}</div>
+    <div class="hero">
+     <div class="kpi"><div class="k">Created</div><div class="v" style="font-size:15px">${dt(t.created_ts)}</div><div class="s">thấy lần đầu ${dt(t.first_seen_ts)}</div></div>
+     <div class="kpi"><div class="k">Outcome</div><div class="v" style="font-size:16px">${t.outcome||'–'}</div><div class="s">${t.migrated?'đã migrate '+dt(t.migrated_ts):''}</div></div>
+     <div class="kpi"><div class="k">MC đầu / đỉnh / cuối</div><div class="v" style="font-size:14px">${mc(t.first_mc_sol)} / ${mc(t.peak_mc_sol)} / ${mc(t.last_mc_sol)}</div></div>
+     <div class="kpi"><div class="k">Trades quan sát</div><div class="v">${t.trades||0}</div><div class="s">KOL mua ${t.kol_buys||0} lần</div></div>
+     <div class="kpi"><div class="k">Dev mua / bán (token)</div><div class="v" style="font-size:14px">${num((t.dev_buy_tok||0)/1e6,0)} / ${num((t.dev_sell_tok||0)/1e6,0)}</div><div class="s">${t.rug?'<span class="down">'+esc(t.rug_evidence)+'</span>':t.rug_checkable?'không có bằng chứng xả':'không kiểm chứng được (không theo dõi từ lúc tạo)'}</div></div>
+    </div></div>
+   <div class="panel"><h2><span>Creator / Dev</span></h2>${!d||!d.creator?'<div class="empty">Chưa xác định creator</div>':`
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="kd ${d.known_dev?'known':'new'}" style="font-size:12px">${d.label}</span><a class="lk mono" href="#/dev/${d.creator}">${esc(d.creator)}</a> <a class="lk" href="${d.creator_url}" target="_blank" rel="noopener">Solscan ↗</a> ${risk(d.risk,d.risk_reason)}</div>
+    ${d.known_dev?`<div class="alert ${bad?'bad':''}"><b>KNOWN DEV</b> · Previous tokens: ${d.previous_tokens} · Thành công (migrate): ${d.migrated??0} · Thất bại: ${d.failed??0}${d.known?' ('+Math.round(100*(d.failed||0)/d.known)+'% trong '+d.known+' token có kết quả)':''}
+      · Rug (bằng chứng): ${d.rug??0}/${d.rug_checkable??0} · Median outcome: ${d.median_outcome_pct==null?'INSUFFICIENT DATA':pct(d.median_outcome_pct)}
+      ${d.latest_mint&&d.latest_mint!==m?` · Token gần nhất: <a class="lk" href="#/token/${d.latest_mint}">${sh(d.latest_mint)}</a>`:''}
+      <div class="faint" style="font-size:12px;margin-top:4px">Chỉ là tín hiệu thông tin/rủi ro — không thay đổi luật copy.</div></div>`:'<div class="note" style="margin-top:6px">NEW DEV: chưa thấy token nào khác của ví này (UNKNOWN / INSUFFICIENT DATA).</div>'}`}</div>
+   <div class="panel"><h2><span>Lệnh giấy trên token này</span></h2><div class="tw"><table><thead><tr><th>Time</th><th>KOL</th><th class="num">Buy</th><th class="num">Sell</th><th class="num">P&L</th><th class="num">ROI</th><th class="num">Delay</th><th>Exit</th></tr></thead><tbody>
+    ${t.paper_trades.map(x=>`<tr><td>${dt(x.exit_ts)}</td><td><a class="lk" href="#/kol/${x.kol}">${esc(x.kol_name)}</a></td><td class="num">${num(x.spend_sol,3)}</td><td class="num">${num(x.proceeds_sol,4)}</td><td class="num">${solPlain(x.pnl_sol,4)}</td><td class="num">${pct(x.net_pct)}</td><td class="num">${x.delay_s==null?'–':x.delay_s+'s'}</td><td>${esc(x.exit_kind)}</td></tr>`).join('')||'<tr><td colspan="8" class="faint">Bot chưa copy token này</td></tr>'}</tbody></table></div></div>`;
+}
+
+/* ---------- Trades ---------- */
+const RF={range:'all',pnl:'',exit:'',kol:'',page:1};
+function setR(k,v){RF[k]=v;if(k!=='page')RF.page=1;route()}
+async function viewTrades(){
+  const T=await api('/api/trades',RF);if(ROUTE!=='trades')return;
+  app.innerHTML=`<div class="panel"><h2><span>Trade ledger (paper)</span><span class="faint">${T.total.toLocaleString()} lệnh · <a class="lk" href="#" onclick="dlCsv();return false">Tải CSV</a></span></h2>
+   <div class="filters"><label>Khoảng ${seg('rr',[['today','Hôm nay'],['7d','7D'],['30d','30D'],['all','Tất cả']],RF.range,'rRange')}</label>
+    <label>Lời / lỗ ${seg('rp',[['','Tất cả'],['pos','Lãi'],['neg','Lỗ']],RF.pnl,'rPnl')}</label>
+    <label>Thoát <select onchange="setR('exit',this.value)">${['','kol_sold','migrated','max_hold','stop_loss','take_profit'].map(s=>`<option ${RF.exit===s?'selected':''} value="${s}">${s||'Tất cả'}</option>`).join('')}</select></label>
+    ${RF.kol?`<label>KOL <span><span class="mono">${sh(RF.kol)}</span> <button onclick="setR('kol','')">✕</button></span></label>`:''}</div>
+   ${T.rows.length?`<div class="tw"><table><thead><tr><th>Time</th><th>KOL</th><th>Token</th><th class="hm">Dev</th><th class="num">Buy</th><th class="num">Sell</th><th class="num">P&L</th><th class="num">ROI</th><th class="num hm">Delay</th><th class="hm">Exit</th></tr></thead><tbody>
+   ${T.rows.map(x=>`<tr><td>${dt(x.exit_ts)}</td><td><a class="lk" href="#/kol/${x.kol}">${esc(x.kol_name)}</a></td><td><a class="lk" href="#/token/${x.mint}">${esc(x.symbol?'$'+x.symbol:sh(x.mint))}</a> <a class="faint" href="${x.token_url}" target="_blank" rel="noopener">↗</a></td>
+     <td class="hm">${devTag(x.dev)}</td><td class="num">${num(x.spend_sol,3)}</td><td class="num">${num(x.proceeds_sol,4)}</td><td class="num big">${solPlain(x.pnl_sol,4)}</td><td class="num">${pct(x.net_pct)}</td>
+     <td class="num hm">${x.delay_s==null?'–':x.delay_s+'s'}</td><td class="hm">${esc(x.exit_kind)}${x.gap?' <span class="b INCONCLUSIVE">gap</span>':''}</td></tr>`).join('')}</tbody></table></div>${pager(T,'rPage')}`:'<div class="empty">Chưa có lệnh nào khớp bộ lọc</div>'}</div>`;
+}
+window.rRange=v=>setR('range',v);window.rPnl=v=>setR('pnl',v);window.rPage=p=>setR('page',p);
+async function dlCsv(){const r=await fetch('/api/export.csv',{headers:{'X-Access-Code':getCode()}});const b=await r.blob();
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='kol_radar_trades.csv';a.click()}
+
+/* ---------- Live ---------- */
+async function viewLive(){
+  const S=await api('/api/state');if(ROUTE!=='live')return;SOLUSD=S.sol_usd||SOLUSD;
+  const card=t=>{const c=t.coin||{},d=t.dev;const first=t.kols.length?Math.min(...t.kols.map(k=>k.first_mc_sol)):t.mc_sol;
+    const bad=d&&['HIGH RISK','REPEAT FAILURE','SUSPICIOUS / RUG HISTORY'].includes(d.risk);
+    return `<div class="card ${t.paper?'held':''}"><div class="top"><div class="img">${c.image_uri&&!BADIMG.has(c.image_uri)?`<img src="${esc(c.image_uri)}" alt="" loading="lazy" referrerpolicy="no-referrer" style="width:100%;height:100%;border-radius:11px;object-fit:cover" onerror="BADIMG.add(this.getAttribute('src'));this.remove()">`:''}</div>
+     <div style="min-width:0;flex:1"><div class="big"><a class="lk" href="#/token/${t.mint}">${esc(c.name||sh(t.mint))}</a> <span class="faint">${esc(c.symbol?'$'+c.symbol:'')}</span></div>
+     <div class="faint" style="font-size:12px">coin ${c.created_timestamp?ago(c.created_timestamp/1000,S.now):'?'} tuổi · KOL vào ${ago(t.first_ts,S.now)} trước</div></div>
+     <div style="text-align:right"><div class="big" style="font-size:17px">${mc(t.mc_sol)}</div><div style="font-size:12px">${pct(first?100*(t.mc_sol/first-1):null)} từ KOL đầu</div></div></div>
+     <div>${t.kols.map(k=>`<a class="chip" href="#/kol/${k.kol}"><b>${esc(k.name)}</b> <span class="faint">${k.sol} SOL @ ${mc(k.first_mc_sol)}${k.sold_sol>0?' · đã bán '+k.sold_sol:''}</span></a>`).join('')}</div>
+     <div class="cg"><div class="m"><div class="k">Người trade</div><div class="v">${t.traders}</div></div><div class="m"><div class="k">Trade 5 phút</div><div class="v">${t.traders_5m}</div></div>
+      <div class="m"><div class="k">Mua / bán</div><div class="v">${t.buys}/${t.sells}</div></div><div class="m"><div class="k">Bình luận</div><div class="v">${c.reply_count??'–'}</div></div></div>
+     ${d&&d.creator?`<div class="${d.known_dev?'alert '+(bad?'bad':''):''}" style="${d.known_dev?'':'font-size:12.5px'}">${devTag(d)}${d.known_dev?`<div style="font-size:12px;margin-top:4px">Previous tokens: ${d.previous_tokens} · Thất bại: ${d.known?Math.round(100*(d.failed||0)/d.known)+'%':'–'} · Rug: ${d.rug??0} · Median outcome: ${d.median_outcome_pct==null?'INSUFFICIENT DATA':pct(d.median_outcome_pct)}</div>`:''}</div>`:'<div class="faint" style="font-size:12px">Dev: đang xác định…</div>'}
+     ${t.dev_sold?'<span class="r h">Dev đã bán</span>':''}
+     ${t.paper?`<div class="alert" style="border-color:rgba(124,92,255,.5);background:rgba(124,92,255,.08)">Bot giấy đang giữ (copy ${esc(t.paper.kol)}) · vào ${mc(t.paper.entry_mc_sol)} · ${pct(t.paper.pct)}</div>`:''}</div>`};
+  app.innerHTML=`<div class="grid2" style="grid-template-columns:minmax(0,1fr) 360px"><div><h2><span>KOL đang bắt coin nào</span><span>${S.tokens.length} coin</span></h2>
+    <div class="cards">${S.tokens.map(card).join('')||'<div class="empty">Chưa có KOL nào mua trong lúc bot chạy</div>'}</div>
+    <div class="note" style="margin-top:8px">"Người đang xem" pump.fun không công khai — thay bằng số ví trade 5 phút và số bình luận.</div></div>
+   <div><div class="panel"><h2><span>Luồng lệnh KOL</span><span class="faint">live</span></h2><div style="max-height:600px;overflow:auto">
+    ${S.feed.map(a=>`<div class="fi"><span class="side ${a.side}">${a.side==='buy'?'MUA':'BÁN'}</span><div><a class="lk" href="#/kol/${a.kol}"><b>${esc(a.name)}</b></a> <span class="faint">${a.sol} SOL</span><br><span class="faint">${esc(a.symbol?'$'+a.symbol:sh(a.mint))} · MC ${mc(a.mc_sol)}</span></div><span class="faint">${ago(a.ts,S.now)}</span></div>`).join('')||'<div class="faint">Chưa có lệnh</div>'}</div></div></div></div>`;
+}
+
+/* ---------- router ---------- */
+async function route(){
+  clearTimeout(timer);hideTip();
+  const h=location.hash||'#/kols',[path,qs]=h.slice(2).split('?'),parts=path.split('/');
+  const t=parts[0]||'kols';ROUTE=t;
+  document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.t===({kol:'kols',dev:'devs',token:'tokens'}[t]||t)));
+  if(t==='trades'&&qs){const p=new URLSearchParams(qs);if(p.get('kol')){RF.kol=p.get('kol');RF.page=1;history.replaceState(null,'','#/trades')}}
+  try{await status();
+    if(t==='kols')await viewKols();else if(t==='kol')await viewKol(parts[1]);else if(t==='devs')await viewDevs();
+    else if(t==='dev')await viewDev(parts[1]);else if(t==='tokens')await viewTokens();else if(t==='token')await viewToken(parts[1]);
+    else if(t==='trades')await viewTrades();else if(t==='live')await viewLive();else location.hash='#/kols';
+  }catch(e){if(e.message!=='auth'){app.innerHTML=`<div class="empty">Lỗi tải dữ liệu: ${esc(e.message)}</div>`}return}
+  timer=setTimeout(()=>{if(!document.querySelector('input:focus,select:focus'))route();else timer=setTimeout(route,15000)},t==='live'?3000:20000);
+}
+window.addEventListener('hashchange',()=>{KD.page=1;DD.page=1;route()});
+window.addEventListener('resize',()=>{clearTimeout(window._rs);window._rs=setTimeout(route,300)});
+route();
 </script>
 </body>
 </html>

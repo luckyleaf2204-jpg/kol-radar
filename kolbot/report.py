@@ -2,22 +2,15 @@
 the same KOL are correlated). No conclusion is drawn under 100 trades."""
 from __future__ import annotations
 
-import random
-
 MIN_PRELIM, MIN_OK = 30, 100
 
 
 def cluster_ci(rows: list[dict], key: str = "kol", iters: int = 2000, seed: int = 7):
+    from kolbot.api import cluster_ci as fast        # same draws as before, O(groups) per draw
     g: dict[str, list[float]] = {}
     for r in rows:
         g.setdefault(r[key], []).append(r["net_pct"])
-    groups = list(g.values())
-    if len(groups) < 2:
-        return None
-    rng = random.Random(seed)
-    means = sorted(sum(sum(x) for x in pick) / sum(len(x) for x in pick)
-                   for pick in ([rng.choice(groups) for _ in groups] for _ in range(iters)))
-    return round(means[int(0.025 * iters)], 2), round(means[int(0.975 * iters) - 1], 2)
+    return fast(list(g.values()), iters, seed)
 
 
 def summarize(closed: list[dict]) -> dict:
