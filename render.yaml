@@ -1,0 +1,17 @@
+# Render Blueprint — KOL Radar (PAPER). One free web service: stream listener + paper engine + dashboard.
+# Secrets are NOT stored here: `sync: false` makes Render ask for them in the dashboard.
+# Free plan: disk is wiped on every restart/deploy -> paper results start over (data/paper.db is not durable).
+services:
+  - type: web
+    name: kol-radar
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py --host 0.0.0.0
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: APP_ACCESS_CODE          # required — the code you type once in the browser
+        sync: false

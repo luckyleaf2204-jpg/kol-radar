@@ -7,6 +7,8 @@ usage:
 import argparse
 import asyncio
 import json
+import os
+import urllib.request
 import sys
 import time
 from pathlib import Path
@@ -49,7 +51,8 @@ def main():
     ap.add_argument("--kols", default=str(ROOT / "kols.json"))
     ap.add_argument("--db", default=str(ROOT / "data" / "paper.db"))
     ap.add_argument("--report", action="store_true")
-    ap.add_argument("--port", type=int, default=8780)
+    ap.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"))
+    ap.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8780)))
     a = ap.parse_args()
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
@@ -87,9 +90,29 @@ def main():
                 print(time.strftime("[kol] %Y-%m-%d %H:%M:%S\n") + report(eng, names))
             await asyncio.sleep(1)
 
+    def health():
+        return {"ok": True, "paper": True, "connected": status["connected"],
+                "last_event_age_s": round(time.time() - status["last_event"]) if status["last_event"] else None,
+                "closed": len(eng.closed), "open": len(eng.positions)}
+
+    async def keep_alive():
+        """Render free plan sleeps after 15 min without inbound traffic: ping our own public URL."""
+        url = os.environ.get("RENDER_EXTERNAL_URL")
+        while url and not stop.is_set():
+            await asyncio.sleep(600)
+            try:
+                await asyncio.to_thread(lambda: urllib.request.urlopen(url + "/healthz", timeout=20).read())
+            except Exception as e:
+                print(f"[kol] keep-alive {type(e).__name__}", flush=True)
+
+    code = os.environ.get("APP_ACCESS_CODE") or None
+    if a.host not in ("127.0.0.1", "localhost") and not code:
+        print("[kol] WARNING: public host without APP_ACCESS_CODE: anyone with the URL can read the dashboard")
+
     async def run():
-        await asyncio.gather(listen(on_event, on_gap, stop, log=log), timers(), meta.run(stop),
-                             serve(lambda: build_state(eng, watch, meta, names, status), port=a.port))
+        await asyncio.gather(listen(on_event, on_gap, stop, log=log), timers(), meta.run(stop), keep_alive(),
+                             serve(lambda: build_state(eng, watch, meta, names, status), host=a.host, port=a.port,
+                                   access_code=code, health=health))
     try:
         asyncio.run(run())
     except KeyboardInterrupt:

@@ -25,7 +25,12 @@ header{position:sticky;top:0;z-index:5;background:rgba(11,13,18,.92);backdrop-fi
 main{max-width:1500px;margin:0 auto;padding:16px;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px}
 @media (max-width:1050px){main{grid-template-columns:1fr}}
 h2{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:4px 0 10px;font-weight:650;display:flex;justify-content:space-between}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(340px,100%),1fr));gap:12px}
+@media (max-width:520px){.grid{grid-template-columns:repeat(2,1fr)}.stats{margin-left:0;gap:12px}}
+#gate{position:fixed;inset:0;z-index:20;background:var(--bg);display:none;align-items:center;justify-content:center;padding:16px}
+#gate form{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px}
+#gate input,#gate button{font:inherit;padding:10px 12px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--text)}
+#gate button{background:var(--accent);border:0;font-weight:650;cursor:pointer}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;transition:border-color .3s}
 .card.fresh{border-color:var(--accent)}
 .card.held{box-shadow:inset 3px 0 0 var(--accent)}
@@ -72,6 +77,9 @@ th{color:var(--muted);font-weight:600;font-size:11px}
 </style>
 </head>
 <body>
+<div id="gate"><form onsubmit="return saveCode(event)"><div class="brand">KOL Radar <span class="tag">PAPER</span></div>
+  <div class="t">Nhập mã truy cập</div><input id="code" type="password" autocomplete="current-password" required>
+  <button type="submit">Vào</button><div class="t" id="gateMsg"></div></form></div>
 <header><div class="bar">
   <div class="brand"><span class="dot" id="dot"></span>KOL Radar <span class="tag">PAPER</span></div>
   <div class="t" id="sub">đang kết nối…</div>
@@ -160,10 +168,15 @@ function render(){
   $('closed').innerHTML='<tr><th>Coin</th><th>KOL</th><th>Thoát</th><th>%</th><th>SOL</th></tr>'+P.closed.map(c=>
     `<tr><td>${esc(c.symbol?'$'+c.symbol:sh(c.mint))}</td><td>${esc(c.kol_name)}</td><td class="t">${esc(c.exit_kind)}</td><td>${pct(c.net_pct)}</td><td class="${c.pnl_sol>=0?'up':'down'}">${c.pnl_sol.toFixed(4)}</td></tr>`).join('');
 }
+function getCode(){try{return localStorage.getItem('kolCode')||''}catch(e){return window._code||''}}
+function saveCode(e){e.preventDefault();const v=$('code').value;try{localStorage.setItem('kolCode',v)}catch(_){window._code=v}
+  $('gate').style.display='none';clearTimeout(window._t);poll();return false}
 async function poll(){
-  try{const r=await fetch('/api/state',{cache:'no-store'});S=await r.json();render()}
+  try{const r=await fetch('/api/state',{cache:'no-store',headers:{'X-Access-Code':getCode()}});
+    if(r.status===401){$('gate').style.display='flex';$('gateMsg').textContent=getCode()?'Mã không đúng':'';return}
+    S=await r.json();render()}
   catch(e){$('dot').className='dot';$('sub').textContent='không kết nối được bot'}
-  setTimeout(poll,2000)
+  window._t=setTimeout(poll,2000)
 }
 poll();
 </script>

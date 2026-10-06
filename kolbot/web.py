@@ -3,6 +3,7 @@ only. Read-only: there is nothing to click that trades."""
 from __future__ import annotations
 
 import asyncio
+import hmac
 import json
 import time
 from pathlib import Path
@@ -47,22 +48,37 @@ def build_state(eng, watch, meta, names: dict[str, str], status: dict) -> dict:
             "kols_tracked": len(names)}
 
 
-async def serve(get_state, host: str = "127.0.0.1", port: int = 8780, log=print):
+def _reply(writer, code: str, ctype: str, body: bytes, head_only: bool = False) -> None:
+    writer.write(f"HTTP/1.1 {code}\r\nContent-Type: {ctype}\r\nContent-Length: {len(body)}\r\n"
+                 "Cache-Control: no-store\r\nConnection: close\r\n\r\n".encode() + (b"" if head_only else body))
+
+
+async def serve(get_state, host: str = "127.0.0.1", port: int = 8780, log=print, access_code: str | None = None,
+                health=None):
+    """access_code set (env APP_ACCESS_CODE on a server): /api/state needs header X-Access-Code. The page and
+    /healthz carry no data and stay open."""
     async def handle(reader, writer):
         try:
             line = (await reader.readline()).decode("latin-1")
-            while (await reader.readline()) not in (b"\r\n", b"\n", b""):
-                pass
-            path = line.split(" ")[1] if " " in line else "/"
-            if path.startswith("/api/state"):
-                body, ctype = json.dumps(get_state(), default=str).encode(), "application/json"
+            headers = {}
+            while (h := await reader.readline()) not in (b"\r\n", b"\n", b""):
+                k, _, v = h.decode("latin-1").partition(":")
+                headers[k.strip().lower()] = v.strip()
+            parts = line.split(" ")
+            method, path = (parts[0], parts[1].split("?")[0]) if len(parts) > 1 else ("GET", "/")
+            head = method == "HEAD"
+            if path == "/api/state":
+                if access_code and not hmac.compare_digest(headers.get("x-access-code", ""), access_code):
+                    _reply(writer, "401 Unauthorized", "application/json", b'{"error":"code"}', head)
+                else:
+                    _reply(writer, "200 OK", "application/json", json.dumps(get_state(), default=str).encode(), head)
+            elif path == "/healthz":
+                _reply(writer, "200 OK", "application/json", json.dumps(health() if health else {"ok": True}).encode(),
+                       head)
             elif path in ("/", "/index.html"):
-                body, ctype = UI.read_bytes(), "text/html; charset=utf-8"
+                _reply(writer, "200 OK", "text/html; charset=utf-8", UI.read_bytes(), head)
             else:
-                writer.write(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
-                return
-            writer.write(f"HTTP/1.1 200 OK\r\nContent-Type: {ctype}\r\nContent-Length: {len(body)}\r\n"
-                         "Cache-Control: no-store\r\nConnection: close\r\n\r\n".encode() + body)
+                _reply(writer, "404 Not Found", "text/plain", b"", head)
         except Exception as e:
             log(f"[web] {type(e).__name__}: {e}")
         finally:
