@@ -38,8 +38,11 @@ class SignalPaper:
     """top_n None: the original book (one paper buy per displayed Top 10 signal). top_n 5 / 20: the same rules on
     the Top 5 / Top 20 of each list; the same 30-minute (wallet, token) dedup as the signals."""
 
-    def __init__(self, db_path: Path, get_sol_usd, clock=time.time, log=print, top_n: int | None = None):
-        self.top_n, self.last_trigger = top_n, {}
+    def __init__(self, db_path: Path, get_sol_usd, clock=time.time, log=print, top_n: int | None = None,
+                 source: str | None = None, label: str | None = None):
+        # source None: both lists; "kol" / "smart": only that list (user request 2026-10-06)
+        self.top_n, self.source, self.last_trigger = top_n, source, {}
+        self.label = label or f"Top {top_n or 10}"
         from kolbot.store import Store
         self.get_sol_usd, self.clock, self.log = get_sol_usd, clock, log
         self.store = Store(Path(db_path))
@@ -75,7 +78,7 @@ class SignalPaper:
             return
         if self.top_n is not None:                       # Top N book: its own trigger from the source ranking
             sig = None
-            if src and src["rank"] <= self.top_n:
+            if src and src["rank"] <= self.top_n and (self.source is None or src["source"] == self.source):
                 from kolbot.signals import DEDUP_S
                 k = (ev["user"], ev["mint"])
                 if ev["ts"] - self.last_trigger.get(k, -1e18) >= DEDUP_S:
@@ -113,7 +116,7 @@ class SignalPaper:
                           "exiting": p.sell_due_ts is not None})
         closed = [dict(c, symbol=symbols.get(c["mint"])) for c in e.closed[-50:]][::-1]
         usd = (lambda x: x * px) if px else (lambda x: None)
-        return {"started": True, "top_n": self.top_n or 10, "start_usd": self._meta("start_usd"), "start_sol": start_sol,
+        return {"started": True, "top_n": self.top_n or 10, "source": self.source, "label": self.label, "start_usd": self._meta("start_usd"), "start_sol": start_sol,
                 "start_sol_usd": self._meta("start_sol_usd"), "started_at": self._meta("started_at"),
                 "trade_usd": TRADE_USD, "max_open": MAX_OPEN, "sol_usd": px,
                 "cash_sol": e.cash, "equity_sol": eq, "equity_usd": usd(eq),

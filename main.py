@@ -104,11 +104,15 @@ def main():
     watch, meta = Watch(names), Meta(on_creator=devs.ingest_api, on_coin=devs.ingest_coin)
     sigpaper = SignalPaper(Path(a.db).with_name("signal_paper.db"), lambda: meta.sol_usd,   # own file, paper only
                            log=lambda m: print(m.replace("[kol] COPY", "[sigpaper] PAPER BUY"), flush=True))
-    books = {10: sigpaper}
-    for n in (5, 20):                              # same rules on the Top 5 / Top 20 (user request 2026-10-06)
-        books[n] = SignalPaper(Path(a.db).with_name(f"signal_paper_top{n}.db"), lambda: meta.sol_usd, top_n=n,
-                               log=lambda m, n=n: print(m.replace("[kol] COPY", f"[sigpaper top{n}] PAPER BUY"),
-                                                    flush=True))
+    books = {"10": sigpaper}
+    # same rules, other source sets (user requests 2026-10-06): both lists Top 5 / 20; one list only Top 5 / 10
+    for key, n, src, label in (("5", 5, None, "Top 5"), ("20", 20, None, "Top 20"),
+                               ("smart5", 5, "smart", "Smart Top 5"), ("smart10", 10, "smart", "Smart Top 10"),
+                               ("kol5", 5, "kol", "KOL Top 5"), ("kol10", 10, "kol", "KOL Top 10")):
+        fname = f"signal_paper_top{n}.db" if src is None else f"signal_paper_{src}{n}.db"
+        books[key] = SignalPaper(Path(a.db).with_name(fname), lambda: meta.sol_usd, top_n=n, source=src, label=label,
+                                 log=lambda m, k=key: print(m.replace("[kol] COPY", f"[sigpaper {k}] PAPER BUY"),
+                                                            flush=True))
     status = {"connected": False, "last_event": 0.0, "events": 0}
 
     def on_event(ev):

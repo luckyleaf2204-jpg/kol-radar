@@ -95,3 +95,15 @@ def test_top_n_books_trigger_on_rank_and_dedup(tmp_path):
         b.on_event(tr("Z", "C", True, 1, NOW), {"id": 9}, None)               # a displayed signal does not matter
     assert set(b5.eng.pending) == {"A"} and set(b20.eng.pending) == {"A", "B"}
     assert b5.report()["top_n"] == 5 and b20.eng.counts["copied"] == 0 and b20.eng.counts["kol_buys"] == 2
+
+
+def test_single_list_books_follow_only_their_source(tmp_path):
+    clk = Clock(NOW)
+    smart5 = SignalPaper(tmp_path / "s5.db", lambda: PX, clock=clk, log=lambda *_: None, top_n=5, source="smart")
+    kol10 = SignalPaper(tmp_path / "k10.db", lambda: PX, clock=clk, log=lambda *_: None, top_n=10, source="kol")
+    for b in (smart5, kol10):
+        b.on_event(tr("SM2", "A", True, 1, NOW), None, {"rank": 2, "source": "smart"})
+        b.on_event(tr("KO7", "B", True, 1, NOW), None, {"rank": 7, "source": "kol"})
+        b.on_event(tr("SM8", "C", True, 1, NOW), None, {"rank": 8, "source": "smart"})
+    assert set(smart5.eng.pending) == {"A"} and set(kol10.eng.pending) == {"B"}
+    assert smart5.report()["label"] == "Top 5" and kol10.report()["source"] == "kol"

@@ -182,16 +182,19 @@ def make_routes(db, roster: dict, get_live=None, get_status=None, symbols=None, 
         return book.report(sym)
 
     def sig_paper(q):
-        books = signal_paper if isinstance(signal_paper, dict) else ({10: signal_paper} if signal_paper else {})
+        books = signal_paper if isinstance(signal_paper, dict) else ({"10": signal_paper} if signal_paper else {})
         if not books:
             return js({"started": False})
-        n = intq(q, "book", 10)
-        out = _book_report(books.get(n) or books[10])
+        n = q1(q, "book", "10")
+        n = n if n in books else "10"
+        out = _book_report(books[n])
+        out["book"] = n
         out["books"] = {}
-        for k, b in sorted(books.items()):              # side-by-side comparison of the Top 5 / 10 / 20 books
+        for k, b in books.items():                      # side-by-side comparison of every book
             r = _book_report(b) if k != n else out
             s_ = r.get("summary") or {}
-            out["books"][k] = {"started": r.get("started"), "equity_usd": r.get("equity_usd"),
+            out["books"][k] = {"label": b.label, "source": b.source, "started": r.get("started"),
+                               "equity_usd": r.get("equity_usd"),
                                "pnl_usd": r.get("pnl_usd"), "pnl_pct": r.get("pnl_pct"), "n": s_.get("n", 0),
                                "win_rate_pct": s_.get("win_rate_pct"), "mean_net_pct": s_.get("mean_net_pct"),
                                "median_net_pct": s_.get("median_net_pct"), "open": len(r.get("open") or [])}
