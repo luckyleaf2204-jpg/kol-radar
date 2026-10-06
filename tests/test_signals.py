@@ -205,3 +205,13 @@ def test_dead_token_gets_an_outcome(world):
     dv.tick(force=True)
     sg.settle(NOW + 9000 + 8000)
     assert st.db.execute("SELECT mc_2h FROM signals WHERE id=?", (s2["id"],)).fetchone()[0] == pytest.approx(12)
+
+
+def test_sources_extend_to_top20_but_display_stays_top10(world):
+    st, sg, clk = world
+    sg.top = {}
+    sg.sources = {"R15": {"source": "kol", "rank": 15}}
+    assert sg.on_event(tr("R15", "Q", True, 1, NOW)) is None                    # no displayed signal
+    assert sg.source_of(tr("R15", "Q", True, 1, NOW))["rank"] == 15             # but a Top 20 book source
+    assert sg.source_of(tr("R15", "Q", True, 0.01, NOW)) is None                # dust never
+    assert sg.source_of(tr("R15", "Q", False, 1, NOW)) is None                  # sells never

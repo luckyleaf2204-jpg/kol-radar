@@ -174,14 +174,28 @@ def make_routes(db, roster: dict, get_live=None, get_status=None, symbols=None, 
         ok = SG.set_state(db, intq(q, "id", 0), q1(q, "state"))
         return js({"ok": ok})
 
-    def sig_paper(q):
-        if not signal_paper:
-            return js({"started": False})
-        e = signal_paper.eng
+    def _book_report(book):
+        e = book.eng
         mints = list({p.mint for p in e.positions.values()} | {c["mint"] for c in e.closed[-50:]}) if e else []
         sym = dict(db.execute(f"SELECT mint, symbol FROM tokens WHERE mint IN ({','.join('?' * len(mints))})",
                               mints).fetchall()) if mints and api._has(db, "tokens") else {}
-        return js(signal_paper.report(sym))
+        return book.report(sym)
+
+    def sig_paper(q):
+        books = signal_paper if isinstance(signal_paper, dict) else ({10: signal_paper} if signal_paper else {})
+        if not books:
+            return js({"started": False})
+        n = intq(q, "book", 10)
+        out = _book_report(books.get(n) or books[10])
+        out["books"] = {}
+        for k, b in sorted(books.items()):              # side-by-side comparison of the Top 5 / 10 / 20 books
+            r = _book_report(b) if k != n else out
+            s_ = r.get("summary") or {}
+            out["books"][k] = {"started": r.get("started"), "equity_usd": r.get("equity_usd"),
+                               "pnl_usd": r.get("pnl_usd"), "pnl_pct": r.get("pnl_pct"), "n": s_.get("n", 0),
+                               "win_rate_pct": s_.get("win_rate_pct"), "mean_net_pct": s_.get("mean_net_pct"),
+                               "median_net_pct": s_.get("median_net_pct"), "open": len(r.get("open") or [])}
+        return js(out)
 
     routes = {"/api/signals/paper": sig_paper, "/api/signals": sigs, "/api/signals/top": sigs_top, "/api/signals/state": ("POST", sig_state),
               "/api/smart": smart, "/api/smart/summary": smart_summary, "/api/smart/wallet": smart_wallet,

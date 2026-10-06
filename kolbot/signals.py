@@ -24,7 +24,8 @@ SIGNAL_MIN_SOL = 0.05
 MIN_AVG_HOLD_S = 60          # user decision 2026-10-06: a source must hold >= 60 s on average (copyable by a person)
 EXCLUDED_STATUSES = ("REJECT",)   # user decision 2026-10-06: a REJECT wallet never sources a buy signal
 SIGNAL_MIN_N = 100
-TOP_N = 10
+TOP_N = 10                   # displayed signals + notifications
+EXT_N = 20                   # paper books may follow up to the Top 20 (user request 2026-10-06)
 DEDUP_S = 1800
 REFRESH_S = 60
 HORIZONS = (("mc_5m", 300), ("mc_30m", 1800), ("mc_2h", 7200))
@@ -61,7 +62,8 @@ class SignalEngine:
         db.executescript(SCHEMA)
         db.commit()
         self.top: dict[str, dict] = {}                     # wallet -> signal source snapshot
-        self.excluded: dict[str, dict] = {}                # Top 10 wallets that do not source signals, with reason
+        self.excluded: dict[str, dict] = {}                # Top 20 wallets that do not source signals, with reason
+        self.sources: dict[str, dict] = {}                 # passing wallets ranked <= EXT_N (paper books Top 5/20)
         self.last_refresh = 0.0
         self.watch: dict[str, dict] = {}                   # mint -> {"sigs": [(id, ts)], "peak": mc, "last": mc}
         for sid, mint, ts, peak in db.execute(
@@ -78,7 +80,7 @@ class SignalEngine:
         self.last_refresh = now
         from kolbot import api, smart_api
         cands = []
-        kol_rows = api.winrate_table(self.db, self.roster, min_n=SIGNAL_MIN_N, size=TOP_N)["rows"][:TOP_N]
+        kol_rows = api.winrate_table(self.db, self.roster, min_n=SIGNAL_MIN_N, size=EXT_N)["rows"][:EXT_N]
         holds = {}
         if kol_rows:
             ks = [r["kol"] for r in kol_rows]
@@ -90,7 +92,7 @@ class SignalEngine:
                                      "win_rate_low_pct": r["win_rate_low_pct"], "status": r["status"],
                                      "pnl_sol": r["pnl_sol"], "avg_hold_s": holds.get(r["kol"])}))
         if self.db.execute("SELECT 1 FROM sqlite_master WHERE name='sw_wallets'").fetchone():
-            for r in smart_api.smart_table(self.db, min_n=SIGNAL_MIN_N, top="10", size=TOP_N)["rows"]:
+            for r in smart_api.smart_table(self.db, min_n=SIGNAL_MIN_N, size=EXT_N)["rows"][:EXT_N]:
                 cands.append((r["wallet"], {"source": "smart", "rank": r["rank"], "name": None, "n": r["n"],
                                             "wins": r["wins"], "win_rate_pct": r["win_rate_pct"],
                                             "win_rate_low_pct": r["win_rate_low_pct"], "status": r["status"],
@@ -109,7 +111,10 @@ class SignalEngine:
                 excluded[w] = dict(info, reason="; ".join(why))
             else:
                 top[w] = info
-        self.top, self.excluded = top, excluded
+        # sources: every passing wallet ranked <= EXT_N in its list; displayed signals only for rank <= TOP_N
+        self.sources = top
+        self.top = {w: i for w, i in top.items() if i["rank"] <= TOP_N}
+        self.excluded = excluded
 
     # --- stream ---------------------------------------------------------------------------------------------------
     def on_event(self, ev: dict) -> dict | None:
@@ -130,6 +135,12 @@ class SignalEngine:
         if not info or not ev["is_buy"] or ev["sol"] < SIGNAL_MIN_SOL * LAMPORTS:
             return None
         return self._fire(ev, info, mc)
+
+    def source_of(self, ev: dict) -> dict | None:
+        """A buy >= SIGNAL_MIN_SOL by a passing wallet ranked <= EXT_N in its list (for the Top N paper books)."""
+        if ev["kind"] != "trade" or not ev["is_buy"] or ev["sol"] < SIGNAL_MIN_SOL * LAMPORTS:
+            return None
+        return self.sources.get(ev["user"])
 
     def _fire(self, ev: dict, info: dict, mc: float) -> dict | None:
         bucket = int(ev["ts"] // DEDUP_S)
@@ -278,8 +289,9 @@ def outcome_stats(db) -> dict:
 
 def top_lists(engine: SignalEngine) -> dict:
     def side(src):
-        rows = [dict(v, wallet=k, active=True) for k, v in engine.top.items() if v["source"] == src]
+        rows = [dict(v, wallet=k, active=True) for k, v in engine.sources.items() if v["source"] == src]
         rows += [dict(v, wallet=k, active=False) for k, v in engine.excluded.items() if v["source"] == src]
         return sorted(rows, key=lambda r: r["rank"])
     return {"kol": side("kol"), "smart": side("smart"), "min_n": SIGNAL_MIN_N, "min_avg_hold_s": MIN_AVG_HOLD_S,
+            "top_n": TOP_N, "ext_n": EXT_N,
             "excluded_statuses": list(EXCLUDED_STATUSES), "refreshed_at": engine.last_refresh}

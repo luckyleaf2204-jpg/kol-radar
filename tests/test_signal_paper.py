@@ -81,3 +81,17 @@ def test_capital_limit_and_restart(tmp_path):
     assert sp2.eng.cfg.starting_sol == pytest.approx(START_USD / PX)          # capital fixed at the first price
     sp2.on_event(tr("S3", "M3", False, 1, NOW + 100), None)                   # source of M3 still followed
     assert sp2.eng.positions["M3"].sell_due_ts is not None
+
+
+def test_top_n_books_trigger_on_rank_and_dedup(tmp_path):
+    clk = Clock(NOW)
+    b5 = SignalPaper(tmp_path / "t5.db", lambda: PX, clock=clk, log=lambda *_: None, top_n=5)
+    b20 = SignalPaper(tmp_path / "t20.db", lambda: PX, clock=clk, log=lambda *_: None, top_n=20)
+    r3, r15 = {"rank": 3, "source": "smart"}, {"rank": 15, "source": "kol"}
+    for b in (b5, b20):
+        b.on_event(tr("W3", "A", True, 1, NOW), None, r3)
+        b.on_event(tr("W15", "B", True, 1, NOW), None, r15)
+        b.on_event(tr("W3", "A", True, 1, NOW + 1), None, r3)                 # same wallet + token: dedup
+        b.on_event(tr("Z", "C", True, 1, NOW), {"id": 9}, None)               # a displayed signal does not matter
+    assert set(b5.eng.pending) == {"A"} and set(b20.eng.pending) == {"A", "B"}
+    assert b5.report()["top_n"] == 5 and b20.eng.counts["copied"] == 0 and b20.eng.counts["kol_buys"] == 2

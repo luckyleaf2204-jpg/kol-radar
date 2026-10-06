@@ -104,6 +104,11 @@ def main():
     watch, meta = Watch(names), Meta(on_creator=devs.ingest_api, on_coin=devs.ingest_coin)
     sigpaper = SignalPaper(Path(a.db).with_name("signal_paper.db"), lambda: meta.sol_usd,   # own file, paper only
                            log=lambda m: print(m.replace("[kol] COPY", "[sigpaper] PAPER BUY"), flush=True))
+    books = {10: sigpaper}
+    for n in (5, 20):                              # same rules on the Top 5 / Top 20 (user request 2026-10-06)
+        books[n] = SignalPaper(Path(a.db).with_name(f"signal_paper_top{n}.db"), lambda: meta.sol_usd, top_n=n,
+                               log=lambda m, n=n: print(m.replace("[kol] COPY", f"[sigpaper top{n}] PAPER BUY"),
+                                                    flush=True))
     status = {"connected": False, "last_event": 0.0, "events": 0}
 
     def on_event(ev):
@@ -114,7 +119,9 @@ def main():
         devs.on_event(ev, is_kol=is_kol)
         smart.on_event(ev)
         sig = signals.on_event(ev)
-        sigpaper.on_event(ev, sig)
+        src = signals.source_of(ev)
+        for b in books.values():
+            b.on_event(ev, sig, src)
         if is_kol and ev["kind"] == "trade":
             hist.on_kol_event(ev["user"], ev["ts"])
 
@@ -136,7 +143,8 @@ def main():
             hist.tick()
             smart.tick()
             signals.tick()
-            sigpaper.tick()
+            for b in books.values():
+                b.tick()
             if time.time() - last >= 600:
                 last = time.time()
                 print(time.strftime("[kol] %Y-%m-%d %H:%M:%S\n") + report(eng, names))
@@ -169,7 +177,7 @@ def main():
                                                  kols_tracked=len(names)),
                          symbols=lambda: {m: c.get("symbol") for m, c in meta.coins.items() if c.get("symbol")},
                          want_creator=meta.want_creator, signal_engine=signals, want_coin=meta.want,
-                         signal_paper=sigpaper,
+                         signal_paper=books,
                          now_mc=lambda: {m: c.vsol / c.vtok * 1e6 for m, c in list(eng.curves.items())})
 
     signals.refresh(force=True)
@@ -193,8 +201,9 @@ def main():
         hist.tick(force=True)
         smart.flush()
         eng.store.save(eng)
-        if sigpaper.eng:
-            sigpaper.store.save(sigpaper.eng)
+        for b in books.values():
+            if b.eng:
+                b.store.save(b.eng)
 
 
 if __name__ == "__main__":
