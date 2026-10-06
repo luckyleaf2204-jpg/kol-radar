@@ -14,6 +14,7 @@ sys.path.insert(0, str(ROOT))
 
 from kolbot.devs import DevTracker  # noqa: E402
 from kolbot.kolhist import KolHistory  # noqa: E402
+from kolbot.smart import SmartTracker  # noqa: E402
 from kolbot.store import Store  # noqa: E402
 
 
@@ -76,6 +77,24 @@ def main():
     for k in kols:
         h.on_kol_event(k, now - 30 * 86400 - rng.uniform(0, 86400))
     h.tick(force=True)
+    sm = SmartTracker(st.db, roster, clock=lambda: now)          # synthetic non-KOL wallets
+    t = now - 20 * 86400
+    for wi in range(1500):
+        w = f"DEMOwallet{wi:05d}" + "w" * 28
+        skill = rng.uniform(0.3, 0.8)
+        for k in range(rng.choice([5, 20, 60, 120, 150, 250])):
+            m = rng.choice(mints)
+            sm.on_event({"kind": "trade", "mint": m, "user": w, "is_buy": True, "sol": 10 ** 9, "token": 10 ** 12,
+                         "ts": t, "vsol": 30 * 10 ** 9, "vtok": 10 ** 15, "fee_bps": 125, "fee_lamports": 10 ** 7})
+            back = rng.uniform(1.05, 2.5) if rng.random() < skill else rng.uniform(0.1, 0.95)
+            sm.on_event({"kind": "trade", "mint": m, "user": w, "is_buy": False, "sol": int(back * 10 ** 9),
+                         "token": 10 ** 12, "ts": t + rng.uniform(5, 900), "vsol": 30 * 10 ** 9, "vtok": 10 ** 15,
+                         "fee_bps": 125, "fee_lamports": 10 ** 7})
+            t += 1.1
+    sm.flush(now)
+    sm.last_ci = 0
+    while sm.refresh_ci():
+        pass
     print(f"demo db {out}: {a.trades} trades, {len(mints)} tokens, {len(devs)} devs")
 
 

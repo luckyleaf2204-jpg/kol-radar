@@ -106,6 +106,15 @@ tr.click{cursor:pointer}
 #gate button{background:var(--accent);border:0;font-weight:650}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
 .sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.wrbar{position:relative;height:6px;background:var(--chip);border-radius:3px;margin-top:4px;overflow:hidden}
+.wrbar .lo{position:absolute;left:0;top:0;bottom:0;background:var(--gainbar)}
+.wrbar .hi{position:absolute;top:0;bottom:0;background:var(--gainbar);opacity:.4}
+.live{color:var(--gain);font-size:11.5px;letter-spacing:.4px;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.45}}
+.anim{animation:fadein .35s ease-out both}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.anim,.live{animation:none}}
+.noanim .anim{animation:none}
 @media (max-width:760px){
   .hm{display:none}
   .cg{grid-template-columns:repeat(2,1fr)}
@@ -121,7 +130,7 @@ tr.click{cursor:pointer}
 <header><div class="bar">
   <div class="brand"><span class="dot" id="dot"></span>KOL Radar <span class="tag">PAPER</span></div>
   <nav id="nav">
-    <a href="#/kols" data-t="kols">KOLs</a><a href="#/devs" data-t="devs">Devs</a><a href="#/tokens" data-t="tokens">Tokens</a>
+    <a href="#/kols" data-t="kols">👑 KOL</a><a href="#/smart" data-t="smart">🧠 Ví thông minh</a><a href="#/devs" data-t="devs">Devs</a><a href="#/tokens" data-t="tokens">Tokens</a>
     <a href="#/trades" data-t="trades">Trades</a><a href="#/live" data-t="live">Live</a>
   </nav>
   <div class="right"><span id="sol"></span><span class="hm" id="stream"></span></div>
@@ -516,21 +525,112 @@ async function viewLive(){
     ${S.feed.map(a=>`<div class="fi"><span class="side ${a.side}">${a.side==='buy'?'MUA':'BÁN'}</span><div><a class="lk" href="#/kol/${a.kol}"><b>${esc(a.name)}</b></a> <span class="faint">${a.sol} SOL</span><br><span class="faint">${esc(a.symbol?'$'+a.symbol:sh(a.mint))} · MC ${mc(a.mc_sol)}</span></div><span class="faint">${ago(a.ts,S.now)}</span></div>`).join('')||'<div class="faint">Chưa có lệnh</div>'}</div></div></div></div>`;
 }
 
+/* ---------- Smart Wallet (🧠 Ví thông minh) — research only, never a buy signal ---------- */
+const SF=Object.assign({min_n:100,top:'',status:'',pnl:'',hide:1,page:1},store.get('smartF',{}));
+function setS(k,v){SF[k]=v;if(k!=='page')SF.page=1;store.set('smartF',SF);route()}
+const SLABEL={INCONCLUSIVE:'CHƯA ĐỦ MẪU',PROVISIONAL:'TẠM THỜI',REJECT:'LOẠI',PASS:'PASS'};
+function sbadge(s){return `<span class="b ${s}" title="${esc(SDESC[s]||s)}" onclick="alert(this.title)">${SLABEL[s]||s}</span>`}
+function wrBar(r){const w=r.win_rate_pct||0,lo=r.win_rate_low_pct||0;
+  return `<div class="wrbar" title="Win rate ${num(w,1)}% · cận dưới 95% (Wilson) ${num(lo,1)}%"><div class="lo" style="width:${lo}%"></div><div class="hi" style="left:${lo}%;width:${Math.max(0,w-lo)}%"></div></div>`}
+function flagChips(f){return (f||[]).map(x=>`<span class="r m" title="${esc(x.evidence)}">⚑ ${esc(x.label)}</span>`).join(' ')}
+async function viewSmart(){
+  const [S,T]=await Promise.all([api('/api/smart/summary',{min_n:SF.min_n}),api('/api/smart',SF)]);
+  if(ROUTE!=='smart')return;
+  const k=S.by_kind||{};
+  const kpis=`<div class="kpis anim">
+   <div class="kpi"><div class="k">Ví đang theo dõi</div><div class="v">${(S.wallets||0).toLocaleString()}</div><div class="s">ngoài danh sách 565 KOL</div></div>
+   <div class="kpi"><div class="k">Giao dịch đã có kết quả</div><div class="v">${(S.resolved_trades||0).toLocaleString()}</div><div class="s">đóng ${(k.closed||0).toLocaleString()} · hết hạn ${(k.expired||0).toLocaleString()}</div></div>
+   <div class="kpi"><div class="k">Chưa xác định</div><div class="v">${(k.migrated||0).toLocaleString()}</div><div class="s">token đã migrate — không tính</div></div>
+   <div class="kpi"><div class="k">Vị thế đang mở</div><div class="v">${(S.open_positions||0).toLocaleString()}</div><div class="s">chờ bán hoặc hết hạn 24 giờ</div></div>
+   <div class="kpi"><div class="k">Đủ mẫu (≥ ${SF.min_n})</div><div class="v">${(S.eligible||0).toLocaleString()}</div><div class="s">ví đủ điều kiện xếp hạng</div></div>
+   <div class="kpi"><div class="k">Thời gian dữ liệu</div><div class="v" style="font-size:15px">${span(S.first_ts,S.last_ts)}</div><div class="s">${S.gaps||0} lần gián đoạn · ${Math.round((S.gap_seconds||0)/60)} phút</div></div></div>`;
+  const podium=(S.top3||[]).length?`<div class="podium">${S.top3.map((r,i)=>`<div class="pod anim" style="animation-delay:${i*60}ms" onclick="location.hash='#/wallet/${r.wallet}'">
+     <div class="m">${['🥇','🥈','🥉'][i]} <span class="rank">#${r.rank}</span></div><div class="n mono" title="${r.wallet}">${sh(r.wallet,6)}</div>
+     <div class="p">${num(r.win_rate_pct,1)}% <span class="faint" style="font-size:12px">thắng</span></div>${wrBar(r)}
+     <div class="mut" style="font-size:12px;margin-top:6px">${r.wins}/${r.n} lệnh · P&L ${solPlain(r.pnl_sol,3)} SOL · ${sbadge(r.status)}</div></div>`).join('')}</div>`
+    :`<div class="empty">Chưa có ví nào đủ ${SF.min_n} giao dịch đã có kết quả. Danh sách sẽ đầy dần khi stream chạy.</div>`;
+  const filt=`<div class="filters">
+   <label>Hiển thị ${seg('top',[['10','TOP 10'],['50','TOP 50'],['','TẤT CẢ']],SF.top,'sTop')}</label>
+   <label>Số giao dịch tối thiểu ${seg('mn',[[30,'≥30'],[50,'≥50'],[100,'≥100'],[200,'≥200']],SF.min_n,'sMin')}</label>
+   <label>Tùy chỉnh <input type="number" min="1" style="width:76px" value="${SF.min_n}" onchange="sMin(this.value)"></label>
+   <label>Trạng thái <select onchange="setS('status',this.value)">${[['','Tất cả'],['PROVISIONAL','TẠM THỜI'],['INCONCLUSIVE','CHƯA ĐỦ MẪU'],['REJECT','LOẠI']].map(([v,l])=>`<option value="${v}" ${SF.status===v?'selected':''}>${l}</option>`).join('')}</select></label>
+   <label>Lời / lỗ ${seg('sp',[['','Tất cả'],['pos','Chỉ lãi'],['neg','Chỉ lỗ']],SF.pnl,'sPnl')}</label>
+   <label>Ví không đáng tin <span><input type="checkbox" ${SF.hide?'checked':''} onchange="setS('hide',this.checked?1:0)"> ẩn</span></label></div>`;
+  const table=T.rows.length?`<div class="tw anim"><table><thead><tr><th>Hạng</th><th>Ví</th><th class="num">Giao dịch</th><th class="num hm">Thắng</th><th class="num hm">Thua</th><th>Win rate</th>
+     <th class="num">Tổng P&L</th><th class="num">ROI</th><th class="num hm">TB / lệnh</th><th class="num hm">Trung vị</th><th class="num hm">Tốt nhất</th><th class="num hm">Tệ nhất</th>
+     <th class="num hm">Chuỗi thắng</th><th class="num hm">Chuỗi thua</th><th class="num hm">Token</th><th class="hm">Lần đầu</th><th class="hm">Gần nhất</th><th class="hm">Trạng thái</th></tr></thead><tbody>
+     ${T.rows.map(r=>`<tr class="click" onclick="location.hash='#/wallet/${r.wallet}'"><td class="rank">#${r.rank}</td>
+      <td><span class="mono" title="${r.wallet}">${sh(r.wallet,6)}</span> ${flagChips(r.flags)}</td>
+      <td class="num">${r.n}</td><td class="num hm up">${r.wins}</td><td class="num hm down">${r.losses}</td>
+      <td style="min-width:120px"><b>${num(r.win_rate_pct,1)}%</b> <span class="faint" style="font-size:11px">≥ ${num(r.win_rate_low_pct,1)}%</span>${wrBar(r)}</td>
+      <td class="num big">${solPlain(r.pnl_sol,3)}</td><td class="num">${pct(r.roi_pct)}</td><td class="num hm">${solPlain(r.avg_pnl_sol,4)}</td><td class="num hm">${solPlain(r.median_pnl_sol,4)}</td>
+      <td class="num hm">${pct(r.best_pct)}</td><td class="num hm">${pct(r.worst_pct)}</td><td class="num hm">${r.long_win}</td><td class="num hm">${r.long_loss}</td><td class="num hm">${r.tokens}</td>
+      <td class="hm">${day(r.first_seen)}</td><td class="hm">${day(r.last_seen)}</td><td class="hm">${sbadge(r.status)}</td></tr>`).join('')}</tbody></table></div>${pager(T,'sPage')}`
+    :`<div class="empty">Không có ví nào khớp bộ lọc${T.eligible===0?` (cần ≥ ${SF.min_n} giao dịch đã có kết quả)`:''}.</div>`;
+  app.innerHTML=`<div class="panel anim" style="border-color:rgba(124,92,255,.45)"><h2><span>🧠 Ví thông minh <span class="faint" style="text-transform:none">— ví ngoài danh sách 👑 KOL có hiệu suất giao dịch tốt</span></span><span class="live">● LIVE</span></h2>
+    <div class="note">Đo bằng <b>giao dịch của chính ví</b> trên bonding curve pump.fun (mua → bán), khác với bảng 👑 KOL (lãi/lỗ khi bot giấy copy KOL). <b>Module nghiên cứu: phát hiện → xếp hạng → nghiên cứu. KHÔNG tự động mua, không đưa vào hướng C.</b></div></div>`
+    +kpis+`<div class="panel anim"><h2><span>🏆 Top 3 ví thông minh</span><span class="faint">≥ ${SF.min_n} giao dịch</span></h2>${podium}</div>`
+    +filt+`<div class="panel anim"><h2><span>Bảng xếp hạng</span><span class="faint">${T.top?'TOP '+T.top+' trong ':''}${(T.eligible||0).toLocaleString()} ví đủ điều kiện</span></h2>${table}
+    <div class="note" style="margin-top:8px">Xếp hạng: chỉ ví đủ mẫu (mặc định ≥ 100 giao dịch đã có kết quả) → win rate ↓ → số giao dịch ↓ → số thắng ↓. CI / P&L / ROI chỉ để tham khảo. Thanh win rate: phần đậm = cận dưới 95% (Wilson).
+    Giao dịch "đã có kết quả" = ví bán ≥ 99% token đã mua, hoặc token không còn giao dịch 24 giờ (phần còn lại tính theo giá cuối). Token đã migrate không tính. Trạng thái: &lt; 100 giao dịch → CHƯA ĐỦ MẪU; ≥ 100 và CI 95% của ROI trung bình &gt; 0 → TẠM THỜI; còn lại → LOẠI. Không có PASS vì chưa có nhóm đối chứng.
+    Ví bị ⚑ (dữ liệu không đủ, tự trade token mình tạo, bot tần suất cao) được ẩn theo mặc định — di chuột vào ⚑ để xem bằng chứng.</div></div>`;
+}
+window.sTop=v=>setS('top',v);window.sMin=v=>setS('min_n',Math.max(1,parseInt(v)||1));window.sPnl=v=>setS('pnl',v);window.sPage=p=>setS('page',p);
+
+const WD={page:1};
+async function viewWallet(w){
+  const d=await api('/api/smart/wallet',{wallet:w,page:WD.page});if(ROUTE!=='wallet')return;
+  if(d.error){app.innerHTML=`<a class="back" href="#/smart">← Ví thông minh</a><div class="empty">Chưa có dữ liệu cho ví ${esc(w)}</div>`;return}
+  app.innerHTML=`<a class="back" href="#/smart">← Ví thông minh</a>
+   <div class="panel anim" style="margin-top:8px"><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><h1>🧠 ${d.rank_all?'#'+d.rank_all+' ':''}<span class="mono" style="font-size:17px">${sh(w,6)}</span></h1>${d.rank_all?'':'<span class="faint" title="Hạng chỉ tính cho ví ≥ 100 giao dịch đã có kết quả và không bị gắn cờ">chưa xếp hạng</span>'}${sbadge(d.status)}<span>${walletLinks(w,d.wallet_url)}</span>${flagChips(d.flags)}</div>
+    <div class="faint mono" style="margin-top:6px;word-break:break-all">${esc(w)}</div>
+    ${d.is_kol?'<div class="alert">Ví này nằm trong danh sách 👑 KOL nên không xuất hiện trong bảng Ví thông minh. Xem ở tab KOL.</div>':''}
+    ${(d.flags||[]).length?`<div class="alert">${d.flags.map(f=>`<div>⚑ <b>${esc(f.label)}</b> — ${esc(f.evidence)}</div>`).join('')}<div class="faint" style="font-size:12px;margin-top:4px">Cờ dựa trên bằng chứng trong dữ liệu; không kết luận rug hay thao túng.</div></div>`:''}
+    <div class="hero">
+     <div class="kpi"><div class="k">Win rate</div><div class="v">${num(d.win_rate_pct,1)}%</div>${wrBar(d)}<div class="s">${d.wins} thắng / ${d.losses} thua · ≥ ${num(d.win_rate_low_pct,1)}% (95%)</div></div>
+     <div class="kpi"><div class="k">Tổng P&L</div><div class="v">${solPlain(d.pnl_sol,4)} <span class="faint" style="font-size:12px">SOL</span></div><div class="s">${SOLUSD?'≈ '+usd(d.pnl_sol*SOLUSD):''}</div></div>
+     <div class="kpi"><div class="k">ROI</div><div class="v">${pct(d.roi_pct,2)}</div><div class="s">CI 95% ROI/lệnh: ${d.ci95?num(d.ci95[0],1)+'% → '+num(d.ci95[1],1)+'%':'–'}</div></div>
+     <div class="kpi"><div class="k">Giao dịch</div><div class="v">${d.n}</div><div class="s">${d.unresolved} chưa xác định · ${d.gap_excluded} loại do gián đoạn</div></div>
+     <div class="kpi"><div class="k">TB / trung vị</div><div class="v" style="font-size:15px">${solPlain(d.avg_pnl_sol,4)} / ${solPlain(d.median_pnl_sol,4)}</div><div class="s">SOL mỗi lệnh</div></div>
+     <div class="kpi"><div class="k">Tốt nhất / tệ nhất</div><div class="v" style="font-size:15px">${pct(d.best_pct)} / ${pct(d.worst_pct)}</div></div>
+     <div class="kpi"><div class="k">Chuỗi</div><div class="v" style="font-size:15px">${d.cur_streak>0?'<span class="up">'+d.cur_streak+' thắng</span>':d.cur_streak<0?'<span class="down">'+(-d.cur_streak)+' thua</span>':'–'}</div><div class="s">dài nhất ${d.long_win} thắng · ${d.long_loss} thua</div></div>
+     <div class="kpi"><div class="k">Token đã trade</div><div class="v">${d.tokens}</div><div class="s">giữ TB ${d.avg_hold_s==null?'–':Math.round(d.avg_hold_s)+'s'}</div></div>
+     <div class="kpi"><div class="k">Lần đầu / gần nhất</div><div class="v" style="font-size:14px">${day(d.first_seen)} → ${day(d.last_seen)}</div><div class="s">${span(d.first_seen,d.last_seen)}</div></div>
+    </div></div>
+   <div class="grid2"><div class="panel anim"><h2><span>P&L tích lũy</span></h2><div class="chart" id="sc"></div></div>
+     <div class="panel anim"><h2><span>Win rate theo thời gian</span><span class="faint">tích lũy, theo ngày UTC</span></h2><div class="chart" id="sw"></div></div></div>
+   <div class="panel anim"><h2><span>Hiệu suất theo ngày (UTC)</span></h2><div class="tw" style="max-height:240px"><table><thead><tr><th>Ngày</th><th class="num">Giao dịch</th><th class="num">Thắng/Thua</th><th class="num">Win rate</th><th class="num">P&L</th><th class="num">ROI</th><th class="num">P&L tích lũy</th><th class="num">ROI tích lũy</th><th class="num">Win rate tích lũy</th></tr></thead><tbody>
+    ${d.daily.map(x=>`<tr><td>${x.date}</td><td class="num">${x.trades}</td><td class="num">${x.wins}/${x.losses}</td><td class="num">${num(x.win_rate_pct,1)}%</td><td class="num">${solPlain(x.pnl_sol,4)}</td><td class="num">${pct(x.roi_pct)}</td><td class="num">${solPlain(x.cum_pnl_sol,4)}</td><td class="num">${pct(x.cum_roi_pct)}</td><td class="num">${num(x.cum_win_rate_pct,1)}%</td></tr>`).join('')||'<tr><td colspan="9" class="faint">–</td></tr>'}</tbody></table></div></div>
+   <div class="panel anim"><h2><span>Lịch sử giao dịch</span><span class="faint">mới nhất trước</span></h2><div class="tw"><table><thead><tr><th>Đóng lúc</th><th>Token</th><th class="num">Mua (SOL)</th><th class="num">Bán (SOL)</th><th class="num">P&L</th><th class="num">ROI</th><th class="num hm">Giữ</th><th class="hm">Kết quả</th></tr></thead><tbody>
+    ${d.history.rows.map(h=>`<tr><td>${dt(h.close_ts)}</td><td><a class="lk" href="#/token/${h.mint}">${esc(h.symbol?'$'+h.symbol:sh(h.mint))}</a> <a class="faint" href="${h.token_url}" target="_blank" rel="noopener">↗</a>${h.self_token?' <span class="r m" title="Ví này là người tạo token">tự tạo</span>':''}</td>
+      <td class="num">${num(h.sol_in,3)}</td><td class="num">${num(h.sol_out,3)}${h.mark_sol?' <span class="faint" title="Phần còn giữ tính theo giá cuối">+'+num(h.mark_sol,3)+'</span>':''}</td><td class="num big">${h.pnl_sol==null?'<span class="faint">–</span>':solPlain(h.pnl_sol,4)}</td><td class="num">${pct(h.roi_pct)}</td>
+      <td class="num hm">${h.hold_s<120?Math.round(h.hold_s)+'s':span(0,h.hold_s)}</td><td class="hm">${{closed:'đã bán',expired:'hết hạn 24h',migrated:'<span class="faint">migrate — chưa xác định</span>'}[h.kind]||esc(h.kind)}${h.gap?' <span class="b INCONCLUSIVE" title="Trùng lúc mất stream: loại khỏi thống kê">gián đoạn</span>':''}</td></tr>`).join('')||'<tr><td colspan="8" class="faint">–</td></tr>'}
+    </tbody></table></div>${pager(d.history,'wPage')}</div>
+   <div class="panel anim"><h2><span>Token đã trade</span><span class="faint">top 100 theo P&L</span></h2><div class="tw" style="max-height:320px"><table><thead><tr><th>Token</th><th class="num">Giao dịch</th><th class="num">Thắng</th><th class="num">P&L</th><th class="num">ROI</th><th>Kết quả token</th></tr></thead><tbody>
+    ${d.tokens_traded.map(t=>`<tr><td><a class="lk" href="#/token/${t.mint}">${esc(t.symbol?'$'+t.symbol:sh(t.mint))}</a></td><td class="num">${t.trades}</td><td class="num">${t.wins}</td><td class="num">${solPlain(t.pnl_sol,4)}</td><td class="num">${pct(t.roi_pct)}</td>
+      <td>${t.outcome?({MIGRATED:'<span class="up">MIGRATED</span>',FAILED:'<span class="down">FAILED</span>',DEAD:'<span class="down">DEAD</span>',PENDING:'<span class="mut">PENDING</span>'}[t.outcome]+(t.rug?' <span class="r x">RUG</span>':'')):'<span class="faint">chưa có dữ liệu</span>'}</td></tr>`).join('')||'<tr><td colspan="6" class="faint">–</td></tr>'}</tbody></table></div></div>`;
+  lineChart($('sc'),d.cumulative,'P&L tích lũy');
+  lineChart($('sw'),d.daily.slice().reverse().map(x=>[Date.parse(x.date+'T23:59:59Z')/1000,x.cum_win_rate_pct]),'Win rate tích lũy',v=>num(v,1)+'%');
+}
+window.wPage=p=>{WD.page=p;route()};
+
 /* ---------- router ---------- */
+let LASTHASH='';
 async function route(){
   clearTimeout(timer);hideTip();
+  app.classList.toggle('noanim',LASTHASH===location.hash);LASTHASH=location.hash;   // fade in once, not on refresh
   const h=location.hash||'#/kols',[path,qs]=h.slice(2).split('?'),parts=path.split('/');
   const t=parts[0]||'kols';ROUTE=t;
-  document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.t===({kol:'kols',dev:'devs',token:'tokens'}[t]||t)));
+  document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.t===({kol:'kols',dev:'devs',token:'tokens',wallet:'smart'}[t]||t)));
   if(t==='trades'&&qs){const p=new URLSearchParams(qs);if(p.get('kol')){RF.kol=p.get('kol');RF.page=1;history.replaceState(null,'','#/trades')}}
   try{await status();
     if(t==='kols')await viewKols();else if(t==='kol')await viewKol(parts[1]);else if(t==='devs')await viewDevs();
     else if(t==='dev')await viewDev(parts[1]);else if(t==='tokens')await viewTokens();else if(t==='token')await viewToken(parts[1]);
-    else if(t==='trades')await viewTrades();else if(t==='live')await viewLive();else location.hash='#/kols';
+    else if(t==='trades')await viewTrades();else if(t==='smart')await viewSmart();else if(t==='wallet')await viewWallet(parts[1]);else if(t==='live')await viewLive();else location.hash='#/kols';
   }catch(e){if(e.message!=='auth'){app.innerHTML=`<div class="empty">Lỗi tải dữ liệu: ${esc(e.message)}</div>`}return}
   timer=setTimeout(()=>{if(!document.querySelector('input:focus,select:focus'))route();else timer=setTimeout(route,15000)},t==='live'?3000:20000);
 }
-window.addEventListener('hashchange',()=>{KD.page=1;DD.page=1;route()});
+window.addEventListener('hashchange',()=>{KD.page=1;DD.page=1;WD.page=1;route()});
 window.addEventListener('resize',()=>{clearTimeout(window._rs);window._rs=setTimeout(route,300)});
 route();
 </script>

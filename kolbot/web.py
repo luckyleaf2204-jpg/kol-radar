@@ -135,7 +135,23 @@ def make_routes(db, roster: dict, get_live=None, get_status=None, symbols=None, 
         return js(api.trade_table(db, roster, q1(q, "range", "all"), q1(q, "kol"), q1(q, "exit"), q1(q, "pnl"),
                                   intq(q, "page", 1), intq(q, "size", 25)))
 
-    routes = {"/api/summary": summary, "/api/kols": kols, "/api/winrate": winrate, "/api/kol": kol, "/api/devs": devs, "/api/dev": dev,
+    def smart(q):
+        from kolbot import smart_api
+        return js(smart_api.smart_table(db, intq(q, "min_n", smart_api.DEFAULT_MIN_N), q1(q, "top"),
+                                        q1(q, "status"), q1(q, "pnl"), q1(q, "hide", "1") not in ("0", "false"),
+                                        intq(q, "page", 1), intq(q, "size", 25)))
+
+    def smart_summary(q):
+        from kolbot import smart_api
+        return js(smart_api.smart_summary(db, intq(q, "min_n", smart_api.DEFAULT_MIN_N)))
+
+    def smart_wallet(q):
+        from kolbot import smart_api
+        d = smart_api.smart_detail(db, q1(q, "wallet"), intq(q, "page", 1), intq(q, "size", 25))
+        return js(d if d is not None else {"error": "not_found"})
+
+    routes = {"/api/smart": smart, "/api/smart/summary": smart_summary, "/api/smart/wallet": smart_wallet,
+              "/api/summary": summary, "/api/kols": kols, "/api/winrate": winrate, "/api/kol": kol, "/api/devs": devs, "/api/dev": dev,
               "/api/tokens": tokens, "/api/token": token, "/api/trades": trades,
               "/api/status": lambda q: js(dict(get_status() if get_status else {}, now=time.time())),
               "/api/export.csv": lambda q: ("text/csv; charset=utf-8", api.export_csv(db))}

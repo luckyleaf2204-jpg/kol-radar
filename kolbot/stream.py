@@ -47,12 +47,14 @@ def decode(line: str) -> dict | None:
         vs, vt = struct.unpack_from("<QQ", d, 97)
         if not plausible_ts(ts) or tok <= 0 or vs <= 0 or vt <= 0:
             return None
-        fee_bps = None
+        fee_bps = fee_lamports = None
         if len(d) >= 225:
             fee_bps = struct.unpack_from("<Q", d, 161)[0] + struct.unpack_from("<Q", d, 209)[0]
+            fee_lamports = struct.unpack_from("<Q", d, 169)[0] + struct.unpack_from("<Q", d, 217)[0]
         creator = b58(d[177:209]) if len(d) >= 209 else None
         return {"kind": "trade", "mint": b58(d[8:40]), "sol": sol, "token": tok, "is_buy": bool(d[56]),
-                "user": b58(d[57:89]), "ts": ts, "vsol": vs, "vtok": vt, "fee_bps": fee_bps, "creator": creator}
+                "user": b58(d[57:89]), "ts": ts, "vsol": vs, "vtok": vt, "fee_bps": fee_bps, "creator": creator,
+                "fee_lamports": fee_lamports}
     if d[:8] == CREATE_DISC:
         return _decode_create(d)
     if d[:8] == COMPLETE_DISC and len(d) >= 112:

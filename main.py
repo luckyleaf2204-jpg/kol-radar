@@ -20,6 +20,7 @@ sys.path.insert(0, str(ROOT))
 from kolbot.config import Config  # noqa: E402
 from kolbot.devs import DevTracker  # noqa: E402
 from kolbot.kolhist import KolHistory  # noqa: E402
+from kolbot.smart import SmartTracker  # noqa: E402
 from kolbot.engine import Engine  # noqa: E402
 from kolbot.meta import Meta  # noqa: E402
 from kolbot.report import by_kol, summarize  # noqa: E402
@@ -95,6 +96,7 @@ def main():
     db = eng.store.db
     devs = DevTracker(db)
     hist = KolHistory(db, roster)
+    smart = SmartTracker(db, roster)               # research only: never feeds the paper bot
     watch, meta = Watch(names), Meta(on_creator=devs.ingest_api)
     status = {"connected": False, "last_event": 0.0, "events": 0}
 
@@ -104,11 +106,13 @@ def main():
         watch.on_event(ev)
         is_kol = ev.get("user") in names
         devs.on_event(ev, is_kol=is_kol)
+        smart.on_event(ev)
         if is_kol and ev["kind"] == "trade":
             hist.on_kol_event(ev["user"], ev["ts"])
 
     def on_gap(a, b):
         eng.on_gap(a, b)
+        smart.on_gap(a, b)
 
     def log(m):
         status["connected"] = "connected" in m
@@ -122,6 +126,7 @@ def main():
             meta.refresh_old(list(watch.mints)[:60])
             devs.tick()
             hist.tick()
+            smart.tick()
             if time.time() - last >= 600:
                 last = time.time()
                 print(time.strftime("[kol] %Y-%m-%d %H:%M:%S\n") + report(eng, names))
@@ -171,6 +176,7 @@ def main():
     finally:
         devs.tick(force=True)
         hist.tick(force=True)
+        smart.flush()
         eng.store.save(eng)
 
 
