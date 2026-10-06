@@ -88,10 +88,24 @@ def make_routes(db, roster: dict, get_live=None, get_status=None, symbols=None, 
         out["now"] = time.time()
         return js(out)
 
+    def fq(q, k):
+        try:
+            v = q1(q, k)
+            return float(v) if v != "" else None
+        except ValueError:
+            return None
+
     def kols(q):
         return js(api.kol_table(db, roster, q1(q, "range", "all"), intq(q, "min_n", 1), q1(q, "pnl"),
                                 q1(q, "status"), q1(q, "sort", "pnl"), q1(q, "dir", "desc"), intq(q, "page", 1),
-                                intq(q, "size", 25), q1(q, "group", "kol")))
+                                intq(q, "size", 25), q1(q, "group", "kol"), fq(q, "min_wr"),
+                                q1(q, "hi_wr") in ("1", "true"), q1(q, "seen")))
+
+    def winrate(q):
+        return js(api.winrate_table(db, roster, q1(q, "range", "all"),
+                                    intq(q, "min_n", api.WINRATE_DEFAULT_MIN_N), q1(q, "pnl"), q1(q, "status"),
+                                    fq(q, "min_wr"), q1(q, "hi_wr") in ("1", "true"), q1(q, "seen"),
+                                    intq(q, "page", 1), intq(q, "size", 25), q1(q, "group", "kol")))
 
     def kol(q):
         d = api.kol_detail(db, roster, q1(q, "wallet"), q1(q, "range", "all"), intq(q, "page", 1),
@@ -121,7 +135,7 @@ def make_routes(db, roster: dict, get_live=None, get_status=None, symbols=None, 
         return js(api.trade_table(db, roster, q1(q, "range", "all"), q1(q, "kol"), q1(q, "exit"), q1(q, "pnl"),
                                   intq(q, "page", 1), intq(q, "size", 25)))
 
-    routes = {"/api/summary": summary, "/api/kols": kols, "/api/kol": kol, "/api/devs": devs, "/api/dev": dev,
+    routes = {"/api/summary": summary, "/api/kols": kols, "/api/winrate": winrate, "/api/kol": kol, "/api/devs": devs, "/api/dev": dev,
               "/api/tokens": tokens, "/api/token": token, "/api/trades": trades,
               "/api/status": lambda q: js(dict(get_status() if get_status else {}, now=time.time())),
               "/api/export.csv": lambda q: ("text/csv; charset=utf-8", api.export_csv(db))}

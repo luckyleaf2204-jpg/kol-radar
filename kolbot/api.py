@@ -19,7 +19,10 @@ import time
 MIN_N = 100
 RANGES = {"today": "today", "24h": 86400, "7d": 7 * 86400, "30d": 30 * 86400, "all": None}
 SORTS = {"pnl": "pnl_sol", "roi": "roi_pct", "win": "win_rate_pct", "trades": "n", "avg": "avg_pnl_sol",
-         "pnl7": "pnl_7d_sol", "pnl30": "pnl_30d_sol", "first": "first_seen_at"}
+         "pnl7": "pnl_7d_sol", "pnl30": "pnl_30d_sol", "first": "first_seen_at", "wins": "wins",
+         "losses": "losses", "median": "median_pnl_sol", "best": "best_pct", "worst": "worst_pct",
+         "streak": "streak", "last": "last_seen_at", "consistent": "win_rate_low_pct"}
+HIGH_WIN_RATE_PCT = 60.0               # "high win rate only" filter
 STATUSES = ("PASS", "PROVISIONAL", "INCONCLUSIVE", "REJECT")
 CI_ITERS = 1000
 _cache: dict = {}
@@ -70,6 +73,18 @@ def cluster_ci(groups: list[list[float]], iters: int = 2000, seed: int = 7):
     return round(float(lo), 2), round(float(hi), 2)
 
 
+def wilson_low(wins: int, n: int, z: float = 1.96) -> float:
+    """Lower bound of the 95 % Wilson interval of a win rate: shown next to the win rate so a 5/5 KOL reads as
+    'somewhere above 57 %', not '100 %'. Information only; it does not change any status."""
+    if n <= 0:
+        return 0.0
+    p = wins / n
+    den = 1 + z * z / n
+    centre = p + z * z / (2 * n)
+    margin = z * ((p * (1 - p) + z * z / (4 * n)) / n) ** 0.5
+    return max(0.0, (centre - margin) / den)
+
+
 def status_of(n: int, ci) -> str:
     if n < MIN_N or ci is None:
         return "INCONCLUSIVE"
@@ -91,20 +106,35 @@ def _ranking(db, since: float, roster: dict) -> list[dict]:
         "WHERE gap = 0 AND exit_ts >= ? GROUP BY kol", (now - 7 * 86400, now - 30 * 86400))}
     seen = {w: (f, src) for w, f, src in db.execute("SELECT wallet, first_seen_at, first_seen_source FROM kols")} \
         if _has(db, "kols") else {}
-    ci_key = {r[0]: ("ci", r[0], r[1], round(r[11], 4)) for r in rows if r[1] >= MIN_N}
-    todo = [k for k, ck in ci_key.items() if ck not in _ci]
-    if todo:                                              # only KOLs whose trades changed since the last CI
-        per: dict[str, list[float]] = {}
-        for kol, x in db.execute(f"SELECT kol, net_pct FROM trades WHERE gap = 0 AND exit_ts >= ? AND kol IN "
-                                 f"({','.join('?' * len(todo))})", (since, *todo)):
-            per.setdefault(kol, []).append(x)
+    seen_last = {w: l for w, l in db.execute("SELECT wallet, last_seen_at FROM kols")} if _has(db, "kols") else {}
+    # per-KOL stats that need the trades themselves (median, streak, CI): recomputed only for KOLs whose trades
+    # changed (key = n + sums), one IN-query for all of them
+    ks_key = {r[0]: ("ks", r[0], r[1], round(r[2], 6), round(r[11], 4)) for r in rows}
+    todo = [k for k, ck in ks_key.items() if ck not in _ci]
+    if todo:
+        from kolbot.kolhist import streaks
+        per: dict[str, list[tuple]] = {}
+        for i in range(0, len(todo), 900):
+            part = todo[i:i + 900]
+            for kol, p, x in db.execute(f"SELECT kol, pnl_sol, net_pct FROM trades WHERE gap = 0 AND exit_ts >= ? "
+                                        f"AND kol IN ({','.join('?' * len(part))}) ORDER BY kol, exit_ts, id",
+                                        (since, *part)):
+                per.setdefault(kol, []).append((p, x))
         if len(_ci) > 50_000:
             _ci.clear()
         for k in todo:
-            _ci[ci_key[k]] = boot_ci(per.get(k, []))
+            vals = per.get(k, [])
+            pn = sorted(v[0] for v in vals)
+            m = len(pn)
+            _ci[ks_key[k]] = {
+                "ci": boot_ci([v[1] for v in vals]) if m >= MIN_N else None,
+                "median": (pn[m // 2] if m % 2 else (pn[m // 2 - 1] + pn[m // 2]) / 2) if m else None,
+                "streak": streaks([v[1] > 0 for v in vals])}
     out = []
     for kol, n, pnl, spend, wins, avg_pct, first, last, tokens, best, worst, _s in rows:
-        ci = _ci.get(ci_key[kol]) if n >= MIN_N else None
+        st = _ci.get(ks_key[kol]) or {}
+        ci = st.get("ci") if n >= MIN_N else None
+        sk = st.get("streak") or {}
         info = roster.get(kol, {})
         out.append({"kol": kol, "name": info.get("name") or kol[:6], "twitter": info.get("twitter") or "",
                     "n": n, "pnl_sol": round(pnl, 6), "spend_sol": round(spend, 6),
@@ -116,7 +146,13 @@ def _ranking(db, since: float, roster: dict) -> list[dict]:
                     "first_seen_at": seen.get(kol, (None, None))[0],
                     "first_seen_source": seen.get(kol, (None, None))[1],
                     "pnl_7d_sol": round(recent.get(kol, (0, 0))[0] or 0, 6),
-                    "pnl_30d_sol": round(recent.get(kol, (0, 0))[1] or 0, 6)})
+                    "pnl_30d_sol": round(recent.get(kol, (0, 0))[1] or 0, 6),
+                    "wins": wins, "losses": n - wins,
+                    "win_rate_low_pct": round(100 * wilson_low(wins, n), 1),
+                    "median_pnl_sol": round(st["median"], 6) if st.get("median") is not None else None,
+                    "streak": sk.get("current", 0), "longest_win": sk.get("longest_win", 0),
+                    "longest_loss": sk.get("longest_loss", 0),
+                    "last_seen_at": max(x for x in (seen_last.get(kol), last) if x)})
     out.sort(key=lambda r: (-r["pnl_sol"], -r["n"], r["kol"]))
     for i, r in enumerate(out, 1):
         r["rank"] = i
@@ -126,19 +162,34 @@ def _ranking(db, since: float, roster: dict) -> list[dict]:
     return out
 
 
-def kol_table(db, roster: dict, rng: str = "all", min_n: int = 1, pnl: str = "", status: str = "",
-              sort: str = "pnl", direction: str = "desc", page: int = 1, size: int = 25, group: str = "kol") -> dict:
-    if group == "control":
-        return {"group": "control", "total": 0, "page": 1, "pages": 0, "rows": [],
-                "note": "Bot paper chưa có nhóm Control (ví ngẫu nhiên). Thêm Control là thay đổi methodology, "
-                        "cần quyết định riêng; nhóm Control của hướng C nằm trong bài test đã đăng ký (sau 27/10)."}
-    ranked = [r for r in _ranking(db, since_of(rng), roster) if r["n"] >= max(1, int(min_n))]
+CONTROL_NOTE = ("Bot paper chưa có nhóm Control (ví ngẫu nhiên). Thêm Control là thay đổi methodology, cần quyết "
+                "định riêng; nhóm Control của hướng C nằm trong bài test đã đăng ký (sau 27/10).")
+
+
+def _filter(rows: list[dict], min_n=1, pnl="", status="", min_wr=None, hi_wr=False, seen="") -> list[dict]:
+    out = [r for r in rows if r["n"] >= max(1, int(min_n))]
     if pnl == "pos":
-        ranked = [r for r in ranked if r["pnl_sol"] > 0]
+        out = [r for r in out if r["pnl_sol"] > 0]
     elif pnl == "neg":
-        ranked = [r for r in ranked if r["pnl_sol"] < 0]
+        out = [r for r in out if r["pnl_sol"] < 0]
     if status in STATUSES:
-        ranked = [r for r in ranked if r["status"] == status]
+        out = [r for r in out if r["status"] == status]
+    if min_wr not in (None, ""):
+        out = [r for r in out if r["win_rate_pct"] >= float(min_wr)]
+    if hi_wr:
+        out = [r for r in out if r["win_rate_pct"] >= HIGH_WIN_RATE_PCT]
+    if seen and seen != "all":                          # KOLs first seen inside this window
+        cut = since_of(seen)
+        out = [r for r in out if r.get("first_seen_at") and r["first_seen_at"] >= cut]
+    return out
+
+
+def kol_table(db, roster: dict, rng: str = "all", min_n: int = 1, pnl: str = "", status: str = "",
+              sort: str = "pnl", direction: str = "desc", page: int = 1, size: int = 25, group: str = "kol",
+              min_wr=None, hi_wr: bool = False, seen: str = "") -> dict:
+    if group == "control":
+        return {"group": "control", "total": 0, "page": 1, "pages": 0, "rows": [], "note": CONTROL_NOTE}
+    ranked = _filter(_ranking(db, since_of(rng), roster), min_n, pnl, status, min_wr, hi_wr, seen)
     k = SORTS.get(sort, "pnl_sol")
     rows = sorted(ranked, key=lambda r: (r[k] if r[k] is not None else float("-inf"), -r["rank"]),
                   reverse=direction != "asc")
@@ -147,6 +198,26 @@ def kol_table(db, roster: dict, rng: str = "all", min_n: int = 1, pnl: str = "",
     page = max(1, min(int(page), pages))
     return {"group": "kol", "total": len(rows), "page": page, "pages": pages, "size": size,
             "rows": rows[(page - 1) * size: page * size]}
+
+
+WINRATE_DEFAULT_MIN_N = 100
+
+
+def winrate_table(db, roster: dict, rng: str = "all", min_n: int = WINRATE_DEFAULT_MIN_N, pnl: str = "",
+                  status: str = "", min_wr=None, hi_wr: bool = False, seen: str = "", page: int = 1,
+                  size: int = 25, group: str = "kol") -> dict:
+    """Top KOL by win rate (research view, never a buy signal). Win rate = wins / resolved trades, where a
+    resolved trade is a closed paper trade not excluded for a stream gap and a win is net P&L > 0 after costs.
+    Order: win rate desc, then resolved trades desc, then wins desc. P&L is shown, never used to rank. The
+    sample filter (default >= 100 resolved trades) keeps 5/5 KOLs from sitting above 200/300 ones."""
+    if group == "control":
+        return {"group": "control", "total": 0, "page": 1, "pages": 0, "rows": [], "note": CONTROL_NOTE}
+    rows = _filter(_ranking(db, since_of(rng), roster), min_n, pnl, status, min_wr, hi_wr, seen)
+    rows = sorted(rows, key=lambda r: (-(r["wins"] / r["n"]), -r["n"], -r["wins"], r["kol"]))
+    out = [dict(r, wr_rank=i) for i, r in enumerate(rows, 1)]
+    page, pages, size = _page(len(out), page, size)
+    return {"group": "kol", "total": len(out), "page": page, "pages": pages, "size": size, "min_n": int(min_n),
+            "rows": out[(page - 1) * size: page * size]}
 
 
 def _downsample(points: list, max_points: int = 300) -> list:
@@ -249,6 +320,18 @@ def kol_detail(db, roster: dict, kol: str, rng: str = "all", page: int = 1, size
         f"SUM(t.net_pct > 0) FROM trades t {'LEFT JOIN tokens k ON k.mint = t.mint' if _has(db, 'tokens') else ''} "
         "WHERE t.kol = ? AND t.gap = 0 AND t.exit_ts >= ? GROUP BY t.mint ORDER BY SUM(t.pnl_sol) DESC LIMIT 100",
         (kol, since))]
+    if by_token and _has(db, "tokens"):                   # token outcome + dev, 2 queries for the whole page
+        from kolbot.devs import COLS, classify
+        mints = [t["mint"] for t in by_token]
+        now = time.time()
+        recs = {r[0]: dict(zip(COLS, r)) for r in db.execute(
+            f"SELECT {','.join(COLS)} FROM tokens WHERE mint IN ({','.join('?' * len(mints))})", mints)}
+        devmap = _token_devs(db, mints)
+        for t in by_token:
+            c = classify(recs[t["mint"]], now) if t["mint"] in recs else None
+            t["outcome"] = c["outcome"] if c else None
+            t["rug"] = c["rug"] if c else None
+            t["dev"] = devmap.get(t["mint"])
     from kolbot.kolhist import kol_history
     since_first = kol_history(db, kol) if _has(db, "kols") else None
     return dict(base, ranked_of=len(ranked), in_roster=info is not None, by_token=by_token, since_first=since_first,

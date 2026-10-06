@@ -190,7 +190,7 @@ async function status(){try{STATUS=await api('/api/status');SOLUSD=STATUS.sol_us
 /* ---------- charts (inline SVG, single series each, hover on every chart) ---------- */
 function showTip(ev,html){tip.innerHTML=html;tip.style.display='block';const x=Math.min(ev.clientX+14,innerWidth-tip.offsetWidth-8);tip.style.left=x+'px';tip.style.top=(ev.clientY+14)+'px'}
 function hideTip(){tip.style.display='none'}
-function lineChart(el,pts,title){
+function lineChart(el,pts,title,fmt){fmt=fmt||(v=>solPlain(v,4)+' SOL');
   if(!pts||pts.length<2){el.innerHTML='<div class="empty">Chưa đủ dữ liệu để vẽ</div>';return}
   const W=el.clientWidth||600,H=el.clientHeight||190,L=56,R=10,T=10,B=22;
   const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);let y0=Math.min(0,...ys),y1=Math.max(0,...ys);if(y0===y1)y1=y0+1;
@@ -211,7 +211,7 @@ function lineChart(el,pts,title){
     pts.forEach((p,k)=>{const dd=Math.abs(X(p[0])-mx);if(dd<b){b=dd;i=k}});const p=pts[i];
     xh.setAttribute('x1',X(p[0]));xh.setAttribute('x2',X(p[0]));xh.setAttribute('visibility','visible');
     xd.setAttribute('cx',X(p[0]));xd.setAttribute('cy',Y(p[1]));xd.setAttribute('visibility','visible');
-    showTip(e,`${dt(p[0])}<br>P&L tích lũy: ${solPlain(p[1],4)} SOL`)};
+    showTip(e,`${dt(p[0])}<br>${esc(title)}: ${fmt(p[1])}`)};
   svg.onmouseleave=()=>{xh.setAttribute('visibility','hidden');xd.setAttribute('visibility','hidden');hideTip()}}
 function barChart(el,bars,opt){
   if(!bars||!bars.length){el.innerHTML='<div class="empty">Chưa có dữ liệu</div>';return}
@@ -226,9 +226,26 @@ function barChart(el,bars,opt){
   el.querySelectorAll('rect[data-i]').forEach(r=>{r.onmousemove=e=>showTip(e,bars[+r.dataset.i].tip);r.onmouseleave=hideTip})}
 
 /* ---------- KOLs ---------- */
+// view: 'perf' (KOL performance, ranked by P&L) | 'wr' (Top KOL by win rate: research only, never a buy signal)
+Object.assign(F,Object.assign({view:'perf',min_wr:'',hi_wr:false,seen:'',wr_min_n:100},F));
 function setF(k,v){F[k]=v;if(k!=='page')F.page=1;store.set('kolF',F);viewKols()}
+function quick(q){Object.assign(F,{page:1,pnl:'',status:'',min_wr:'',hi_wr:false});
+  if(q==='top')Object.assign(F,{view:'perf',sort:'pnl',dir:'desc'});
+  if(q==='wr')Object.assign(F,{view:'wr'});
+  if(q==='wins')Object.assign(F,{view:'perf',sort:'wins',dir:'desc'});
+  if(q==='consistent')Object.assign(F,{view:'perf',sort:'consistent',dir:'desc',min_n:Math.max(+F.min_n||1,30)});
+  if(q==='losers')Object.assign(F,{view:'perf',sort:'pnl',dir:'asc'});
+  F.quick=q;store.set('kolF',F);viewKols()}
+function sortBy(k){if(F.sort===k)F.dir=F.dir==='desc'?'asc':'desc';else{F.sort=k;F.dir='desc'}F.page=1;F.quick='';store.set('kolF',F);viewKols()}
+function th(k,label,cls=''){const on=F.view==='perf'&&F.sort===k;return `<th class="s num ${cls}" onclick="sortBy('${k}')" title="Sắp xếp theo ${esc(label)}">${label}${on?(F.dir==='desc'?' ↓':' ↑'):''}</th>`}
+function streakTxt(s){return s>0?`<span class="up">${s}W</span>`:s<0?`<span class="down">${-s}L</span>`:'<span class="faint">–</span>'}
+function firstSeen(r){return `<span title="${r.first_seen_source==='ledger'?'Theo lệnh copy đầu tiên (trước khi có bảng theo dõi)':'Lần đầu stream thấy KOL giao dịch'}">${r.first_seen_at?day(r.first_seen_at):'<span class="faint">UNKNOWN</span>'}</span>`}
+function wrCell(r){return `${num(r.win_rate_pct,1)}% <div class="faint" style="font-size:11px" title="Cận dưới 95% (Wilson): với mẫu nhỏ, win rate thật có thể thấp tới mức này">≥ ${num(r.win_rate_low_pct,1)}%</div>`}
 async function viewKols(){
-  const [S,T]=await Promise.all([api('/api/summary',{range:F.range,min_n:F.min_n}),api('/api/kols',F)]);
+  const minN=F.view==='wr'?F.wr_min_n:F.min_n;
+  const common={range:F.range,min_n:minN,pnl:F.pnl,status:F.status,min_wr:F.min_wr,hi_wr:F.hi_wr?1:'',seen:F.seen,page:F.page,group:F.group};
+  const [S,T]=await Promise.all([api('/api/summary',{range:F.range,min_n:F.min_n}),
+    F.view==='wr'?api('/api/winrate',common):api('/api/kols',Object.assign({sort:F.sort,dir:F.dir},common))]);
   if(ROUTE!=='kols')return;
   const st=S.stream||{}, prog=Math.min(100,100*S.n/S.min_n_required);
   const kpis=`<div class="kpis">
@@ -249,14 +266,19 @@ async function viewKols(){
   const losers=(arr)=>arr.length?`<div class="list">${arr.map(r=>`<div class="it" onclick="location.hash='#/kol/${r.kol}'"><span><span class="rank">#${r.rank}</span> ${esc(r.name)} ${lowN(r.n)} <span class="faint">n=${r.n}</span></span><span>${solPlain(r.pnl_sol,3)} SOL · ${pct(r.roi_pct)}</span></div>`).join('')}</div>`:'<div class="empty">Chưa có KOL lỗ</div>';
   const landing=`<div class="grid2"><div class="panel"><h2><span>🏆 Top KOL since first seen</span><span class="faint">min n = ${F.min_n}</span></h2>${podium(S.top_all)}</div>
      <div class="panel"><h2><span>Top losers since first seen</span></h2>${losers(S.losers_all)}</div></div>`;
+  const quickBar=`<div class="filters"><label>Xem nhanh ${seg('quick',[['top','Top KOL'],['wr','Top Win Rate'],['wins','Most Wins'],['consistent','Most Consistent'],['losers','Biggest Losers']],F.quick||(F.view==='wr'?'wr':''),'quick')}</label>
+     <label>Bảng ${seg('view',[['perf','KOL Performance'],['wr','Top KOL by Win Rate']],F.view,'setView')}</label></div>`;
+  const nOpts=[[30,'≥30'],[50,'≥50'],[100,'≥100'],[200,'≥200']];
   const filt=`<div class="filters">
    <label>Nhóm ${seg('group',[['kol','KOL'],['control','Control']],F.group,'setGroup')}</label>
-   <label>Khoảng thời gian ${seg('range',[['today','Hôm nay'],['7d','7D'],['30d','30D'],['all','Since first seen']],F.range,'setRange')}</label>
-   <label>Min n ${seg('min_n',[[1,'1'],[3,'3'],[10,'10'],[30,'30'],[100,'100']],F.min_n,'setMinN')}</label>
+   <label>Khung dữ liệu ${seg('range',[['today','Hôm nay'],['7d','7D'],['30d','30D'],['all','Since first seen']],F.range,'setRange')}</label>
+   <label>Số trade tối thiểu ${seg('min_n',(F.view==='wr'?nOpts:[[1,'Tất cả']].concat(nOpts)),minN,'setMinN')}</label>
+   <label>Custom <input type="number" min="1" style="width:76px" value="${minN}" onchange="setMinN(this.value)"></label>
+   <label>Win rate tối thiểu (%) <input type="number" min="0" max="100" style="width:76px" value="${esc(F.min_wr)}" placeholder="vd 55" onchange="setF('min_wr',this.value)"></label>
    <label>Lời / lỗ ${seg('pnl',[['','Tất cả'],['pos','Chỉ lãi'],['neg','Chỉ lỗ']],F.pnl,'setPnl')}</label>
+   <label>Win rate cao <span><input type="checkbox" ${F.hi_wr?'checked':''} onchange="setF('hi_wr',this.checked)"> ≥ 60%</span></label>
    <label>Status <select onchange="setF('status',this.value)">${['','PASS','PROVISIONAL','INCONCLUSIVE','REJECT'].map(s=>`<option value="${s}" ${F.status===s?'selected':''}>${s||'Tất cả'}</option>`).join('')}</select></label>
-   <label>Sắp xếp <select onchange="setF('sort',this.value)">${[['pnl','Cumulative P&L'],['roi','ROI'],['win','Win rate'],['trades','Trades'],['avg','Avg P&L'],['pnl7','7D P&L'],['pnl30','30D P&L'],['first','First seen']].map(([v,l])=>`<option value="${v}" ${F.sort===v?'selected':''}>${l}</option>`).join('')}</select></label>
-   <label>&nbsp;<button onclick="setF('dir',F.dir==='desc'?'asc':'desc')">${F.dir==='desc'?'↓ Giảm dần':'↑ Tăng dần'}</button></label></div>`;
+   <label>First seen trong ${seg('seen',[['','Tất cả'],['7d','7D'],['30d','30D']],F.seen,'setSeen')}</label></div>`;
   const charts=`<div class="grid4">
    <div class="panel"><h2><span>P&L tích lũy (SOL)</span></h2><div class="chart" id="c1"></div></div>
    <div class="panel"><h2><span>Phân bố ROI mỗi lệnh</span></h2><div class="chart" id="c2"></div><div class="legend"><span><i class="sw" style="background:var(--gainbar)"></i>lãi</span><span><i class="sw" style="background:var(--lossbar)"></i>lỗ</span></div></div>
@@ -264,25 +286,41 @@ async function viewKols(){
      <div class="wl" title="${S.wins} thắng, ${S.losses} thua"><div style="flex:${S.wins||0};background:var(--gainbar)"></div><div style="flex:${S.losses||0};background:var(--lossbar)"></div></div>
      <div class="legend"><span><i class="sw" style="background:var(--gainbar)"></i>thắng ${S.win_rate_pct??'–'}%</span><span><i class="sw" style="background:var(--lossbar)"></i>thua</span></div></div>
    <div class="panel"><h2><span>Lệnh theo ${S.bucket_s>=86400?'ngày':'giờ'}</span></h2><div class="chart" id="c4"></div></div></div>`;
-  let table;
+  let table, title, note;
   if(T.group==='control'){table=`<div class="empty">${esc(T.note)}</div>`}
-  else if(!T.rows.length){table='<div class="empty">Không có KOL nào khớp bộ lọc</div>'}
-  else table=`<div class="tw"><table><thead><tr><th>Rank</th><th>KOL</th><th class="hm">First seen</th><th class="num">Trades</th><th class="num hm">Win rate</th>
-     <th class="num">Cumulative P&L</th><th class="num">ROI</th><th class="num hm">7D P&L</th><th class="num hm">30D P&L</th><th class="num hm">Avg P&L/trade</th><th class="hm">Status</th><th class="hm"></th></tr></thead><tbody>
-     ${T.rows.map(r=>`<tr class="click" onclick="location.hash='#/kol/${r.kol}'"><td class="rank">#${r.rank}</td>
-      <td><b>${esc(r.name)}</b> ${lowN(r.n)}<div class="mono faint" title="${r.kol}">${sh(r.kol)}</div></td>
-      <td class="hm" title="${r.first_seen_source==='ledger'?'Theo lệnh copy đầu tiên (trước khi có bảng theo dõi)':'Lần đầu stream thấy KOL giao dịch'}">${r.first_seen_at?day(r.first_seen_at):'<span class="faint">UNKNOWN</span>'}</td>
-      <td class="num">${r.n}</td><td class="num hm">${r.win_rate_pct}%</td>
-      <td class="num big">${solPlain(r.pnl_sol,4)}</td><td class="num">${pct(r.roi_pct)}</td>
-      <td class="num hm">${solPlain(r.pnl_7d_sol,4)}</td><td class="num hm">${solPlain(r.pnl_30d_sol,4)}</td><td class="num hm">${solPlain(r.avg_pnl_sol,4)}</td>
-      <td class="hm">${badge(r.status)}</td><td class="hm"><a class="lk" href="#/kol/${r.kol}">View →</a></td></tr>`).join('')}</tbody></table></div>${pager(T,'kpage')}`;
-  app.innerHTML=kpis+landing+filt+charts+`<div class="panel"><h2><span>Bảng KOL</span><span class="faint">P&L tính bằng SOL sau toàn bộ chi phí mô phỏng</span></h2>${table}
-    <div class="note" style="margin-top:8px">Status theo methodology đã chốt: n &lt; 100 → INCONCLUSIVE; n ≥ 100 và CI95 &gt; 0 → PROVISIONAL (thiếu nhóm control nên chưa thể PASS); n ≥ 100 và CI95 ≤ 0 → REJECT. Di chuột/bấm vào badge để xem giải thích.</div></div>`;
+  else if(!T.rows.length){table=`<div class="empty">Không có KOL nào khớp bộ lọc${F.view==='wr'?` (cần ≥ ${minN} lệnh đã đóng)`:''}</div>`}
+  else if(F.view==='wr'){
+    table=`<div class="tw"><table><thead><tr><th>Rank</th><th>KOL</th><th class="num">Wins</th><th class="num">Losses</th><th class="num">Resolved</th><th class="num">Win rate</th>
+      <th class="num hm">Avg P&L</th><th class="num hm">Total P&L</th><th class="hm">First seen</th><th class="hm">Status</th></tr></thead><tbody>
+      ${T.rows.map(r=>`<tr class="click" onclick="location.hash='#/kol/${r.kol}'"><td class="rank">#${r.wr_rank}</td>
+       <td><b>${esc(r.name)}</b> ${lowN(r.n)}<div class="mono faint" title="${r.kol}">${sh(r.kol)}</div></td>
+       <td class="num up">${r.wins}</td><td class="num down">${r.losses}</td><td class="num">${r.n}</td><td class="num big">${wrCell(r)}</td>
+       <td class="num hm">${solPlain(r.avg_pnl_sol,4)}</td><td class="num hm">${solPlain(r.pnl_sol,4)}</td><td class="hm">${firstSeen(r)}</td><td class="hm">${badge(r.status)}</td></tr>`).join('')}</tbody></table></div>${pager(T,'kpage')}`;
+    title='Top KOL by Win Rate';
+    note=`Win rate = thắng / lệnh đã đóng (lệnh thắng = P&L ròng &gt; 0 sau chi phí; lệnh trùng lúc mất stream bị loại). Xếp hạng: win rate ↓, rồi số lệnh ↓, rồi số thắng ↓. P&L chỉ để tham khảo, không dùng xếp hạng. Mặc định chỉ KOL có ≥ 100 lệnh. <b>Bảng nghiên cứu — KHÔNG phải tín hiệu mua.</b> Copy-buy chỉ được xem xét khi hướng C đủ mẫu và được đánh giá riêng.`}
+  else{
+    table=`<div class="tw"><table><thead><tr><th>Rank</th><th>KOL</th>${th('trades','Trades')}${th('wins','Wins','hm')}${th('losses','Losses','hm')}${th('win','Win rate','hm')}
+      ${th('pnl','Total P&L')}${th('roi','ROI')}${th('avg','Avg P&L','hm')}${th('median','Median P&L','hm')}${th('best','Best','hm')}${th('worst','Worst','hm')}${th('streak','Streak','hm')}
+      ${th('pnl7','7D P&L','hm')}${th('pnl30','30D P&L','hm')}${th('first','First seen','hm')}${th('last','Last seen','hm')}<th class="hm">Status</th><th class="hm"></th></tr></thead><tbody>
+      ${T.rows.map(r=>`<tr class="click" onclick="location.hash='#/kol/${r.kol}'"><td class="rank">#${r.rank}</td>
+       <td><b>${esc(r.name)}</b> ${lowN(r.n)}<div class="mono faint" title="${r.kol}">${sh(r.kol)}</div></td>
+       <td class="num">${r.n}</td><td class="num hm up">${r.wins}</td><td class="num hm down">${r.losses}</td><td class="num hm">${wrCell(r)}</td>
+       <td class="num big">${solPlain(r.pnl_sol,4)}</td><td class="num">${pct(r.roi_pct)}</td><td class="num hm">${solPlain(r.avg_pnl_sol,4)}</td><td class="num hm">${solPlain(r.median_pnl_sol,4)}</td>
+       <td class="num hm">${pct(r.best_pct)}</td><td class="num hm">${pct(r.worst_pct)}</td><td class="num hm" title="Dài nhất: ${r.longest_win} thắng · ${r.longest_loss} thua">${streakTxt(r.streak)}</td>
+       <td class="num hm">${solPlain(r.pnl_7d_sol,4)}</td><td class="num hm">${solPlain(r.pnl_30d_sol,4)}</td><td class="num hm">${firstSeen(r)}</td><td class="num hm">${day(r.last_seen_at)}</td>
+       <td class="hm">${badge(r.status)}</td><td class="hm"><a class="lk" href="#/kol/${r.kol}">View →</a></td></tr>`).join('')}</tbody></table></div>${pager(T,'kpage')}`;
+    title='KOL Performance';
+    note=`Rank = thứ hạng theo Total P&L (since first seen hoặc khung đã chọn). Bấm tiêu đề cột để sắp xếp. "Most Consistent" = cận dưới 95% của win rate (Wilson), chỉ KOL ≥ 30 lệnh.`}
+  app.innerHTML=kpis+landing+quickBar+filt+charts+`<div class="panel"><h2><span>${title||'Bảng KOL'}</span><span class="faint">P&L tính bằng SOL sau toàn bộ chi phí mô phỏng</span></h2>${table}
+    <div class="note" style="margin-top:8px">${note||''}</div>
+    <div class="note" style="margin-top:6px">Status theo methodology đã chốt: n &lt; 100 → INCONCLUSIVE; n ≥ 100 và CI95 &gt; 0 → PROVISIONAL (thiếu nhóm control nên chưa thể PASS); n ≥ 100 và CI95 ≤ 0 → REJECT. Di chuột/bấm vào badge để xem giải thích.</div></div>`;
   lineChart($('c1'),S.cumulative,'P&L tích lũy');
   barChart($('c2'),S.histogram.map(b=>({v:b.n,c:b.hi<=0?'var(--lossbar)':'var(--gainbar)',tip:`ROI ${b.lo}% → ${b.hi}%${b.hi>=300?'+':''}<br>${b.n} lệnh`})),{title:'Phân bố ROI',left:'−100%',right:'+300%'});
   barChart($('c4'),S.over_time.map(b=>({v:b.n,c:'var(--accent)',tip:`${dt(b.t)}<br>${b.n} lệnh · ${b.wins} thắng`})),{title:'Lệnh theo thời gian',left:S.over_time.length?day(S.over_time[0].t):'',right:S.over_time.length?day(S.over_time[S.over_time.length-1].t):''});
 }
-window.setGroup=v=>setF('group',v);window.setRange=v=>setF('range',v);window.setMinN=v=>setF('min_n',+v);window.setPnl=v=>setF('pnl',v);window.kpage=p=>setF('page',p);
+window.setGroup=v=>setF('group',v);window.setRange=v=>setF('range',v);window.setPnl=v=>setF('pnl',v);window.kpage=p=>setF('page',p);
+window.setSeen=v=>setF('seen',v);window.setView=v=>{F.quick=v==='wr'?'wr':'';setF('view',v)};
+window.setMinN=v=>{v=Math.max(1,parseInt(v)||1);setF(F.view==='wr'?'wr_min_n':'min_n',v)};
 
 /* ---------- KOL detail ---------- */
 const KD={range:'all',page:1};
@@ -312,17 +350,22 @@ async function viewKol(w){
    <div class="filters"><label>Khung xem ${seg('kr',[['today','Today'],['7d','7D'],['30d','30D'],['all','Since first seen']],KD.range,'kdRange')}</label>
      <span class="mut" style="font-size:12.5px">Trong khung: ${d.n||0} lệnh · P&L ${solPlain(d.pnl_sol,4)} SOL · ROI ${pct(d.roi_pct)} · win ${d.win_rate_pct??'–'}% · rank #${d.rank??'–'}/${d.ranked_of}</span></div>
    <div class="grid2"><div class="panel"><h2><span>P&L tích lũy</span></h2><div class="chart" id="kc"></div></div>
-     <div class="panel"><h2><span>Snapshot theo ngày (UTC)</span></h2><div class="tw" style="max-height:200px"><table><thead><tr><th>Ngày</th><th class="num">Lệnh</th><th class="num">W/L</th><th class="num">P&L</th><th class="num">ROI</th><th class="num">Cum P&L</th><th class="num">Cum ROI</th></tr></thead><tbody>
-     ${(H.daily||[]).map(x=>`<tr><td>${x.date}</td><td class="num">${x.trades}</td><td class="num">${x.wins}/${x.losses}</td><td class="num">${solPlain(x.pnl_sol,4)}</td><td class="num">${pct(x.roi_pct)}</td><td class="num">${solPlain(x.cum_pnl_sol,4)}</td><td class="num">${pct(x.cum_roi_pct)}</td></tr>`).join('')||'<tr><td colspan="7" class="faint">Chưa có snapshot</td></tr>'}</tbody></table></div></div></div>
+     <div class="panel"><h2><span>Win rate theo thời gian</span><span class="faint">tích lũy từ first seen, theo ngày UTC</span></h2><div class="chart" id="kw"></div></div></div>
+   <div class="grid2" style="grid-template-columns:1fr">
+     <div class="panel"><h2><span>Snapshot theo ngày (UTC)</span></h2><div class="tw" style="max-height:200px"><table><thead><tr><th>Ngày</th><th class="num">Lệnh</th><th class="num">W/L</th><th class="num">Win rate</th><th class="num">P&L</th><th class="num">ROI</th><th class="num">Cum P&L</th><th class="num">Cum ROI</th><th class="num">Cum win rate</th></tr></thead><tbody>
+     ${(H.daily||[]).map(x=>`<tr><td>${x.date}</td><td class="num">${x.trades}</td><td class="num">${x.wins}/${x.losses}</td><td class="num">${num(x.win_rate_pct,1)}%</td><td class="num">${solPlain(x.pnl_sol,4)}</td><td class="num">${pct(x.roi_pct)}</td><td class="num">${solPlain(x.cum_pnl_sol,4)}</td><td class="num">${pct(x.cum_roi_pct)}</td><td class="num">${x.cum_win_rate_pct==null?'–':num(x.cum_win_rate_pct,1)+'%'}</td></tr>`).join('')||'<tr><td colspan="9" class="faint">Chưa có snapshot</td></tr>'}</tbody></table></div></div></div>
    <div class="panel"><h2><span>Lịch sử giao dịch</span><span class="faint">mới nhất trước</span></h2>
     <div class="tw"><table><thead><tr><th>Time</th><th>Token</th><th class="hm">Dev</th><th class="num">Buy</th><th class="num">Sell</th><th class="num">P&L</th><th class="num">ROI</th><th class="num hm">Delay</th><th class="hm">Status</th></tr></thead><tbody>
     ${d.history.rows.map(h=>`<tr><td>${dt(h.exit_ts)}</td><td><a class="lk" href="#/token/${h.mint}">${esc(h.symbol?'$'+h.symbol:sh(h.mint))}</a> <a class="faint" href="${h.token_url}" target="_blank" rel="noopener" title="pump.fun">↗</a></td>
       <td class="hm">${devTag(h.dev)}</td><td class="num">${num(h.buy_sol,3)}</td><td class="num">${num(h.sell_sol,4)}</td><td class="num big">${solPlain(h.pnl_sol,4)}</td><td class="num">${pct(h.roi_pct)}</td>
       <td class="num hm" title="KOL mua → lệnh giấy khớp">${h.delay_s==null?'–':h.delay_s+'s'}</td><td class="hm">${esc(h.exit_kind)}${h.gap?' <span class="b INCONCLUSIVE" title="Trùng lúc mất stream > 5 phút: loại khỏi thống kê">gap</span>':''}</td></tr>`).join('')||'<tr><td colspan="9" class="faint">Không có lệnh trong khung này</td></tr>'}
     </tbody></table></div>${pager(d.history,'kdPage')}</div>
-   <div class="panel"><h2><span>Theo token</span><span class="faint">top 100 theo P&L</span></h2><div class="tw" style="max-height:320px"><table><thead><tr><th>Token</th><th class="num">Lệnh</th><th class="num">Thắng</th><th class="num">P&L</th><th class="num">ROI</th></tr></thead><tbody>
-    ${(d.by_token||[]).map(t=>`<tr><td><a class="lk" href="#/token/${t.mint}">${esc(t.symbol?'$'+t.symbol:sh(t.mint))}</a></td><td class="num">${t.trades}</td><td class="num">${t.wins}</td><td class="num">${solPlain(t.pnl_sol,4)}</td><td class="num">${pct(t.roi_pct)}</td></tr>`).join('')||'<tr><td colspan="5" class="faint">–</td></tr>'}</tbody></table></div></div>`;
-  lineChart($('kc'),d.cumulative,'P&L tích lũy KOL');
+   <div class="panel"><h2><span>Theo token</span><span class="faint">top 100 theo P&L</span></h2><div class="tw" style="max-height:320px"><table><thead><tr><th>Token</th><th class="num">Lệnh</th><th class="num">Thắng</th><th class="num">P&L</th><th class="num">ROI</th><th>Outcome token</th><th class="hm">Dev</th></tr></thead><tbody>
+    ${(d.by_token||[]).map(t=>`<tr><td><a class="lk" href="#/token/${t.mint}">${esc(t.symbol?'$'+t.symbol:sh(t.mint))}</a></td><td class="num">${t.trades}</td><td class="num">${t.wins}</td><td class="num">${solPlain(t.pnl_sol,4)}</td><td class="num">${pct(t.roi_pct)}</td>
+      <td>${t.outcome?({MIGRATED:'<span class="up">MIGRATED</span>',FAILED:'<span class="down">FAILED</span>',DEAD:'<span class="down">DEAD</span>',PENDING:'<span class="mut">PENDING</span>'}[t.outcome]+(t.rug?' <span class="r x">RUG</span>':'')):'<span class="faint">chưa có dữ liệu</span>'}</td><td class="hm">${devTag(t.dev)}</td></tr>`).join('')||'<tr><td colspan="7" class="faint">–</td></tr>'}</tbody></table></div></div>`;
+  lineChart($('kc'),d.cumulative,'P&L tích lũy');
+  const wrs=(H.daily||[]).slice().reverse().filter(x=>x.cum_win_rate_pct!=null).map(x=>[Date.parse(x.date+'T23:59:59Z')/1000,x.cum_win_rate_pct]);
+  lineChart($('kw'),wrs,'Win rate tích lũy',v=>num(v,1)+'%');
 }
 window.kdRange=v=>{KD.range=v;KD.page=1;route()};window.kdPage=p=>{KD.page=p;route()};
 

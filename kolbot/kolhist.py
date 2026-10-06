@@ -107,9 +107,11 @@ def kol_history(db, wallet: str) -> dict:
     spend = sum(r[2] for r in rows)
     wins = sum(1 for r in rows if r[1] > 0)
     daily = [dict(zip(("date", "trades", "wins", "losses", "pnl_sol", "roi_pct", "win_rate_pct", "cum_trades",
-                       "cum_pnl_sol", "cum_roi_pct"), r)) for r in db.execute(
-        "SELECT date, trades, wins, losses, pnl_sol, roi_pct, win_rate_pct, cum_trades, cum_pnl_sol, cum_roi_pct "
-        "FROM kol_daily WHERE wallet=? ORDER BY date DESC LIMIT 400", (wallet,))]
+                       "cum_wins", "cum_pnl_sol", "cum_roi_pct"), r)) for r in db.execute(
+        "SELECT date, trades, wins, losses, pnl_sol, roi_pct, win_rate_pct, cum_trades, cum_wins, cum_pnl_sol, "
+        "cum_roi_pct FROM kol_daily WHERE wallet=? ORDER BY date DESC LIMIT 400", (wallet,))]
+    for d in daily:                                        # win rate since first seen, as of each day
+        d["cum_win_rate_pct"] = round(100 * d["cum_wins"] / d["cum_trades"], 1) if d["cum_trades"] else None
     return {"wallet": wallet, "display_name": k[0] if k else None, "twitter": k[1] if k else None,
             "first_seen_at": k[2] if k else None, "last_seen_at": k[3] if k else None,
             "first_seen_source": k[4] if k else None,
