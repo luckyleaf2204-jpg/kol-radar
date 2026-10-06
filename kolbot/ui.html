@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KOL Radar</title>
+<style>
+:root{
+  --bg:#0b0d12;--panel:#12151d;--panel2:#171b25;--line:#232838;--text:#e7eaf2;--muted:#8a91a6;--faint:#5c6378;
+  --accent:#7c5cff;--good:#2fd38a;--bad:#ff5d6c;--warn:#f5b84b;--chip:#1d2230;
+  --mono:ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:inherit;text-decoration:none}
+header{position:sticky;top:0;z-index:5;background:rgba(11,13,18,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.bar{max-width:1500px;margin:0 auto;padding:12px 16px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.brand{font-weight:750;font-size:17px;letter-spacing:.2px;display:flex;align-items:center;gap:8px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--faint)}
+.dot.on{background:var(--good);box-shadow:0 0 0 4px rgba(47,211,138,.15)}
+.tag{font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(124,92,255,.18);color:#b9a8ff;letter-spacing:.4px}
+.stats{display:flex;gap:18px;flex-wrap:wrap;margin-left:auto}
+.stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.stat .v{font-weight:650;font-variant-numeric:tabular-nums}
+main{max-width:1500px;margin:0 auto;padding:16px;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px}
+@media (max-width:1050px){main{grid-template-columns:1fr}}
+h2{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:4px 0 10px;font-weight:650;display:flex;justify-content:space-between}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;transition:border-color .3s}
+.card.fresh{border-color:var(--accent)}
+.card.held{box-shadow:inset 3px 0 0 var(--accent)}
+.top{display:flex;gap:11px;align-items:center}
+.img{width:46px;height:46px;border-radius:12px;background:var(--chip) center/cover no-repeat;flex:none}
+.name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub{color:var(--muted);font-size:12px;display:flex;gap:8px;flex-wrap:wrap}
+.mc{margin-left:auto;text-align:right}
+.mc .v{font-size:18px;font-weight:750;font-variant-numeric:tabular-nums}
+.chg{font-size:12px;font-weight:650}
+.up{color:var(--good)}.down{color:var(--bad)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.m{background:var(--panel2);border-radius:9px;padding:7px 8px}
+.m .k{font-size:10.5px;color:var(--muted)}
+.m .v{font-weight:650;font-variant-numeric:tabular-nums}
+.kols{display:flex;flex-wrap:wrap;gap:6px}
+.kc{background:var(--chip);border:1px solid var(--line);border-radius:9px;padding:5px 8px;font-size:12px}
+.kc b{font-weight:650}
+.kc .x{color:var(--muted)}
+.kc.sold{border-color:rgba(255,93,108,.5)}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.badge{font-size:11.5px;font-weight:650;padding:3px 8px;border-radius:999px;background:var(--chip);color:var(--muted)}
+.badge.good{background:rgba(47,211,138,.14);color:var(--good)}
+.badge.bad{background:rgba(255,93,108,.14);color:var(--bad)}
+.badge.warn{background:rgba(245,184,75,.14);color:var(--warn)}
+.badge.live{background:rgba(255,93,108,.18);color:#ff8b96}
+.paper{background:rgba(124,92,255,.10);border:1px solid rgba(124,92,255,.35);border-radius:9px;padding:7px 9px;font-size:12.5px;display:flex;justify-content:space-between}
+aside{display:flex;flex-direction:column;gap:16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+.feed{max-height:520px;overflow:auto;display:flex;flex-direction:column}
+.fi{display:grid;grid-template-columns:44px 1fr auto;gap:8px;padding:7px 2px;border-bottom:1px solid var(--line);font-size:12.5px;align-items:center}
+.fi:last-child{border:0}
+.side{font-size:10.5px;font-weight:750;padding:2px 0;border-radius:6px;text-align:center}
+.side.buy{background:rgba(47,211,138,.15);color:var(--good)}
+.side.sell{background:rgba(255,93,108,.15);color:var(--bad)}
+.t{color:var(--faint);font-size:11px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left;font-variant-numeric:tabular-nums}
+th{color:var(--muted);font-weight:600;font-size:11px}
+.mono{font-family:var(--mono);font-size:11.5px}
+.note{color:var(--faint);font-size:11.5px;margin-top:8px}
+.empty{color:var(--muted);padding:30px;text-align:center;border:1px dashed var(--line);border-radius:14px}
+.big{font-size:22px;font-weight:750}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <div class="brand"><span class="dot" id="dot"></span>KOL Radar <span class="tag">PAPER</span></div>
+  <div class="t" id="sub">đang kết nối…</div>
+  <div class="stats">
+    <div class="stat"><div class="k">SOL</div><div class="v" id="sol">–</div></div>
+    <div class="stat"><div class="k">Equity giấy</div><div class="v" id="eq">–</div></div>
+    <div class="stat"><div class="k">PnL đã chốt</div><div class="v" id="pnl">–</div></div>
+    <div class="stat"><div class="k">Lệnh đóng</div><div class="v" id="n">–</div></div>
+    <div class="stat"><div class="k">Đang giữ</div><div class="v" id="open">–</div></div>
+  </div>
+</div></header>
+<main>
+  <section>
+    <h2><span>KOL đang bắt coin nào</span><span id="cnt"></span></h2>
+    <div class="cards" id="cards"><div class="empty">Chưa có KOL nào mua trong lúc bot chạy. Chờ vài giây…</div></div>
+    <div class="note">Số người trade / mua / bán / volume đếm từ lúc KOL đầu tiên vào coin. "Người đang xem" pump.fun không công khai:
+      hiển thị thay bằng số ví trade trong 5 phút, số bình luận và trạng thái livestream. Đánh giá dev là heuristic từ lịch sử coin dev đã tạo.</div>
+  </section>
+  <aside>
+    <div class="panel"><h2><span>Kết quả bot giấy</span></h2><div id="summary"></div></div>
+    <div class="panel"><h2><span>Luồng lệnh KOL</span><span class="t">live</span></h2><div class="feed" id="feed"></div></div>
+    <div class="panel"><h2><span>Lệnh giấy đã đóng</span></h2><div style="max-height:360px;overflow:auto"><table id="closed"></table></div></div>
+  </aside>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let S=null, seen=new Set();
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function usd(x){if(x==null)return'–';const a=Math.abs(x);return(x<0?'-':'')+'$'+(a>=1e6?(a/1e6).toFixed(2)+'M':a>=1e3?(a/1e3).toFixed(1)+'K':a.toFixed(0))}
+function mc(sol){return S&&S.sol_usd?usd(sol*S.sol_usd):(sol?sol.toFixed(1)+' SOL':'–')}
+function ago(ts){const s=Math.max(0,Math.round(S.now-ts));return s<60?s+'s':s<3600?Math.floor(s/60)+'p':Math.floor(s/3600)+'h'+String(Math.floor(s%3600/60)).padStart(2,'0')}
+function pct(x,d=1){if(x==null||!isFinite(x))return'–';return`<span class="${x>=0?'up':'down'}">${x>=0?'+':''}${x.toFixed(d)}%</span>`}
+function sh(a){return a?a.slice(0,4)+'…'+a.slice(-4):''}
+
+function card(t){
+  const c=t.coin||{}, r=t.creator_rating, first=t.kols.length?Math.min(...t.kols.map(k=>k.first_mc_sol)):t.mc_sol;
+  const chg=first?100*(t.mc_sol/first-1):null, fresh=S.now-t.last_kol_ts<20;
+  const kols=t.kols.map(k=>`<div class="kc ${k.sold_sol>0?'sold':''}"><b>${esc(k.name)}</b> <span class="x">${k.sol} SOL @ ${mc(k.first_mc_sol)}${k.sold_sol>0?' · đã bán '+k.sold_sol:''}</span></div>`).join('');
+  const rep=r?`<span class="badge ${r.tone}" title="${r.coins}${r.more?'+':''} coin trước, ${r.graduated} tốt nghiệp, ATH tốt nhất ${usd(r.best_ath_usd)}">Dev: ${esc(r.label)} · ${r.coins}${r.more?'+':''} coin / ${r.graduated} tốt nghiệp</span>`
+          :(t.creator?'<span class="badge">Dev: đang tra…</span>':'<span class="badge">Dev: đang tải…</span>');
+  const socials=[c.twitter&&`<a class="badge" href="${esc(c.twitter)}" target="_blank" rel="noopener">X</a>`,
+                 c.telegram&&`<a class="badge" href="${esc(c.telegram)}" target="_blank" rel="noopener">TG</a>`,
+                 c.website&&`<a class="badge" href="${esc(c.website)}" target="_blank" rel="noopener">Web</a>`].filter(Boolean).join('');
+  const p=t.paper?`<div class="paper"><span>Bot giấy đang giữ (copy ${esc(t.paper.kol)}) · vào ${mc(t.paper.entry_mc_sol)}${t.paper.selling?' · đang thoát':''}</span><b>${pct(t.paper.pct)}</b></div>`:'';
+  return `<div class="card ${fresh?'fresh':''} ${t.paper?'held':''}">
+   <div class="top"><div class="img" style="background-image:url('${esc(c.image_uri||'')}')"></div>
+     <div style="min-width:0"><div class="name">${esc(c.name||sh(t.mint))} <span class="t">${esc(c.symbol?'$'+c.symbol:'')}</span></div>
+       <div class="sub"><a href="https://pump.fun/coin/${t.mint}" target="_blank" rel="noopener" class="mono">${sh(t.mint)}</a>
+       <span>coin ${c.created_timestamp?ago(c.created_timestamp/1000):'?'} tuổi</span><span>KOL vào ${ago(t.first_ts)} trước</span></div></div>
+     <div class="mc"><div class="v">${mc(t.mc_sol)}</div><div class="chg">${pct(chg)} từ KOL đầu</div></div></div>
+   <div class="kols">${kols}</div>
+   <div class="grid">
+     <div class="m"><div class="k">Người trade</div><div class="v">${t.traders}</div></div>
+     <div class="m"><div class="k">Trade 5 phút</div><div class="v">${t.traders_5m}</div></div>
+     <div class="m"><div class="k">Mua / bán</div><div class="v">${t.buys} / ${t.sells}</div></div>
+     <div class="m"><div class="k">Volume</div><div class="v">${S.sol_usd?usd(t.vol_sol*S.sol_usd):t.vol_sol+' SOL'}</div></div>
+     <div class="m"><div class="k">ATH (từ lúc xem)</div><div class="v">${mc(t.ath_mc_sol)}</div></div>
+     <div class="m"><div class="k">Bình luận</div><div class="v">${c.reply_count??'–'}</div></div>
+     <div class="m" style="grid-column:span 2"><div class="k">Trạng thái</div><div class="v">${t.completed?'Đã tốt nghiệp → PumpSwap':'Trên bonding curve'}</div></div>
+   </div>
+   <div class="row">${rep}${t.dev_sold?'<span class="badge bad">Dev đã bán</span>':''}${c.is_currently_live?'<span class="badge live">● LIVE</span>':''}${socials}</div>
+   ${p}</div>`;
+}
+
+function render(){
+  const P=S.paper, s=P.summary, live=S.status.connected&&S.now-S.status.last_event<30;
+  $('dot').className='dot'+(live?' on':'');
+  $('sub').textContent=`${S.kols_tracked} ví KOL · ${live?'stream live':'mất kết nối'} · ${S.status.events.toLocaleString()} sự kiện`;
+  $('sol').textContent=S.sol_usd?'$'+S.sol_usd.toFixed(2):'–';
+  $('eq').innerHTML=`${P.equity.toFixed(3)} <span class="t">/ ${P.start} SOL</span>`;
+  $('pnl').innerHTML=s.n?`<span class="${s.pnl_sol>=0?'up':'down'}">${s.pnl_sol>=0?'+':''}${s.pnl_sol.toFixed(3)} SOL</span>`:'–';
+  $('n').textContent=s.n; $('open').textContent=P.open;
+  $('cnt').textContent=S.tokens.length+' coin';
+  $('cards').innerHTML=S.tokens.length?S.tokens.map(card).join(''):'<div class="empty">Chưa có KOL nào mua trong lúc bot chạy. Chờ vài giây…</div>';
+  $('feed').innerHTML=S.feed.map(a=>`<div class="fi"><span class="side ${a.side}">${a.side==='buy'?'MUA':'BÁN'}</span>
+     <div><b>${esc(a.name)}</b> <span class="x">${a.sol} SOL</span><br><span class="t">${esc(a.symbol?'$'+a.symbol:sh(a.mint))} · MC ${mc(a.mc_sol)}</span></div>
+     <span class="t">${ago(a.ts)}</span></div>`).join('')||'<div class="t">Chưa có lệnh.</div>';
+  const st=P.settings;
+  $('summary').innerHTML=`<div class="row" style="justify-content:space-between"><div><div class="t">Trung bình / lệnh (sau phí)</div><div class="big">${s.n?pct(s.mean_net_pct,2):'–'}</div></div>
+     <div style="text-align:right"><div class="t">Thắng</div><div class="big">${s.n?s.win_rate_pct+'%':'–'}</div></div></div>
+     <div class="row" style="margin-top:8px"><span class="badge ${s.status==='OK'?(s.ci95_by_kol&&s.ci95_by_kol[0]>0?'good':'bad'):'warn'}">${s.status} · n=${s.n}</span>
+     <span class="badge">${esc(s.verdict||'Chưa có lệnh đóng')}</span></div>
+     ${s.ci95_by_kol?`<div class="note">CI 95% theo KOL: ${s.ci95_by_kol[0]}% → ${s.ci95_by_kol[1]}% · thoát: ${Object.entries(s.exit_kinds).map(([k,v])=>k+' '+v).join(', ')}</div>`:''}
+     <div class="note">Mỗi lệnh ${st.position_sol} SOL · trễ ${st.delay_s}s · trượt thêm ${st.extra_slippage_pct}%/chiều · KOL mua ≥ ${st.min_kol_buy_sol} SOL · tối đa ${st.max_open} lệnh.
+     KOL thấy ${P.counts.kol_buys} lần mua · copy ${P.counts.copied} · bỏ qua ${Object.entries(P.counts.skipped).map(([k,v])=>k+' '+v).join(', ')||0}</div>`;
+  $('closed').innerHTML='<tr><th>Coin</th><th>KOL</th><th>Thoát</th><th>%</th><th>SOL</th></tr>'+P.closed.map(c=>
+    `<tr><td>${esc(c.symbol?'$'+c.symbol:sh(c.mint))}</td><td>${esc(c.kol_name)}</td><td class="t">${esc(c.exit_kind)}</td><td>${pct(c.net_pct)}</td><td class="${c.pnl_sol>=0?'up':'down'}">${c.pnl_sol.toFixed(4)}</td></tr>`).join('');
+}
+async function poll(){
+  try{const r=await fetch('/api/state',{cache:'no-store'});S=await r.json();render()}
+  catch(e){$('dot').className='dot';$('sub').textContent='không kết nối được bot'}
+  setTimeout(poll,2000)
+}
+poll();
+</script>
+</body>
+</html>
