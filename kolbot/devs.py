@@ -4,6 +4,8 @@ public coin list. Information / risk signal only: nothing here changes what the 
 
 Outcome of a token (never guessed):
   PENDING    younger than 24 h and not migrated: no outcome yet, counted nowhere as win or loss
+  UNKNOWN_AGE creation time unknown (an old token first seen through a later trade, before pump.fun's coin data
+             filled its date in): no outcome, counted nowhere as win or loss
   MIGRATED   the bonding curve completed (success)
   FAILED     >= 24 h old and not migrated; DEAD = failed and no trade for >= 24 h (subset of failed)
 Rug evidence is only claimed for a token we watched from its creation (first seen <= 120 s after create) whose
@@ -21,6 +23,10 @@ FROM_CREATION_S = 120
 RUG_SOLD_FRAC = 0.9
 RUG_DRAWDOWN = 0.8
 FLUSH_S = 30
+PROFILE_VERSION = 2
+BACKFILL_BATCH = 300
+NEW_DEV_COLS = (("seen_only", "INTEGER DEFAULT 0"), ("unknown_age", "INTEGER DEFAULT 0"),
+                ("distinct_names", "INTEGER"), ("max_same_name", "INTEGER"), ("top_name", "TEXT"))
 SOFT_S = 600
 KEEP_IN_MEMORY_S = 2 * 3600
 RISKS = ("UNKNOWN", "LOW RISK", "MEDIUM RISK", "HIGH RISK", "REPEAT FAILURE", "SUSPICIOUS / RUG HISTORY")
@@ -41,6 +47,7 @@ CREATE TABLE IF NOT EXISTS devs (wallet TEXT PRIMARY KEY, first_seen_ts REAL, la
     latest_mint TEXT, prev_mint TEXT, risk TEXT, risk_reason TEXT, risk_evidence TEXT, risk_ts REAL,
     updated_ts REAL);
 CREATE INDEX IF NOT EXISTS ix_devs_created ON devs(created);
+CREATE TABLE IF NOT EXISTS devs_meta (k TEXT PRIMARY KEY, v INTEGER);
 CREATE TABLE IF NOT EXISTS dev_risk_log (wallet TEXT, risk TEXT, reason TEXT, evidence TEXT, ts REAL);
 CREATE INDEX IF NOT EXISTS ix_dev_risk_log ON dev_risk_log(wallet, ts);
 -- relations between wallets, only with an explicit source (e.g. 'pump.fun:creator'); nothing is inferred
@@ -55,17 +62,20 @@ COLS = ("mint", "creator", "name", "symbol", "created_ts", "first_seen_ts", "fir
 
 def classify(t: dict, now: float) -> dict:
     """Outcome and rug evidence of one token record (see module doc)."""
-    born = t.get("created_ts") or t.get("first_seen_ts")
-    last_trade = max(x for x in (t.get("last_trade_ts"), t.get("api_last_trade_ts"), born) if x) if born else None
+    born = t.get("created_ts")                    # never the first-seen time: an old token can be first seen today
+    seen = [x for x in (t.get("last_trade_ts"), t.get("api_last_trade_ts"), born) if x]
+    last_trade = max(seen) if seen else None
     if t.get("migrated"):
         outcome = "MIGRATED"
-    elif born is None or now - born < DAY:
+    elif born is None:
+        outcome = "UNKNOWN_AGE"
+    elif now - born < DAY:
         outcome = "PENDING"
     else:
         outcome = "DEAD" if last_trade and now - last_trade >= DAY else "FAILED"
     from_creation = bool(t.get("first_seen_ts") and t.get("created_ts")
                          and t["first_seen_ts"] - t["created_ts"] <= FROM_CREATION_S)
-    known = outcome != "PENDING"
+    known = outcome not in ("PENDING", "UNKNOWN_AGE")
     rug, evidence = None, None
     if from_creation and known:
         bought, sold = t.get("dev_buy_tok") or 0, t.get("dev_sell_tok") or 0
@@ -105,6 +115,15 @@ class DevTracker:
     def __init__(self, db, clock=time.time, log=print):
         self.db, self.clock, self.log = db, clock, log
         db.executescript(SCHEMA)
+        have = {r[1] for r in db.execute("PRAGMA table_info(devs)")}
+        for col, typ in NEW_DEV_COLS:
+            if col not in have:
+                db.execute(f"ALTER TABLE devs ADD COLUMN {col} {typ}")
+        v = (db.execute("SELECT v FROM devs_meta WHERE k='profile_version'").fetchone() or [0])[0]
+        # profiles written by an older version counted old tokens as new: recompute all, in the background
+        self.backfill = [w for (w,) in db.execute("SELECT wallet FROM devs")] if v < PROFILE_VERSION else []
+        db.execute("INSERT OR REPLACE INTO devs_meta VALUES ('profile_version', ?)", (PROFILE_VERSION,))
+        db.commit()
         self.mem: dict[str, dict] = {}
         self.dirty: set[str] = set()
         self.dirty_devs: set[str] = set()          # refreshed at the next flush (create, migrate, dev / KOL trade)
@@ -162,6 +181,22 @@ class DevTracker:
         if t.get("creator"):
             (self.dirty_devs if important else self.soft_devs).add(t["creator"])
 
+    def ingest_coin(self, mint: str, d: dict) -> None:
+        """pump.fun's own record of one coin: fills name / symbol / creation time that the stream did not see."""
+        if not d or not d.get("creator"):
+            return
+        t = self._rec(mint)
+        t["creator"] = t.get("creator") or d["creator"]
+        t["name"] = t.get("name") or d.get("name")
+        t["symbol"] = t.get("symbol") or d.get("symbol")
+        if d.get("created_timestamp") and not t.get("created_ts"):
+            t["created_ts"] = d["created_timestamp"] / 1000
+        if d.get("complete"):
+            t["migrated"] = 1
+        t["updated_ts"] = self.clock()
+        self.dirty.add(mint)
+        self.dirty_devs.add(t["creator"])
+
     def ingest_api(self, creator: str, coins: list[dict]) -> None:
         """A dev's coin list from pump.fun (history before we listened). Stream fields are never overwritten."""
         for c in coins:
@@ -216,6 +251,9 @@ class DevTracker:
                                 f"({','.join('?' * len(COLS))})", rows)
             self.dirty.clear()
         devs, self.dirty_devs = self.dirty_devs, set()
+        if self.backfill:
+            devs |= set(self.backfill[:BACKFILL_BATCH])
+            self.backfill = self.backfill[BACKFILL_BATCH:]
         for d in devs:
             self.refresh_dev(d)
         self.db.commit()
@@ -235,10 +273,20 @@ class DevTracker:
         pnl = self.db.execute("SELECT COUNT(*), COALESCE(SUM(t.pnl_sol),0) FROM trades t JOIN tokens k ON "
                               "k.mint = t.mint WHERE k.creator=? AND t.gap=0", (wallet,)).fetchone() \
             if self._has_trades() else (0, 0.0)
-        by_time = sorted(toks, key=lambda t: t.get("created_ts") or t.get("first_seen_ts") or 0)
+        by_time = sorted(toks, key=lambda t: t.get("created_ts") or 0)       # unknown dates sort first, not last
+        names: dict[str, int] = {}
+        for t in toks:
+            if t.get("name"):
+                k = t["name"].strip().lower()
+                names[k] = names.get(k, 0) + 1
+        top_name = max(names, key=names.get) if names else None
         p = {"wallet": wallet, "created": len(toks), "observed": sum(c["observed"] for c in cls), "known": known,
              "migrated": migrated, "failed": failed, "dead": sum(c["dead"] for c in cls),
-             "pending": len(toks) - known, "rug": rug, "rug_checkable": chk,
+             "pending": sum(c["outcome"] == "PENDING" for c in cls), "rug": rug, "rug_checkable": chk,
+             "seen_only": sum(1 for t in toks if not t.get("created_ts")),
+             "unknown_age": sum(c["outcome"] == "UNKNOWN_AGE" for c in cls),
+             "distinct_names": len(names), "max_same_name": names[top_name] if top_name else None,
+             "top_name": top_name,
              "success_rate": migrated / known if known else None, "fail_rate": failed / known if known else 0.0,
              "rug_rate": rug / chk if chk else None,
              "median_outcome_pct": statistics.median(outs) if outs else None,
@@ -261,7 +309,8 @@ class DevTracker:
         cols = ("wallet", "first_seen_ts", "last_token_ts", "created", "observed", "known", "migrated", "failed",
                 "dead", "pending", "rug", "rug_checkable", "success_rate", "fail_rate", "rug_rate",
                 "median_outcome_pct", "avg_outcome_pct", "outcome_n", "paper_pnl_sol", "paper_trades", "latest_mint",
-                "prev_mint", "risk", "risk_reason", "risk_evidence", "risk_ts", "updated_ts")
+                "prev_mint", "risk", "risk_reason", "risk_evidence", "risk_ts", "updated_ts") + \
+            tuple(c for c, _ in NEW_DEV_COLS)
         self.db.execute(f"INSERT OR REPLACE INTO devs ({','.join(cols)}) VALUES ({','.join('?' * len(cols))})",
                         tuple(p[c] for c in cols))
         return p
@@ -274,7 +323,8 @@ class DevTracker:
 DEV_COLS = ("wallet", "first_seen_ts", "last_token_ts", "created", "observed", "known", "migrated", "failed", "dead",
             "pending", "rug", "rug_checkable", "success_rate", "fail_rate", "rug_rate", "median_outcome_pct",
             "avg_outcome_pct", "outcome_n", "paper_pnl_sol", "paper_trades", "latest_mint", "prev_mint", "risk",
-            "risk_reason", "risk_evidence", "risk_ts", "updated_ts")
+            "risk_reason", "risk_evidence", "risk_ts", "updated_ts", "seen_only", "unknown_age", "distinct_names",
+            "max_same_name", "top_name")
 
 
 def get_dev_profile(db, wallet: str) -> dict | None:
@@ -294,7 +344,7 @@ def get_dev_tokens(db, wallet: str, page: int = 1, size: int = 25, now: float | 
     page = max(1, min(int(page), pages))
     rows = []
     for r in db.execute(f"SELECT {','.join(COLS)} FROM tokens WHERE creator=? ORDER BY "
-                        "COALESCE(created_ts, first_seen_ts) DESC LIMIT ? OFFSET ?", (wallet, size, (page - 1) * size)):
+                        "created_ts IS NULL, COALESCE(created_ts, first_seen_ts) DESC LIMIT ? OFFSET ?", (wallet, size, (page - 1) * size)):
         t = dict(zip(COLS, r))
         t.update(classify(t, now))
         rows.append(t)
@@ -333,6 +383,7 @@ def dev_badge(db, creator: str | None, current_mint: str | None = None) -> dict 
         return {"creator": creator, "known_dev": False, "label": "NEW DEV", "previous_tokens": max(prev, 0),
                 "risk": p["risk"] if p else "UNKNOWN"}
     return {"creator": creator, "known_dev": True, "label": "KNOWN DEV", "previous_tokens": prev,
+            "seen_only": p.get("seen_only"), "max_same_name": p.get("max_same_name"), "top_name": p.get("top_name"),
             "known": p["known"], "migrated": p["migrated"], "failed": p["failed"], "rug": p["rug"],
             "rug_checkable": p["rug_checkable"], "fail_rate": p["fail_rate"], "rug_rate": p["rug_rate"],
             "median_outcome_pct": p["median_outcome_pct"], "outcome_n": p["outcome_n"], "risk": p["risk"],

@@ -69,7 +69,7 @@ def build_state(eng, watch, meta, names: dict[str, str], status: dict) -> dict:
 
 
 def make_routes(db, roster: dict, get_live=None, get_status=None, symbols=None, want_creator=None,
-                signal_engine=None, now_mc=None) -> dict:
+                signal_engine=None, now_mc=None, want_coin=None) -> dict:
     """path -> handler(query) returning (content_type, body). All handlers only read."""
     def q1(q, k, d=""):
         return (q.get(k) or [d])[0]
@@ -122,6 +122,10 @@ def make_routes(db, roster: dict, get_live=None, get_status=None, symbols=None, 
         if want_creator and w:
             want_creator(w)                      # fetch the dev's pump.fun history in the background
         d = api.dev_detail(db, w, intq(q, "page", 1), intq(q, "size", 25))
+        if d and want_coin:                     # ask pump.fun for names / creation dates the stream never saw
+            for (m,) in db.execute("SELECT mint FROM tokens WHERE creator = ? AND (name IS NULL OR created_ts IS NULL) "
+                                   "LIMIT 40", (w,)):
+                want_coin(m)
         return js(d if d is not None else {"error": "not_found", "wallet": w,
                                            "wallet_url": api.solscan("wallet", w) if w else None})
 
@@ -130,6 +134,8 @@ def make_routes(db, roster: dict, get_live=None, get_status=None, symbols=None, 
 
     def token(q):
         d = api.token_detail(db, q1(q, "mint"), roster)
+        if want_coin and q1(q, "mint") and (d is None or not d.get("name") or not d.get("created_ts")):
+            want_coin(q1(q, "mint"))
         return js(d if d is not None else {"error": "not_found"})
 
     def trades(q):

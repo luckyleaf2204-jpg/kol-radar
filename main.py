@@ -100,7 +100,7 @@ def main():
     hist = KolHistory(db, roster)
     smart = SmartTracker(db, roster)               # research only: never feeds the paper bot
     signals = SignalEngine(db, roster)             # Top 10 buys -> display-only signals
-    watch, meta = Watch(names), Meta(on_creator=devs.ingest_api)
+    watch, meta = Watch(names), Meta(on_creator=devs.ingest_api, on_coin=devs.ingest_coin)
     status = {"connected": False, "last_event": 0.0, "events": 0}
 
     def on_event(ev):
@@ -163,7 +163,7 @@ def main():
                                                                         "state='new'").fetchone()[0],
                                                  kols_tracked=len(names)),
                          symbols=lambda: {m: c.get("symbol") for m, c in meta.coins.items() if c.get("symbol")},
-                         want_creator=meta.want_creator, signal_engine=signals,
+                         want_creator=meta.want_creator, signal_engine=signals, want_coin=meta.want,
                          now_mc=lambda: {m: c.vsol / c.vtok * 1e6 for m, c in list(eng.curves.items())})
 
     signals.refresh(force=True)

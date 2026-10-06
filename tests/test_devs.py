@@ -156,3 +156,37 @@ def test_engine_ignores_create_events():
     e = Engine(Config(), {"K"}, None, log=lambda *_: None)
     e.on_event(create("M", "K", T0))
     assert not e.pending and not e.curves
+
+
+def test_old_token_seen_later_is_not_a_new_failure(tmp_path):
+    """A token created long before we listened, first seen through a trade today: no creation time -> no outcome
+    (not 'created today and failed tomorrow'); pump.fun's coin data later fills name and date."""
+    st, tk, clk = tracker(tmp_path, t=T0 + 10 * D.DAY)
+    tk.on_event(tr("OLD1", "x", True, T0 + 10 * D.DAY, creator="DV"))
+    tk.tick(force=True)
+    clk.t = T0 + 12 * D.DAY
+    tk.refresh_dev("DV")
+    p = D.get_dev_profile(st.db, "DV")
+    assert p["created"] == 1 and p["seen_only"] == 1 and p["unknown_age"] == 1 and p["known"] == 0 and p["failed"] == 0
+    tk.ingest_coin("OLD1", {"creator": "DV", "name": "Goatacio", "symbol": "GOAT", "created_timestamp": T0 * 1000})
+    tk.tick(force=True)
+    p = D.get_dev_profile(st.db, "DV")
+    assert p["seen_only"] == 0 and p["known"] == 1 and p["failed"] == 1 and p["distinct_names"] == 1
+    assert st.db.execute("SELECT name, created_ts FROM tokens WHERE mint='OLD1'").fetchone() == ("Goatacio", T0)
+
+
+def test_name_repeats_and_profile_backfill(tmp_path):
+    st, tk, clk = tracker(tmp_path)
+    for i in range(6):
+        tk.on_event(dict(create(f"R{i}", "SPAM", T0 + i), name="Chaotic Rocket"))
+    tk.on_event(create("U1", "SPAM", T0 + 9))
+    tk.tick(force=True)
+    p = D.get_dev_profile(st.db, "SPAM")
+    assert p["distinct_names"] == 2 and p["max_same_name"] == 6 and p["top_name"] == "chaotic rocket"
+    st.db.execute("UPDATE devs_meta SET v = 1")                         # profiles from the previous version
+    st.db.execute("UPDATE devs SET seen_only = NULL, distinct_names = NULL")
+    st.db.commit()
+    tk2 = D.DevTracker(st.db, clock=clk)
+    assert tk2.backfill == ["SPAM"]
+    tk2.tick(force=True)
+    assert D.get_dev_profile(st.db, "SPAM")["distinct_names"] == 2 and not tk2.backfill

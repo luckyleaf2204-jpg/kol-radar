@@ -381,7 +381,8 @@ DEV_SORTS = {"rug": "rug_rate", "fail": "fail_rate", "median": "median_outcome_p
              "success": "success_rate", "pnl": "paper_pnl_sol", "recent": "last_token_ts"}
 DEV_LIST_COLS = ("wallet", "created", "observed", "known", "migrated", "failed", "dead", "pending", "rug",
                  "rug_checkable", "success_rate", "fail_rate", "rug_rate", "median_outcome_pct", "outcome_n",
-                 "paper_pnl_sol", "paper_trades", "risk", "risk_reason", "last_token_ts", "latest_mint")
+                 "paper_pnl_sol", "paper_trades", "risk", "risk_reason", "last_token_ts", "latest_mint",
+                 "seen_only", "unknown_age", "distinct_names", "max_same_name", "top_name")
 
 
 def dev_table(db, min_tokens: int = 2, risk: str = "", sort: str = "tokens", direction: str = "desc",

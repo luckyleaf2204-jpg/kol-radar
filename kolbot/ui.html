@@ -374,7 +374,7 @@ async function viewKol(w){
     </tbody></table></div>${pager(d.history,'kdPage')}</div>
    <div class="panel"><h2><span>Theo token</span><span class="faint">top 100 theo P&L</span></h2><div class="tw" style="max-height:320px"><table><thead><tr><th>Token</th><th class="num">Lệnh</th><th class="num">Thắng</th><th class="num">P&L</th><th class="num">ROI</th><th>Outcome token</th><th class="hm">Dev</th></tr></thead><tbody>
     ${(d.by_token||[]).map(t=>`<tr><td><a class="lk" href="#/token/${t.mint}">${esc(t.symbol?'$'+t.symbol:sh(t.mint))}</a></td><td class="num">${t.trades}</td><td class="num">${t.wins}</td><td class="num">${solPlain(t.pnl_sol,4)}</td><td class="num">${pct(t.roi_pct)}</td>
-      <td>${t.outcome?({MIGRATED:'<span class="up">MIGRATED</span>',FAILED:'<span class="down">FAILED</span>',DEAD:'<span class="down">DEAD</span>',PENDING:'<span class="mut">PENDING</span>'}[t.outcome]+(t.rug?' <span class="r x">RUG</span>':'')):'<span class="faint">chưa có dữ liệu</span>'}</td><td class="hm">${devTag(t.dev)}</td></tr>`).join('')||'<tr><td colspan="7" class="faint">–</td></tr>'}</tbody></table></div></div>`;
+      <td>${t.outcome?({MIGRATED:'<span class="up">MIGRATED</span>',FAILED:'<span class="down">FAILED</span>',DEAD:'<span class="down">DEAD</span>',PENDING:'<span class="mut">PENDING</span>',UNKNOWN_AGE:'<span class="faint" title="Token tạo trước khi bot theo dõi; chưa biết ngày tạo nên chưa tính thắng/thua">TUỔI KHÔNG RÕ</span>'}[t.outcome]+(t.rug?' <span class="r x">RUG</span>':'')):'<span class="faint">chưa có dữ liệu</span>'}</td><td class="hm">${devTag(t.dev)}</td></tr>`).join('')||'<tr><td colspan="7" class="faint">–</td></tr>'}</tbody></table></div></div>`;
   lineChart($('kc'),d.cumulative,'P&L tích lũy');
   const wrs=(H.daily||[]).slice().reverse().filter(x=>x.cum_win_rate_pct!=null).map(x=>[Date.parse(x.date+'T23:59:59Z')/1000,x.cum_win_rate_pct]);
   lineChart($('kw'),wrs,'Win rate tích lũy',v=>num(v,1)+'%');
@@ -394,11 +394,11 @@ async function viewDevs(){
     <label>Tìm ví <input value="${esc(DF.q)}" placeholder="địa chỉ dev…" onchange="setD('q',this.value)"></label></div>
    ${T.rows.length?`<div class="tw"><table><thead><tr><th>Rank</th><th>Dev</th><th class="num">Tokens</th><th class="num">Success</th><th class="num">Fail</th><th class="num hm">Rug</th><th class="num">Rug rate</th><th class="num hm">Median outcome</th><th>Risk</th><th class="hm"></th></tr></thead><tbody>
    ${T.rows.map(r=>`<tr class="click" onclick="location.hash='#/dev/${r.wallet}'"><td class="rank">#${r.rank}</td><td class="mono" title="${r.wallet}">${sh(r.wallet,6)}</td>
-     <td class="num">${r.created}<div class="faint" style="font-size:11px">${r.known} có kết quả · ${r.pending} chờ</div></td><td class="num">${r.migrated}</td><td class="num">${r.failed}</td>
+     <td class="num">${r.created}<div class="faint" style="font-size:11px">${r.known} có kết quả · ${r.pending} chờ${r.seen_only?' · '+r.seen_only+' token cũ':''}</div>${r.max_same_name>=5?`<div class="r m" style="font-size:10.5px" title="Tên dùng nhiều nhất: ${esc(r.top_name)}">trùng tên ×${r.max_same_name}</div>`:''}</td><td class="num">${r.migrated}</td><td class="num">${r.failed}</td>
      <td class="num hm">${r.rug}<span class="faint">/${r.rug_checkable}</span></td><td class="num">${rate(r.rug_rate)}</td><td class="num hm">${r.outcome_n?pct(r.median_outcome_pct):'<span class="faint" title="Chưa có token nào theo dõi từ lúc tạo và đã có kết quả">–</span>'}</td>
      <td>${risk(r.risk,r.risk_reason)}</td><td class="hm"><a class="lk" href="#/dev/${r.wallet}">View →</a></td></tr>`).join('')}</tbody></table></div>${pager(T,'dPage')}`:'<div class="empty">Chưa có dev nào khớp bộ lọc. Hồ sơ dev được tạo dần khi stream thấy token mới.</div>'}
    <div class="note" style="margin-top:8px"><b>Định nghĩa:</b> Success = token đã migrate. Fail = ≥ 24 giờ tuổi và chưa migrate. Token &lt; 24 giờ là "chờ" — không tính thắng/thua.
-   Rug chỉ tính khi có bằng chứng: token được theo dõi từ lúc tạo, dev bán ≥ 90% số token dev mua, MC giảm ≥ 80% từ đỉnh và không migrate. Rug rate = rug / số token kiểm chứng được.
+   Rug chỉ tính khi có bằng chứng: token được theo dõi từ lúc tạo, dev bán ≥ 90% số token dev mua, MC giảm ≥ 80% từ đỉnh và không migrate. Rug rate = rug / số token kiểm chứng được. "Token cũ" = token được tạo trước khi bot theo dõi, chỉ thấy qua giao dịch về sau: tên và ngày tạo được lấy từ pump.fun khi bạn mở trang dev; khi chưa biết ngày tạo thì không tính thắng/thua. "Trùng tên" = cùng một tên được dùng cho nhiều token (dấu hiệu tạo token hàng loạt).
    Median outcome = MC cuối / MC đầu của token theo dõi từ lúc tạo. Đây là tín hiệu thông tin, không thay đổi luật copy.</div></div>`;
 }
 window.dMin=v=>setD('min_tokens',+v);window.dPage=p=>setD('page',p);
@@ -416,7 +416,8 @@ async function viewDev(w){
     <div class="alert ${bad?'bad':''}"><b>Risk: ${esc(p.risk||'UNKNOWN')}</b> — ${esc(p.risk_reason||'')}<div class="faint" style="font-size:12px;margin-top:3px">Tính lúc ${dt(p.risk_ts)} · bằng chứng: ${esc(JSON.stringify(Object.fromEntries(Object.entries(ev).filter(([k])=>k!=='rug_tokens'))))}</div>
     ${(ev.rug_tokens||[]).map(t=>`<div style="font-size:12px;margin-top:3px">• <a class="lk" href="#/token/${t.mint}">${sh(t.mint)}</a>: ${esc(t.evidence)}</div>`).join('')}</div>
     <div class="hero">
-     <div class="kpi"><div class="k">Token đã tạo</div><div class="v">${p.created}</div><div class="s">${p.observed} quan sát trực tiếp</div></div>
+     <div class="kpi"><div class="k">Token đã tạo</div><div class="v">${p.created}</div><div class="s">${p.created-(p.seen_only||0)} thấy lúc tạo · ${p.seen_only||0} token cũ${p.unknown_age?' ('+p.unknown_age+' chưa rõ tuổi)':''}</div></div>
+     <div class="kpi"><div class="k">Tên token</div><div class="v">${p.distinct_names??'–'}</div><div class="s">tên khác nhau${p.max_same_name>1?` · "${esc(p.top_name)}" dùng ${p.max_same_name} lần`:''}</div></div>
      <div class="kpi"><div class="k">Có kết quả</div><div class="v">${p.known}</div><div class="s">${p.pending} đang chờ (&lt; 24h)</div></div>
      <div class="kpi"><div class="k">Migrate (success)</div><div class="v">${p.migrated}</div><div class="s">success rate ${rate(p.success_rate)}</div></div>
      <div class="kpi"><div class="k">Thất bại</div><div class="v">${p.failed}</div><div class="s">fail rate ${rate(p.fail_rate)} · ${p.dead} chết hẳn</div></div>
@@ -428,14 +429,14 @@ async function viewDev(w){
     </div></div>
    <div class="panel"><h2><span>Token của dev</span><span class="faint">mới nhất trước</span></h2>
     <div class="tw"><table><thead><tr><th>Token</th><th>Created</th><th>Migration</th><th class="num">Peak MC</th><th class="num">Final MC</th><th class="num hm">Outcome %</th><th class="num hm">P&L (bot)</th><th>Outcome</th><th>Rug / Fail</th><th class="hm">Link</th></tr></thead><tbody>
-    ${d.tokens.rows.map(t=>`<tr class="click" onclick="location.hash='#/token/${t.mint}'"><td><b>${esc(t.symbol?'$'+t.symbol:sh(t.mint))}</b><div class="faint" style="font-size:11px">${esc((t.name||'').slice(0,28))}</div></td>
-      <td>${dt(t.created_ts||t.first_seen_ts)}<div class="faint" style="font-size:11px">${t.source==='api'?'nguồn: pump.fun API':'nguồn: stream'}</div></td>
+    ${d.tokens.rows.map(t=>`<tr class="click" onclick="location.hash='#/token/${t.mint}'"><td><b>${esc(t.symbol?'$'+t.symbol:sh(t.mint))}</b><div class="faint" style="font-size:11px">${t.name?esc(t.name.slice(0,28)):'đang lấy tên từ pump.fun…'}</div></td>
+      <td>${t.created_ts?dt(t.created_ts):'<span class="faint">chưa rõ</span>'}<div class="faint" style="font-size:11px">${t.created_ts?(t.source==='api'?'nguồn: pump.fun':'nguồn: stream'):'thấy lần đầu '+dt(t.first_seen_ts)}</div></td>
       <td>${t.migrated?'<span class="up">✓ '+(t.migrated_ts?dt(t.migrated_ts):'đã migrate')+'</span>':'–'}</td>
       <td class="num">${t.peak_mc_sol?mc(t.peak_mc_sol):t.api_ath_usd?usd(t.api_ath_usd)+' <span class="faint">ATH</span>':'–'}</td>
       <td class="num">${t.last_mc_sol?mc(t.last_mc_sol):t.api_mc_usd?usd(t.api_mc_usd):'–'}</td>
       <td class="num hm">${t.outcome_pct==null?'<span class="faint" title="Chỉ tính cho token theo dõi từ lúc tạo và đã có kết quả">–</span>':pct(t.outcome_pct)}</td>
       <td class="num hm">${t.paper_pnl_sol==null?'–':solPlain(t.paper_pnl_sol,4)}</td>
-      <td>${{MIGRATED:'<span class="up">MIGRATED</span>',FAILED:'<span class="down">FAILED</span>',DEAD:'<span class="down">DEAD</span>',PENDING:'<span class="mut">PENDING</span>'}[t.outcome]}</td>
+      <td>${{MIGRATED:'<span class="up">MIGRATED</span>',FAILED:'<span class="down">FAILED</span>',DEAD:'<span class="down">DEAD</span>',PENDING:'<span class="mut">PENDING</span>',UNKNOWN_AGE:'<span class="faint" title="Token tạo trước khi bot theo dõi; chưa biết ngày tạo nên chưa tính thắng/thua">TUỔI KHÔNG RÕ</span>'}[t.outcome]}</td>
       <td>${t.rug?'<span class="r x" title="'+esc(t.rug_evidence)+'">RUG (bằng chứng)</span>':t.rug_checkable?'<span class="faint">không</span>':'<span class="faint" title="Không theo dõi từ lúc tạo nên không kiểm chứng được">không kiểm chứng</span>'}</td>
       <td class="hm"><a class="lk" href="${t.token_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">pump ↗</a> <a class="lk" href="${t.solscan_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">scan ↗</a></td></tr>`).join('')||'<tr><td colspan="10" class="faint">–</td></tr>'}
     </tbody></table></div>${pager(d.tokens,'ddPage')}</div>
@@ -456,7 +457,7 @@ async function viewTokens(){
    ${T.rows.map(t=>`<tr class="click" onclick="location.hash='#/token/${t.mint}'"><td><b>${esc(t.symbol?'$'+t.symbol:sh(t.mint))}</b> ${t.kol_buys?'<span class="chip">KOL ×'+t.kol_buys+'</span>':''}</td>
      <td>${dt(t.created_ts||t.first_seen_ts)}</td><td>${devTag(t.dev)}</td><td class="num hm">${t.trades||0}</td>
      <td class="num">${mc(t.peak_mc_sol)}</td><td class="num">${mc(t.last_mc_sol)}</td>
-     <td>${{MIGRATED:'<span class="up">MIGRATED</span>',FAILED:'<span class="down">FAILED</span>',DEAD:'<span class="down">DEAD</span>',PENDING:'<span class="mut">PENDING</span>'}[t.outcome]}</td>
+     <td>${{MIGRATED:'<span class="up">MIGRATED</span>',FAILED:'<span class="down">FAILED</span>',DEAD:'<span class="down">DEAD</span>',PENDING:'<span class="mut">PENDING</span>',UNKNOWN_AGE:'<span class="faint" title="Token tạo trước khi bot theo dõi; chưa biết ngày tạo nên chưa tính thắng/thua">TUỔI KHÔNG RÕ</span>'}[t.outcome]}</td>
      <td class="num">${t.paper_pnl_sol==null?'–':solPlain(t.paper_pnl_sol,4)}</td>
      <td class="hm"><a class="lk" href="${t.token_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">pump ↗</a></td></tr>`).join('')}</tbody></table></div>${pager(T,'tPage')}`:'<div class="empty">Chưa có token nào. Token được lưu khi stream thấy chúng.</div>'}</div>`;
 }
@@ -611,7 +612,7 @@ async function viewWallet(w){
     </tbody></table></div>${pager(d.history,'wPage')}</div>
    <div class="panel anim"><h2><span>Token đã trade</span><span class="faint">top 100 theo P&L</span></h2><div class="tw" style="max-height:320px"><table><thead><tr><th>Token</th><th class="num">Giao dịch</th><th class="num">Thắng</th><th class="num">P&L</th><th class="num">ROI</th><th>Kết quả token</th></tr></thead><tbody>
     ${d.tokens_traded.map(t=>`<tr><td><a class="lk" href="#/token/${t.mint}">${esc(t.symbol?'$'+t.symbol:sh(t.mint))}</a></td><td class="num">${t.trades}</td><td class="num">${t.wins}</td><td class="num">${solPlain(t.pnl_sol,4)}</td><td class="num">${pct(t.roi_pct)}</td>
-      <td>${t.outcome?({MIGRATED:'<span class="up">MIGRATED</span>',FAILED:'<span class="down">FAILED</span>',DEAD:'<span class="down">DEAD</span>',PENDING:'<span class="mut">PENDING</span>'}[t.outcome]+(t.rug?' <span class="r x">RUG</span>':'')):'<span class="faint">chưa có dữ liệu</span>'}</td></tr>`).join('')||'<tr><td colspan="6" class="faint">–</td></tr>'}</tbody></table></div></div>`;
+      <td>${t.outcome?({MIGRATED:'<span class="up">MIGRATED</span>',FAILED:'<span class="down">FAILED</span>',DEAD:'<span class="down">DEAD</span>',PENDING:'<span class="mut">PENDING</span>',UNKNOWN_AGE:'<span class="faint" title="Token tạo trước khi bot theo dõi; chưa biết ngày tạo nên chưa tính thắng/thua">TUỔI KHÔNG RÕ</span>'}[t.outcome]+(t.rug?' <span class="r x">RUG</span>':'')):'<span class="faint">chưa có dữ liệu</span>'}</td></tr>`).join('')||'<tr><td colspan="6" class="faint">–</td></tr>'}</tbody></table></div></div>`;
   lineChart($('sc'),d.cumulative,'P&L tích lũy');
   lineChart($('sw'),d.daily.slice().reverse().map(x=>[Date.parse(x.date+'T23:59:59Z')/1000,x.cum_win_rate_pct]),'Win rate tích lũy',v=>num(v,1)+'%');
 }

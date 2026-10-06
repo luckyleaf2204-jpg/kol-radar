@@ -41,8 +41,9 @@ def creator_rating(coins: list[dict], current_mint: str | None = None) -> dict:
 
 
 class Meta:
-    def __init__(self, log=print, on_creator=None):
+    def __init__(self, log=print, on_creator=None, on_coin=None):
         self.log, self.on_creator = log, on_creator      # on_creator(wallet, coins): persist a dev's history
+        self.on_coin = on_coin                           # on_coin(mint, coin): fill name / creation time
         self.coins: dict[str, dict] = {}
         self.creators: dict[str, dict] = {}
         self.sol_usd: float | None = None
@@ -84,6 +85,8 @@ class Meta:
                                                              "telegram", "website", "reply_count",
                                                              "is_currently_live", "created_timestamp",
                                                              "ath_market_cap")}
+                    if self.on_coin:
+                        self.on_coin(key, d)
                     cr = d.get("creator")
                     if cr and cr not in self.creators:
                         await asyncio.sleep(GAP_S)
