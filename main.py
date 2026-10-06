@@ -21,6 +21,7 @@ from kolbot.config import Config  # noqa: E402
 from kolbot.devs import DevTracker  # noqa: E402
 from kolbot.kolhist import KolHistory  # noqa: E402
 from kolbot.smart import SmartTracker  # noqa: E402
+from kolbot.signals import SignalEngine, refuse_auto_trade  # noqa: E402
 from kolbot.engine import Engine  # noqa: E402
 from kolbot.meta import Meta  # noqa: E402
 from kolbot.report import by_kol, summarize  # noqa: E402
@@ -79,6 +80,7 @@ def main():
     ap.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8780)))
     ap.add_argument("--no-stream", action="store_true", help="dashboard only (tests / demo database)")
     a = ap.parse_args()
+    refuse_auto_trade()                            # signals are display-only; automatic trading does not exist
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
     cfg = Config.load(Path(a.config))
@@ -97,6 +99,7 @@ def main():
     devs = DevTracker(db)
     hist = KolHistory(db, roster)
     smart = SmartTracker(db, roster)               # research only: never feeds the paper bot
+    signals = SignalEngine(db, roster)             # Top 10 buys -> display-only signals
     watch, meta = Watch(names), Meta(on_creator=devs.ingest_api)
     status = {"connected": False, "last_event": 0.0, "events": 0}
 
@@ -107,6 +110,7 @@ def main():
         is_kol = ev.get("user") in names
         devs.on_event(ev, is_kol=is_kol)
         smart.on_event(ev)
+        signals.on_event(ev)
         if is_kol and ev["kind"] == "trade":
             hist.on_kol_event(ev["user"], ev["ts"])
 
@@ -127,6 +131,7 @@ def main():
             devs.tick()
             hist.tick()
             smart.tick()
+            signals.tick()
             if time.time() - last >= 600:
                 last = time.time()
                 print(time.strftime("[kol] %Y-%m-%d %H:%M:%S\n") + report(eng, names))
@@ -154,10 +159,14 @@ def main():
     routes = make_routes(eng.store.db, roster, get_live=lambda: build_state(eng, watch, meta, names, status),
                          get_status=lambda: dict(health(), events=status["events"], gaps=len(eng.gaps),
                                                  live=not a.no_stream, sol_usd=meta.sol_usd,
+                                                 signals_new=db.execute("SELECT COUNT(*) FROM signals WHERE "
+                                                                        "state='new'").fetchone()[0],
                                                  kols_tracked=len(names)),
                          symbols=lambda: {m: c.get("symbol") for m, c in meta.coins.items() if c.get("symbol")},
-                         want_creator=meta.want_creator)
+                         want_creator=meta.want_creator, signal_engine=signals,
+                         now_mc=lambda: {m: c.vsol / c.vtok * 1e6 for m, c in list(eng.curves.items())})
 
+    signals.refresh(force=True)
     from kolbot import api as _api
     t0 = time.time()
     _api.summary(db, roster)                       # warm the ranking / CI caches before the first visitor

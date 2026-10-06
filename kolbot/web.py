@@ -68,7 +68,8 @@ def build_state(eng, watch, meta, names: dict[str, str], status: dict) -> dict:
             "kols_tracked": len(names)}
 
 
-def make_routes(db, roster: dict, get_live=None, get_status=None, symbols=None, want_creator=None) -> dict:
+def make_routes(db, roster: dict, get_live=None, get_status=None, symbols=None, want_creator=None,
+                signal_engine=None, now_mc=None) -> dict:
     """path -> handler(query) returning (content_type, body). All handlers only read."""
     def q1(q, k, d=""):
         return (q.get(k) or [d])[0]
@@ -150,7 +151,25 @@ def make_routes(db, roster: dict, get_live=None, get_status=None, symbols=None, 
         d = smart_api.smart_detail(db, q1(q, "wallet"), intq(q, "page", 1), intq(q, "size", 25))
         return js(d if d is not None else {"error": "not_found"})
 
-    routes = {"/api/smart": smart, "/api/smart/summary": smart_summary, "/api/smart/wallet": smart_wallet,
+    def sigs(q):
+        from kolbot import signals as SG
+        return js(SG.list_signals(db, q1(q, "source"), q1(q, "state"), intq(q, "since_id", 0), intq(q, "page", 1),
+                                  intq(q, "size", 30), symbols() if symbols else None, now_mc() if now_mc else None))
+
+    def sigs_top(q):
+        from kolbot import signals as SG
+        out = {"outcomes": SG.outcome_stats(db) if api._has(db, "signals") else {}, "auto_trade": False}
+        if signal_engine:
+            out.update(SG.top_lists(signal_engine))
+        return js(out)
+
+    def sig_state(q):
+        from kolbot import signals as SG
+        ok = SG.set_state(db, intq(q, "id", 0), q1(q, "state"))
+        return js({"ok": ok})
+
+    routes = {"/api/signals": sigs, "/api/signals/top": sigs_top, "/api/signals/state": ("POST", sig_state),
+              "/api/smart": smart, "/api/smart/summary": smart_summary, "/api/smart/wallet": smart_wallet,
               "/api/summary": summary, "/api/kols": kols, "/api/winrate": winrate, "/api/kol": kol, "/api/devs": devs, "/api/dev": dev,
               "/api/tokens": tokens, "/api/token": token, "/api/trades": trades,
               "/api/status": lambda q: js(dict(get_status() if get_status else {}, now=time.time())),
@@ -183,8 +202,19 @@ async def serve(routes: dict, host: str = "127.0.0.1", port: int = 8780, log=pri
                 if access_code and not hmac.compare_digest(headers.get("x-access-code", ""), access_code):
                     _reply(writer, "401 Unauthorized", "application/json", b'{"error":"code"}', head)
                 elif path in routes:
-                    ctype, body = routes[path](query)
-                    _reply(writer, "200 OK", ctype, body, head)
+                    h = routes[path]
+                    need = "GET"
+                    if isinstance(h, tuple):                  # ("POST", handler): a route that writes
+                        need, h = h
+                    if need == "POST":
+                        n = int(headers.get("content-length") or 0)
+                        if n:
+                            await reader.readexactly(min(n, 65536))
+                    if (method == "POST") != (need == "POST"):
+                        _reply(writer, "405 Method Not Allowed", "application/json", b'{"error":"method"}', head)
+                    else:
+                        ctype, body = h(query)
+                        _reply(writer, "200 OK", ctype, body, head)
                 else:
                     _reply(writer, "404 Not Found", "application/json", b'{"error":"route"}', head)
             elif path == "/healthz":
