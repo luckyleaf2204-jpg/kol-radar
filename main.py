@@ -113,6 +113,13 @@ def main():
         books[key] = SignalPaper(Path(a.db).with_name(fname), lambda: meta.sol_usd, top_n=n, source=src, label=label,
                                  log=lambda m, k=key: print(m.replace("[kol] COPY", f"[sigpaper {k}] PAPER BUY"),
                                                             flush=True))
+    # pre-registered H1 / H2 (docs/prereg_signal_books.md, 2026-10-06): later exit; >= 2 sources within 10 min
+    for key, entry, label in (("h1", "signal", "H1 · thoát khi nguồn bán ≥50%"),
+                              ("h2", "confluence", "H2 · ≥2 ví nguồn cùng mua")):
+        books[key] = SignalPaper(Path(a.db).with_name(f"signal_paper_{key}.db"), lambda: meta.sol_usd, label=label,
+                                 entry=entry, exit="half_sold",
+                                 log=lambda m, k=key: print(m.replace("[kol] COPY", f"[sigpaper {k}] PAPER BUY"),
+                                                            flush=True))
     status = {"connected": False, "last_event": 0.0, "events": 0}
 
     def on_event(ev):

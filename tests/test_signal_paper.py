@@ -107,3 +107,69 @@ def test_single_list_books_follow_only_their_source(tmp_path):
         b.on_event(tr("SM8", "C", True, 1, NOW), None, {"rank": 8, "source": "smart"})
     assert set(smart5.eng.pending) == {"A"} and set(kol10.eng.pending) == {"B"}
     assert smart5.report()["label"] == "Top 5" and kol10.report()["source"] == "kol"
+
+
+def test_funding_keeps_entries_at_50_and_records_topups(tmp_path):
+    clk = Clock(NOW)
+    sp = book(tmp_path, clock=clk)
+    sp.eng.cash = 0.05                                                       # almost bust
+    sp.on_event(tr("S", "F", True, 1, NOW), {"id": 1})
+    sp.on_event(tr("x", "F", True, 1, NOW + 4), None)
+    assert "F" in sp.eng.positions and sp.eng.positions["F"].spend_sol == pytest.approx(TRADE_USD / PX)
+    assert sp.eng.topped_up == pytest.approx(TRADE_USD / PX - 0.05)
+    sp.tick()
+    r = sp.report()
+    assert r["topped_up_usd"] == pytest.approx((TRADE_USD / PX - 0.05) * PX)
+    assert r["sim_balance_sol"] == pytest.approx(r["equity_sol"] - r["topped_up_sol"])
+    sp.store.db.close()
+    assert book(tmp_path, clock=clk).eng.topped_up == pytest.approx(TRADE_USD / PX - 0.05)   # persisted
+
+
+def h(tmp_path, entry, name):
+    return SignalPaper(tmp_path / f"{name}.db", lambda: PX, clock=Clock(NOW), log=lambda *_: None,
+                       entry=entry, exit="half_sold", label=name)
+
+
+def test_h1_exits_only_after_half_is_sold(tmp_path):
+    b = h(tmp_path, "signal", "h1")
+    buy = {**tr("SRC", "A", True, 1, NOW), "token": 1000}
+    b.on_event(buy, {"id": 1})
+    b.on_event(tr("x", "A", True, 1, NOW + 4), None)
+    assert "A" in b.eng.positions and b.eng.track["A"] == {"SRC": [1000, 0]}
+    b.on_event({**tr("SRC", "A", False, 0.1, NOW + 10), "token": 200}, None)   # 20 % sold: hold
+    assert b.eng.positions["A"].sell_due_ts is None
+    b.on_event({**tr("SRC", "A", False, 0.2, NOW + 20), "token": 300}, None)   # 50 %: exit in 3 s
+    assert b.eng.positions["A"].sell_due_ts == NOW + 23
+    b.on_event(tr("x", "A", False, 0.1, NOW + 24), None)
+    assert not b.eng.positions and b.eng.closed[0]["exit_kind"] == "kol_sold"
+    b.tick()
+    assert "A" not in b.eng.track
+
+
+def test_h1_cancels_pending_if_half_sold_before_fill(tmp_path):
+    b = h(tmp_path, "signal", "h1")
+    b.on_event({**tr("SRC", "B", True, 1, NOW), "token": 1000}, {"id": 1})
+    b.on_event({**tr("SRC", "B", False, 1, NOW + 1), "token": 600}, None)
+    assert not b.eng.pending and b.eng.counts["skipped"]["source_sold_half_first"] == 1
+
+
+def test_h2_needs_two_sources_within_10_minutes(tmp_path):
+    b = h(tmp_path, "confluence", "h2")
+    s1, s2 = {"rank": 2, "source": "smart"}, {"rank": 7, "source": "kol"}
+    b.on_event({**tr("W1", "C", True, 1, NOW), "token": 1000}, None, s1)
+    assert not b.eng.pending                                                 # one source: nothing
+    b.on_event({**tr("W1", "C", True, 1, NOW + 60), "token": 500}, None, s1) # same wallet again: still one
+    assert not b.eng.pending
+    b.on_event({**tr("W2", "C", True, 1, NOW + 120), "token": 400}, None, s2)
+    assert "C" in b.eng.pending and b.eng.track["C"] == {"W1": [1000, 0], "W2": [400, 0]}
+    b.on_event({**tr("W1", "D", True, 1, NOW), "token": 10}, None, s1)
+    b.on_event({**tr("W2", "D", True, 1, NOW + 700), "token": 10}, None, s2)   # 11+ min apart: no entry
+    assert "D" not in b.eng.pending
+    b.on_event({**tr("W3", "E", True, 1, NOW), "token": 10}, None, {"rank": 11, "source": "smart"})
+    b.on_event({**tr("W2", "E", True, 1, NOW + 5), "token": 10}, None, s2)   # rank 11 is not a Top 10 source
+    assert "E" not in b.eng.pending
+    b.on_event(tr("x", "C", True, 1, NOW + 130), None)                         # fill
+    b.on_event({**tr("W2", "C", False, 1, NOW + 200), "token": 400}, None)     # 400 / 1400 sold: hold
+    assert b.eng.positions["C"].sell_due_ts is None
+    b.on_event({**tr("W1", "C", False, 1, NOW + 210), "token": 400}, None)     # 800 / 1400: exit
+    assert b.eng.positions["C"].sell_due_ts == NOW + 213

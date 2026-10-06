@@ -193,8 +193,13 @@ def make_routes(db, roster: dict, get_live=None, get_status=None, symbols=None, 
         for k, b in books.items():                      # side-by-side comparison of every book
             r = _book_report(b) if k != n else out
             s_ = r.get("summary") or {}
-            out["books"][k] = {"label": b.label, "source": b.source, "started": r.get("started"),
-                               "equity_usd": r.get("equity_usd"),
+            out["books"][k] = {"label": b.label, "source": b.source, "entry": b.entry, "exit": b.exit,
+                               "started": r.get("started"), "equity_usd": r.get("equity_usd"),
+                               "sim_balance_usd": r.get("sim_balance_usd"), "busted": r.get("busted"),
+                               "topped_up_usd": r.get("topped_up_usd"), "expectancy_usd": r.get("expectancy_usd"),
+                               "max_drawdown_usd": r.get("max_drawdown_usd"),
+                               "ci95": (r.get("summary") or {}).get("ci95_by_kol"),
+                               "status": (r.get("summary") or {}).get("status"),
                                "pnl_usd": r.get("pnl_usd"), "pnl_pct": r.get("pnl_pct"), "n": s_.get("n", 0),
                                "win_rate_pct": s_.get("win_rate_pct"), "mean_net_pct": s_.get("mean_net_pct"),
                                "median_net_pct": s_.get("median_net_pct"), "open": len(r.get("open") or [])}
