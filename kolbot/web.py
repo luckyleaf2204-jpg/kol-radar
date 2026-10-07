@@ -185,15 +185,15 @@ def make_routes(db, roster: dict, get_live=None, get_status=None, symbols=None, 
         books = signal_paper if isinstance(signal_paper, dict) else ({"10": signal_paper} if signal_paper else {})
         if not books:
             return js({"started": False})
-        n = q1(q, "book", "10")
-        n = n if n in books else "10"
+        n = q1(q, "book", "s1")
+        n = n if n in books else ("s1" if "s1" in books else next(iter(books)))
         out = _book_report(books[n])
         out["book"] = n
         out["books"] = {}
         for k, b in books.items():                      # side-by-side comparison of every book
             r = _book_report(b) if k != n else out
             s_ = r.get("summary") or {}
-            out["books"][k] = {"label": b.label, "source": b.source, "entry": b.entry, "exit": b.exit,
+            out["books"][k] = {"label": b.label, "paused": b.paused, "source": b.source, "entry": b.entry, "exit": b.exit,
                                "started": r.get("started"), "equity_usd": r.get("equity_usd"),
                                "sim_balance_usd": r.get("sim_balance_usd"), "busted": r.get("busted"),
                                "topped_up_usd": r.get("topped_up_usd"), "expectancy_usd": r.get("expectancy_usd"),

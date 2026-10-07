@@ -106,6 +106,7 @@ class SignalPaper:
         self.entry = entry or ("signal" if top_n is None else "topn")
         self.exit, self.top_n, self.source = exit, top_n, source
         self.cfg_overrides = cfg_overrides or {}
+        self.paused = False
         self.label = label or f"Top {top_n or 10}"
         self.last_trigger: dict = {}
         self.recent: dict[str, dict[str, tuple]] = {}     # confluence: mint -> {wallet: (ts, tokens)}
@@ -231,7 +232,7 @@ class SignalPaper:
         closed = [dict(c, symbol=symbols.get(c["mint"])) for c in e.closed[-50:]][::-1]
         usd = (lambda x: x * px) if px else (lambda x: None)
         mean_pnl = s.get("pnl_sol", 0.0) / s["n"] if s.get("n") else None
-        return {"started": True, "top_n": self.top_n or 10, "source": self.source, "label": self.label,
+        return {"started": True, "paused": self.paused, "top_n": self.top_n or 10, "source": self.source, "label": self.label,
                 "entry": self.entry, "exit": self.exit, "start_usd": self._meta("start_usd"), "start_sol": start_sol,
                 "start_sol_usd": self._meta("start_sol_usd"), "started_at": self._meta("started_at"),
                 "trade_usd": TRADE_USD, "max_open": MAX_OPEN, "sol_usd": px,

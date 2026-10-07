@@ -132,6 +132,8 @@ def main():
                                  entry=entry, exit="half_sold",
                                  log=lambda m, k=key: print(m.replace("[kol] COPY", f"[sigpaper {k}] PAPER BUY"),
                                                             flush=True))
+    for b in books.values():                       # paused (user, 2026-10-07): data kept and shown, no new trades
+        b.paused = True
     status = {"connected": False, "last_event": 0.0, "events": 0}
 
     def on_event(ev):
@@ -143,9 +145,7 @@ def main():
         smart.on_event(ev)
         sig = signals.on_event(ev)
         src = signals.source_of(ev)
-        for b in books.values():
-            b.on_event(ev, sig, src)
-        s1_launch.on_event(ev)
+        s1_launch.on_event(ev)                     # 2026-10-07 (user): only S1 / S2 run; the other books are paused
         s2.on_event(ev, None, sniper_src.source_of(ev))
         if is_kol and ev["kind"] == "trade":
             hist.on_kol_event(ev["user"], ev["ts"])
@@ -168,8 +168,6 @@ def main():
             hist.tick()
             smart.tick()
             signals.tick()
-            for b in books.values():
-                b.tick()
             sniper_src.refresh()
             s1_launch.tick()
             s1.tick()
