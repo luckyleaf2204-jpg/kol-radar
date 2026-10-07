@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOL Radar</title>
+<style>
+:root{--bg:#0f1115;--fg:#e6e6e6;--mut:#8b93a1;--card:#171a21;--line:#262b35;--ok:#3fb950;--bad:#f85149;--warn:#d29922;--acc:#a78bfa}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#fafafa;--fg:#1d1f23;--mut:#5b6270;--card:#fff;--line:#e3e6ea}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,sans-serif}
+header{position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--line);z-index:2}
+.bar{max-width:1400px;margin:0 auto;padding:10px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.brand{font-weight:800;font-size:17px}.tag{font-size:11px;padding:2px 7px;border-radius:6px;background:#2d2350;color:var(--acc);margin-left:6px}
+nav a{color:var(--mut);text-decoration:none;padding:6px 10px;border-radius:8px}nav a.on{background:var(--line);color:var(--fg)}
+main{max-width:1400px;margin:0 auto;padding:16px}h2{font-size:16px;margin:18px 0 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}.grid .card{min-width:0;overflow-wrap:anywhere}
+.k{font-size:20px;font-weight:700}.mut{color:var(--mut)}.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--mut);font-weight:600}tr.click{cursor:pointer}tr.click:hover{background:var(--line)}
+.banner{border:1px solid var(--warn);color:var(--warn);border-radius:8px;padding:8px 12px;margin-bottom:12px}
+pre{white-space:pre-wrap;font-size:12px;margin:6px 0}input{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px}
+</style></head><body>
+<header><div class="bar"><div class="brand">KOL Radar <span class="tag">DEX ARB · PAPER</span></div>
+<nav id="nav"><a href="#/overview">Tổng quan</a><a href="#/opps">Cơ hội</a><a href="#/ledger">Sổ paper</a><a href="#/health">DEX / chain</a><a href="#/research">Nghiên cứu</a><a href="#/storage">Lưu trữ</a></nav></div></header>
+<main>
+<div class="banner">PAPER ONLY — không ví, không khóa, không ký, không gửi giao dịch. Mọi số tiền là <b>NET ESTIMATE</b> trên giấy theo quote asset của chain (USDC; USDT trên BNB), không phải lợi nhuận thật. Arbitrage không phải không rủi ro.</div>
+<form id="gate" onsubmit="return save(event)" style="display:none;margin:10px 0">Mã truy cập: <input id="code" type="password"> <button>OK</button></form>
+<div id="err" class="bad"></div><div id="app">Đang tải…</div>
+</main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+function code(){try{return localStorage.getItem('kolCode')||''}catch(e){return window._c||''}}
+function save(e){e.preventDefault();try{localStorage.setItem('kolCode',$('code').value)}catch(_){window._c=$('code').value}$('gate').style.display='none';route();return false}
+async function api(p){const r=await fetch(p,{cache:'no-store',headers:{'X-Access-Code':code()}});if(r.status===401){$('gate').style.display='block';throw new Error('cần mã truy cập')}if(!r.ok)throw new Error(p+' '+r.status);return r.json()}
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const n=(v,d=4)=>v==null?'–':Number(v).toFixed(d);const pct=v=>v==null?'–':(100*v).toFixed(3)+'%';
+const ts=t=>t?new Date(t*1000).toLocaleString('vi-VN'):'–';const age=s=>s==null?'–':(s<120?Math.round(s)+'s':Math.round(s/60)+'m');
+const cls=s=>({SUPPORTED:'ok',OK:'ok',CANDIDATE:'ok',CLOSED:'ok',PAPER_PROFIT_ESTIMATE:'ok',UNAVAILABLE:'bad',STALE:'warn',UNVERIFIED:'warn',REJECTED:'mut',FAILED:'bad',PAPER_LOSS:'bad',OPEN_EXPOSURE:'warn',NOT_EXECUTABLE:'bad'})[s]||'';
+function tbl(head,rows,click){return '<div class="card"><table><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr>'+(rows.length?rows.map((r,i)=>'<tr'+(click?` class="click" onclick="${click}(${i})"`:'')+'>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join(''):'<tr><td class="mut" colspan="'+head.length+'">chưa có dữ liệu</td></tr>')+'</table></div>'}
+function kpis(items){return '<div class="grid">'+items.map(([k,v])=>'<div class="card"><div class="mut">'+k+'</div><div class="k">'+esc(v)+'</div></div>').join('')+'</div>'}
+let OPPS=[];
+window.showOpp=i=>{const o=OPPS[i];const d=$('detail');d.innerHTML='<h2>Breakdown cơ hội #'+o.id+'</h2><div class="card"><pre>'+esc(JSON.stringify({gross_spread:o.gross_spread,gas_cost:o.gas_cost,setup_cost:o.setup_cost,other_cost:o.other_cost,estimated_costs:o.estimated_costs,net_profit_estimate:o.net_profit_estimate,uncertainty_buffer:o.uncertainty_buffer,net_profit_after_buffer:o.net_profit_after_buffer,cost_status:JSON.parse(o.cost_status||'null'),cost_detail:JSON.parse(o.cost_detail||'null'),swap_fees:JSON.parse(o.swap_fees||'null'),buy_route:JSON.parse(o.buy_route||'null'),sell_route:JSON.parse(o.sell_route||'null'),buy_context:o.buy_context,sell_context:o.sell_context,quote_age_s:o.quote_age_s,latency_ms:[o.buy_latency_ms,o.sell_latency_ms],impact:[o.impact_buy,o.impact_sell]},null,1))+'</pre></div>';d.scrollIntoView()};
+const pages={
+ async overview(){const o=await api('/api/overview');const c=o.chains;
+  return kpis([['Thí nghiệm',o.experiment],['Schema',o.schema_version],['Paper',o.paper_enabled?'đang chạy':'TẮT (disk không bền)'],['Cơ hội lưu',JSON.stringify(o.opportunities_stored)],['Chu kỳ paper',JSON.stringify(o.cycles)]])+
+  '<h2>Chain</h2>'+tbl(['Chain','Scan','Đánh giá','Ứng viên','Scan gần nhất','Tuổi dữ liệu','Giá native (quote)','Lỗi'],Object.entries(c).map(([k,v])=>[k,v.scans,v.evaluated,v.candidates,age(v.last_scan_age_s),age(v.data_age_s),n(v.native_price,2),esc(v.last_error)]))+
+  '<h2>Kết luận (theo quy tắc đăng ký trước)</h2>'+tbl(['Tài khoản','Chain','Kết luận','Ứng viên','Leg1 khớp','Đóng','Mở','Hủy','Lỗi','NET ESTIMATE TB','Trung vị','CI95 theo ngày','Baseline TB','Ngày'],o.verdicts.map(v=>[v.account,v.chain,'<span class="'+cls(v.verdict)+'">'+v.verdict+'</span>',v.candidates,v.leg1_filled,v.closed,v.open_exposure,v.aborted,v.failed,n(v.mean_net),n(v.median_net),v.ci95_by_day?n(v.ci95_by_day[0])+' … '+n(v.ci95_by_day[1]):'–',n(v.baseline_mean),v.days]))+
+  '<h2>Đánh giá theo lý do (kể cả bị loại)</h2>'+tbl(['Lý do','Số lần'],Object.entries(o.evaluations_by_reason).map(([k,v])=>[esc(k),v]))},
+ async opps(){OPPS=await api('/api/opportunities?limit=200');
+  return '<p class="mut">Gồm cả cơ hội bị loại (spread âm chỉ lưu mẫu 1 %, còn lại vào rollup). Bấm một dòng để xem breakdown chi phí.</p>'+tbl(['#','Lúc','Chain','Token','Size','Mua ở','Bán ở','Block/slot','Tuổi quote','Gross spread','Chi phí ước tính','Buffer','NET ESTIMATE sau buffer','Impact mua/bán','Trạng thái','Lý do'],OPPS.map(o=>[o.id,ts(o.detected_at),o.chain,o.token,o.size,o.buy_protocol,o.sell_protocol,(o.buy_context??'–')+'/'+(o.sell_context??'–'),n(o.quote_age_s,2)+'s',n(o.gross_spread),n(o.estimated_costs),n(o.uncertainty_buffer),'<b>'+n(o.net_profit_after_buffer)+'</b>',pct(o.impact_buy)+' / '+pct(o.impact_sell),'<span class="'+cls(o.status)+'">'+o.status+'</span>',esc(o.reason)]),'showOpp')+'<div id="detail"></div>'},
+ async ledger(){const l=await api('/api/ledger');
+  return '<h2>Số dư paper theo (chain, token)</h2>'+tbl(['Tài khoản','Chain','Token','Số dư'],l.balances.map(b=>[b.account,b.chain,b.token,n(b.amount,6)]))+
+  '<h2>Chu kỳ</h2>'+tbl(['#','Tài khoản','Chain','Token','Size','Mua → bán','Trạng thái','Lý do','Chi','Nhận','Gas','Setup','NET ESTIMATE','Lúc bắt đầu','Baseline'],l.cycles.map(c=>[c.id,c.account,c.chain,c.token,c.size,c.buy_protocol+' → '+c.sell_protocol,'<span class="'+cls(c.status)+'">'+c.status+'</span>',esc(c.reason),n(c.spent),n(c.received),n(c.gas_cost),n(c.setup_cost),'<b>'+n(c.net)+'</b>',ts(c.started_at),c.baseline?'có':'']))+
+  '<h2>Leg (quote quyết định vs quote lúc khớp)</h2>'+tbl(['Chu kỳ','Leg','Lần','DEX','Vào','Quote quyết định','Min-out','Quote lúc khớp','Khớp','Trạng thái','Gas (quote)','Chi phí'],l.legs.map(g=>[g.cycle_id,g.leg,g.attempt,g.protocol,n(g.amount_in,6)+' '+g.token_in,n(g.decision_quote_out,6),n(g.min_out,6),n(g.exec_quote_out,6),n(g.filled_out,6),'<span class="'+cls(g.status)+'">'+g.status+'</span>',n(g.gas_quote),esc(g.cost_status)]))+
+  '<h2>Vị thế mở (OPEN_EXPOSURE)</h2>'+tbl(['Tài khoản','Chain','Token','Lượng','Chu kỳ','Mở lúc'],l.positions.map(p=>[p.account,p.chain,p.token,n(p.amount,6),p.cycle_id,ts(p.opened_at)]))},
+ async health(){const h=await api('/api/health');
+  return '<h2>Connector</h2>'+tbl(['Chain','ID','Protocol','Phiên bản','Router/quoter/label','Pool','Nguồn quote','Trạng thái','Atomic (model B)','Kiểm tra'],h.coverage.map(c=>[c.chain,c.chain_id,c.name,c.version,'<span class="mut">'+esc(c.address)+'</span>',esc(c.pool_types),esc(c.quote_source),'<span class="'+cls(c.status)+'">'+c.status+'</span>',esc(c.atomic),ts(c.checked_at)]))+
+  '<h2>Feed health</h2>'+tbl(['Chain','Protocol','Trạng thái','OK','Lỗi','Latency ms','OK gần nhất','Lỗi gần nhất'],h.feeds.map(f=>[f.chain,f.protocol,'<span class="'+cls(f.state)+'">'+f.state+'</span>',f.ok,f.fail,n(f.latency_ms,0),age(f.last_ok_age_s),esc(f.last_error)]))+
+  '<h2>Phí (gần nhất)</h2>'+tbl(['Chain','Loại','Giá trị (native)','Trạng thái','Nguồn','Lúc'],h.fees.map(f=>[f.chain,f.kind,n(f.value,12),f.status,esc(f.source),ts(f.at)]))+
+  '<h2>Data gaps</h2>'+tbl(['Chain','Protocol','Từ','Đến','Lý do'],h.gaps.map(g=>[g.chain,g.protocol,ts(g.start),ts(g.end),esc(g.reason)]))},
+ async research(){const r=await api('/api/research');
+  return '<p>'+esc(r.atomic_model)+'</p><h2>Cấu hình đăng ký trước</h2>'+r.config.map(c=>'<div class="card"><b>'+esc(c.version)+'</b> · '+ts(c.registered_at)+'<pre>'+esc(c.config)+'</pre></div>').join('')+
+  '<h2>Kết quả theo route (chu kỳ đóng, NET ESTIMATE)</h2>'+tbl(['Tài khoản','Chain','Token','Size','Mua','Bán','n','TB','Tổng'],r.by_route.map(x=>[x.account,x.chain,x.token,x.size,x.buy_protocol,x.sell_protocol,x.n,n(x.mean_net),n(x.sum_net)]))+
+  '<h2>Đánh giá bị loại theo chain / lý do</h2>'+tbl(['Chain','Lý do','n','Gross tốt nhất'],r.evaluations_by_reason.map(x=>[x.chain,esc(x.reason),x.n,n(x.best_gross)]))+
+  '<h2>Lần chạy</h2>'+tbl(['#','Phiên bản','Bắt đầu','Host','Ghi chú'],r.runs.map(x=>[x.id,x.version,ts(x.started_at),esc(x.host),esc(x.note)]))},
+ async storage(){const s=await api('/api/storage');
+  return kpis([['dexarb.db',s.db_mb+' / '+s.quota_mb+' MB'],['Bền vững',s.durable?'có':'KHÔNG'],['Schema',s.schema_version],['Vượt quota',s.over_quota?'CÓ':'không']])+'<p class="mut">'+esc(s.db_path)+' · '+esc(s.durability_note)+'</p>'+
+  '<h2>Bảng</h2>'+tbl(['Bảng','Dòng','Byte ước tính','Byte/ngày'],Object.entries(s.tables).sort((a,b)=>b[1].est_bytes-a[1].est_bytes).map(([t,v])=>[t,v.rows,v.est_bytes,s.bytes_per_day[t]??'–']))+
+  '<h2>Retention</h2><div class="card"><pre>'+esc(JSON.stringify(s.retention,null,1))+'</pre></div><h2>Backup gần nhất</h2><div class="card"><pre>'+esc(JSON.stringify(s.last_backup,null,1))+'</pre></div>'}};
+async function route(){const p=(location.hash.replace('#/','')||'overview');for(const a of document.querySelectorAll('nav a'))a.classList.toggle('on',a.getAttribute('href')==='#/'+p);
+ try{$('app').innerHTML=await (pages[p]||pages.overview)();$('err').textContent=''}catch(e){$('err').textContent=e.message}}
+window.addEventListener('hashchange',route);route();setInterval(()=>{if(!document.getElementById('detail'))route()},20000);
+</script></body></html>

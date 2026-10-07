@@ -1,0 +1,1236 @@
+{
+ "base/pancakeswap_v3": {
+  "checked_at": 1791361797.826768,
+  "note": "4 round trips quoted on PancakeSwap V3",
+  "ok": true,
+  "samples": [
+   {
+    "context": 52286223,
+    "impact_buy": 2.2019927625738234e-06,
+    "impact_sell": 0.0,
+    "latency_ms": 361,
+    "round_trip_out": 99.97956,
+    "route": [
+     {
+      "fee_tier": 100,
+      "path": [
+       "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+       "0x4200000000000000000000000000000000000006"
+      ],
+      "venue": "PancakeSwap V3",
+      "via": "0xb048bbc1ee6b733fffcfb9e9cef7375518e25997"
+     }
+    ],
+    "size": 100.0,
+    "token": "WETH"
+   },
+   {
+    "context": 52286224,
+    "impact_buy": 2.2019490904856553e-05,
+    "impact_sell": 2.1067698097287924e-05,
+    "latency_ms": 395,
+    "round_trip_out": 999.755937,
+    "route": [
+     {
+      "fee_tier": 100,
+      "path": [
+       "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+       "0x4200000000000000000000000000000000000006"
+      ],
+      "venue": "PancakeSwap V3",
+      "via": "0xb048bbc1ee6b733fffcfb9e9cef7375518e25997"
+     }
+    ],
+    "size": 1000.0,
+    "token": "WETH"
+   },
+   {
+    "context": 52286224,
+    "impact_buy": 0.0,
+    "impact_sell": 0.0,
+    "latency_ms": 367,
+    "round_trip_out": 99.978367,
+    "route": [
+     {
+      "fee_tier": 100,
+      "path": [
+       "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+       "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf"
+      ],
+      "venue": "PancakeSwap V3",
+      "via": "0xb048bbc1ee6b733fffcfb9e9cef7375518e25997"
+     }
+    ],
+    "size": 100.0,
+    "token": "cbBTC"
+   },
+   {
+    "context": 52286224,
+    "impact_buy": 0.0,
+    "impact_sell": 0.0,
+    "latency_ms": 347,
+    "round_trip_out": 999.699293,
+    "route": [
+     {
+      "fee_tier": 100,
+      "path": [
+       "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+       "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf"
+      ],
+      "venue": "PancakeSwap V3",
+      "via": "0xb048bbc1ee6b733fffcfb9e9cef7375518e25997"
+     }
+    ],
+    "size": 1000.0,
+    "token": "cbBTC"
+   }
+  ]
+ },
+ "base/sushiswap_v2": {
+  "checked_at": 1791361791.500875,
+  "note": "buy cbBTC 100.0: NO_ROUTE no pool / reverted; buy cbBTC 1000.0: NO_ROUTE no pool / reverted",
+  "ok": false,
+  "samples": [
+   {
+    "context": 52286221,
+    "impact_buy": 0.05144984343950865,
+    "impact_sell": 0.048782415460987605,
+    "latency_ms": 387,
+    "round_trip_out": 89.676989,
+    "route": [
+     {
+      "path": [
+       "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+       "0x4200000000000000000000000000000000000006"
+      ],
+      "venue": "SushiSwap V2",
+      "via": "0x6bded42c6da8fbf0d2ba55b2fa120c5e0c8d7891"
+     }
+    ],
+    "size": 100.0,
+    "token": "WETH"
+   },
+   {
+    "context": 52286221,
+    "impact_buy": 0.351550515585045,
+    "impact_sell": 0.25946281141884797,
+    "latency_ms": 377,
+    "round_trip_out": 476.897063,
+    "route": [
+     {
+      "path": [
+       "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+       "0x4200000000000000000000000000000000000006"
+      ],
+      "venue": "SushiSwap V2",
+      "via": "0x6bded42c6da8fbf0d2ba55b2fa120c5e0c8d7891"
+     }
+    ],
+    "size": 1000.0,
+    "token": "WETH"
+   }
+  ]
+ },
+ "base/uniswap_v2": {
+  "checked_at": 1791361789.2557025,
+  "note": "4 round trips quoted on Uniswap V2",
+  "ok": true,
+  "samples": [
+   {
+    "context": 52286219,
+    "impact_buy": 0.000151103044723655,
+    "impact_sell": 0.0001420737535963168,
+    "latency_ms": 451,
+    "round_trip_out": 99.37088,
+    "route": [
+     {
+      "path": [
+       "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+       "0x4200000000000000000000000000000000000006"
+      ],
+      "venue": "Uniswap V2",
+      "via": "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24"
+     }
+    ],
+    "size": 100.0,
+    "token": "WETH"
+   },
+   {
+    "context": 52286220,
+    "impact_buy": 0.0015089763546325408,
+    "impact_sell": 0.001502119886430675,
+    "latency_ms": 391,
+    "round_trip_out": 991.015137,
+    "route": [
+     {
+      "path": [
+       "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+       "0x4200000000000000000000000000000000000006"
+      ],
+      "venue": "Uniswap V2",
+      "via": "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24"
+     }
+    ],
+    "size": 1000.0,
+    "token": "WETH"
+   },
+   {
+    "context": 52286220,
+    "impact_buy": 0.0,
+    "impact_sell": 0.00030612053584111454,
+    "latency_ms": 381,
+    "round_trip_out": 99.33888,
+    "route": [
+     {
+      "path": [
+       "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+       "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf"
+      ],
+      "venue": "Uniswap V2",
+      "via": "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24"
+     }
+    ],
+    "size": 100.0,
+    "token": "cbBTC"
+   },
+   {
+    "context": 52286220,
+    "impact_buy": 0.0026632911392405756,
+    "impact_sell": 0.0030574830015662746,
+    "latency_ms": 354,
+    "round_trip_out": 987.914875,
+    "route": [
+     {
+      "path": [
+       "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+       "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf"
+      ],
+      "venue": "Uniswap V2",
+      "via": "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24"
+     }
+    ],
+    "size": 1000.0,
+    "token": "cbBTC"
+   }
+  ]
+ },
+ "base/uniswap_v3": {
+  "checked_at": 1791361794.4916067,
+  "note": "4 round trips quoted on Uniswap V3",
+  "ok": true,
+  "samples": [
+   {
+    "context": 52286222,
+    "impact_buy": 9.720442066596391e-06,
+    "impact_sell": 9.45198492008359e-06,
+    "latency_ms": 371,
+    "round_trip_out": 99.978055,
+    "route": [
+     {
+      "fee_tier": 100,
+      "path": [
+       "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+       "0x4200000000000000000000000000000000000006"
+      ],
+      "venue": "Uniswap V3",
+      "via": "0x3d4e44eb1374240ce5f1b871ab261cd16335b76a"
+     }
+    ],
+    "size": 100.0,
+    "token": "WETH"
+   },
+   {
+    "context": 52286222,
+    "impact_buy": 9.719590908296993e-05,
+    "impact_sell": 9.65387685540886e-05,
+    "latency_ms": 389,
+    "round_trip_out": 999.60549,
+    "route": [
+     {
+      "fee_tier": 100,
+      "path": [
+       "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+       "0x4200000000000000000000000000000000000006"
+      ],
+      "venue": "Uniswap V3",
+      "via": "0x3d4e44eb1374240ce5f1b871ab261cd16335b76a"
+     }
+    ],
+    "size": 1000.0,
+    "token": "WETH"
+   },
+   {
+    "context": 52286222,
+    "impact_buy": 0.0,
+    "impact_sell": 0.0,
+    "latency_ms": 353,
+    "round_trip_out": 99.898653,
+    "route": [
+     {
+      "fee_tier": 500,
+      "path": [
+       "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+       "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf"
+      ],
+      "venue": "Uniswap V3",
+      "via": "0x3d4e44eb1374240ce5f1b871ab261cd16335b76a"
+     }
+    ],
+    "size": 100.0,
+    "token": "cbBTC"
+   },
+   {
+    "context": 52286223,
+    "impact_buy": 0.0,
+    "impact_sell": 0.0,
+    "latency_ms": 393,
+    "round_trip_out": 998.972791,
+    "route": [
+     {
+      "fee_tier": 500,
+      "path": [
+       "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+       "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf"
+      ],
+      "venue": "Uniswap V3",
+      "via": "0x3d4e44eb1374240ce5f1b871ab261cd16335b76a"
+     }
+    ],
+    "size": 1000.0,
+    "token": "cbBTC"
+   }
+  ]
+ },
+ "bnb/biswap_v2": {
+  "checked_at": 1791361879.6218076,
+  "note": "4 round trips quoted on BiSwap V2",
+  "ok": true,
+  "samples": [
+   {
+    "context": 126220425,
+    "impact_buy": 0.00043148704846196484,
+    "impact_sell": 0.00043043853163216017,
+    "latency_ms": 354,
+    "round_trip_out": 99.51448446908621,
+    "route": [
+     {
+      "path": [
+       "0x55d398326f99059ff775485246999027b3197955",
+       "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
+      ],
+      "venue": "BiSwap V2",
+      "via": "0x3a6d8ca21d1cf76f653a67577fa0d27453350dd8"
+     }
+    ],
+    "size": 100.0,
+    "token": "WBNB"
+   },
+   {
+    "context": 126220427,
+    "impact_buy": 0.0042981623640098165,
+    "impact_sell": 0.004271225993269345,
+    "latency_ms": 404,
+    "round_trip_out": 987.4786329174341,
+    "route": [
+     {
+      "path": [
+       "0x55d398326f99059ff775485246999027b3197955",
+       "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
+      ],
+      "venue": "BiSwap V2",
+      "via": "0x3a6d8ca21d1cf76f653a67577fa0d27453350dd8"
+     }
+    ],
+    "size": 1000.0,
+    "token": "WBNB"
+   },
+   {
+    "context": 126220429,
+    "impact_buy": 0.0013812664839644162,
+    "impact_sell": 0.0013766043968654884,
+    "latency_ms": 392,
+    "round_trip_out": 99.32562976238566,
+    "route": [
+     {
+      "path": [
+       "0x55d398326f99059ff775485246999027b3197955",
+       "0x2170ed0880ac9a755fd29b2688956bd959f933f8"
+      ],
+      "venue": "BiSwap V2",
+      "via": "0x3a6d8ca21d1cf76f653a67577fa0d27453350dd8"
+     }
+    ],
+    "size": 100.0,
+    "token": "ETH"
+   },
+   {
+    "context": 126220430,
+    "impact_buy": 0.013642894809737127,
+    "impact_sell": 0.013432533816323255,
+    "latency_ms": 306,
+    "round_trip_out": 969.1926625026189,
+    "route": [
+     {
+      "path": [
+       "0x55d398326f99059ff775485246999027b3197955",
+       "0x2170ed0880ac9a755fd29b2688956bd959f933f8"
+      ],
+      "venue": "BiSwap V2",
+      "via": "0x3a6d8ca21d1cf76f653a67577fa0d27453350dd8"
+     }
+    ],
+    "size": 1000.0,
+    "token": "ETH"
+   }
+  ]
+ },
+ "bnb/pancakeswap_v2": {
+  "checked_at": 1791361876.6722422,
+  "note": "4 round trips quoted on PancakeSwap V2",
+  "ok": true,
+  "samples": [
+   {
+    "context": 126220419,
+    "impact_buy": 2.5126362853677975e-06,
+    "impact_sell": 2.506348414033077e-06,
+    "latency_ms": 420,
+    "round_trip_out": 99.50012510862067,
+    "route": [
+     {
+      "path": [
+       "0x55d398326f99059ff775485246999027b3197955",
+       "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
+      ],
+      "venue": "PancakeSwap V2",
+      "via": "0x10ed43c718714eb63d5aa57b78b54704e256024e"
+     }
+    ],
+    "size": 100.0,
+    "token": "WBNB"
+   },
+   {
+    "context": 126220420,
+    "impact_buy": 2.51257941712435e-05,
+    "impact_sell": 2.506235019417158e-05,
+    "latency_ms": 359,
+    "round_trip_out": 994.9562055489332,
+    "route": [
+     {
+      "path": [
+       "0x55d398326f99059ff775485246999027b3197955",
+       "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
+      ],
+      "venue": "PancakeSwap V2",
+      "via": "0x10ed43c718714eb63d5aa57b78b54704e256024e"
+     }
+    ],
+    "size": 1000.0,
+    "token": "WBNB"
+   },
+   {
+    "context": 126220422,
+    "impact_buy": 0.00023132431741179627,
+    "impact_sell": 0.00023069272191189594,
+    "latency_ms": 389,
+    "round_trip_out": 99.45461331929542,
+    "route": [
+     {
+      "path": [
+       "0x55d398326f99059ff775485246999027b3197955",
+       "0x2170ed0880ac9a755fd29b2688956bd959f933f8"
+      ],
+      "venue": "PancakeSwap V2",
+      "via": "0x10ed43c718714eb63d5aa57b78b54704e256024e"
+     }
+    ],
+    "size": 100.0,
+    "token": "ETH"
+   },
+   {
+    "context": 126220424,
+    "impact_buy": 0.002308432394432347,
+    "impact_sell": 0.0022973659623714004,
+    "latency_ms": 386,
+    "round_trip_out": 990.4241518633011,
+    "route": [
+     {
+      "path": [
+       "0x55d398326f99059ff775485246999027b3197955",
+       "0x2170ed0880ac9a755fd29b2688956bd959f933f8"
+      ],
+      "venue": "PancakeSwap V2",
+      "via": "0x10ed43c718714eb63d5aa57b78b54704e256024e"
+     }
+    ],
+    "size": 1000.0,
+    "token": "ETH"
+   }
+  ]
+ },
+ "bnb/pancakeswap_v3": {
+  "checked_at": 1791361882.7377431,
+  "note": "4 round trips quoted on PancakeSwap V3",
+  "ok": true,
+  "samples": [
+   {
+    "context": 126220432,
+    "impact_buy": 1.399573602123283e-06,
+    "impact_sell": 1.5256030295729417e-06,
+    "latency_ms": 360,
+    "round_trip_out": 99.98211163307177,
+    "route": [
+     {
+      "fee_tier": 100,
+      "path": [
+       "0x55d398326f99059ff775485246999027b3197955",
+       "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
+      ],
+      "venue": "PancakeSwap V3",
+      "via": "0xb048bbc1ee6b733fffcfb9e9cef7375518e25997"
+     }
+    ],
+    "size": 100.0,
+    "token": "WBNB"
+   },
+   {
+    "context": 126220434,
+    "impact_buy": 1.399555156744725e-05,
+    "impact_sell": 1.5255610836262257e-05,
+    "latency_ms": 420,
+    "round_trip_out": 999.7936229975135,
+    "route": [
+     {
+      "fee_tier": 100,
+      "path": [
+       "0x55d398326f99059ff775485246999027b3197955",
+       "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
+      ],
+      "venue": "PancakeSwap V3",
+      "via": "0xb048bbc1ee6b733fffcfb9e9cef7375518e25997"
+     }
+    ],
+    "size": 1000.0,
+    "token": "WBNB"
+   },
+   {
+    "context": 126220435,
+    "impact_buy": 2.4843479662139956e-05,
+    "impact_sell": 2.48403776250683e-05,
+    "latency_ms": 378,
+    "round_trip_out": 99.97502869735499,
+    "route": [
+     {
+      "fee_tier": 100,
+      "path": [
+       "0x55d398326f99059ff775485246999027b3197955",
+       "0x2170ed0880ac9a755fd29b2688956bd959f933f8"
+      ],
+      "venue": "PancakeSwap V3",
+      "via": "0xb048bbc1ee6b733fffcfb9e9cef7375518e25997"
+     }
+    ],
+    "size": 100.0,
+    "token": "ETH"
+   },
+   {
+    "context": 126220437,
+    "impact_buy": 0.00024837920567011285,
+    "impact_sell": 4.5833748117618534e-05,
+    "latency_ms": 388,
+    "round_trip_out": 999.3100975182562,
+    "route": [
+     {
+      "fee_tier": 100,
+      "path": [
+       "0x55d398326f99059ff775485246999027b3197955",
+       "0x2170ed0880ac9a755fd29b2688956bd959f933f8"
+      ],
+      "venue": "PancakeSwap V3",
+      "via": "0xb048bbc1ee6b733fffcfb9e9cef7375518e25997"
+     }
+    ],
+    "size": 1000.0,
+    "token": "ETH"
+   }
+  ]
+ },
+ "bnb/uniswap_v3": {
+  "checked_at": 1791361885.7186425,
+  "note": "4 round trips quoted on Uniswap V3",
+  "ok": true,
+  "samples": [
+   {
+    "context": 126220439,
+    "impact_buy": 1.9201046080441486e-05,
+    "impact_sell": 1.6687947245186407e-06,
+    "latency_ms": 388,
+    "round_trip_out": 99.97355256570704,
+    "route": [
+     {
+      "fee_tier": 100,
+      "path": [
+       "0x55d398326f99059ff775485246999027b3197955",
+       "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
+      ],
+      "venue": "Uniswap V3",
+      "via": "0x78d78e420da98ad378d7799be8f4af69033eb077"
+     }
+    ],
+    "size": 100.0,
+    "token": "WBNB"
+   },
+   {
+    "context": 126220441,
+    "impact_buy": 0.00019121807623068143,
+    "impact_sell": 1.668558549894339e-05,
+    "latency_ms": 354,
+    "round_trip_out": 999.5940359994387,
+    "route": [
+     {
+      "fee_tier": 100,
+      "path": [
+       "0x55d398326f99059ff775485246999027b3197955",
+       "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
+      ],
+      "venue": "Uniswap V3",
+      "via": "0x78d78e420da98ad378d7799be8f4af69033eb077"
+     }
+    ],
+    "size": 1000.0,
+    "token": "WBNB"
+   },
+   {
+    "context": 126220442,
+    "impact_buy": 0.0002402852783881526,
+    "impact_sell": 0.00024010741260094282,
+    "latency_ms": 370,
+    "round_trip_out": 99.85199149408221,
+    "route": [
+     {
+      "fee_tier": 500,
+      "path": [
+       "0x55d398326f99059ff775485246999027b3197955",
+       "0x2170ed0880ac9a755fd29b2688956bd959f933f8"
+      ],
+      "venue": "Uniswap V3",
+      "via": "0x78d78e420da98ad378d7799be8f4af69033eb077"
+     }
+    ],
+    "size": 100.0,
+    "token": "ETH"
+   },
+   {
+    "context": 126220444,
+    "impact_buy": 0.002397662486687935,
+    "impact_sell": 0.0023907183447652303,
+    "latency_ms": 384,
+    "round_trip_out": 994.2176058349698,
+    "route": [
+     {
+      "fee_tier": 500,
+      "path": [
+       "0x55d398326f99059ff775485246999027b3197955",
+       "0x2170ed0880ac9a755fd29b2688956bd959f933f8"
+      ],
+      "venue": "Uniswap V3",
+      "via": "0x78d78e420da98ad378d7799be8f4af69033eb077"
+     }
+    ],
+    "size": 1000.0,
+    "token": "ETH"
+   }
+  ]
+ },
+ "ethereum/sushiswap_v2": {
+  "checked_at": 1791361870.5278513,
+  "note": "buy WBTC 100.0: NO_ROUTE no pool / reverted; buy WBTC 1000.0: NO_ROUTE no pool / reverted",
+  "ok": false,
+  "samples": [
+   {
+    "context": 26139328,
+    "impact_buy": 0.0007001826082297935,
+    "impact_sell": 0.0006959660126308886,
+    "latency_ms": 350,
+    "round_trip_out": 99.261869,
+    "route": [
+     {
+      "path": [
+       "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+       "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+      ],
+      "venue": "SushiSwap V2",
+      "via": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f"
+     }
+    ],
+    "size": 100.0,
+    "token": "WETH"
+   },
+   {
+    "context": 26139328,
+    "impact_buy": 0.006957935761493728,
+    "impact_sell": 0.006888245913697966,
+    "latency_ms": 391,
+    "round_trip_out": 980.278764,
+    "route": [
+     {
+      "path": [
+       "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+       "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+      ],
+      "venue": "SushiSwap V2",
+      "via": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f"
+     }
+    ],
+    "size": 1000.0,
+    "token": "WETH"
+   }
+  ]
+ },
+ "ethereum/uniswap_v2": {
+  "checked_at": 1791361868.2583203,
+  "note": "4 round trips quoted on Uniswap V2",
+  "ok": true,
+  "samples": [
+   {
+    "context": 26139328,
+    "impact_buy": 9.624567516519633e-06,
+    "impact_sell": 1.307860422183893e-07,
+    "latency_ms": 336,
+    "round_trip_out": 99.398987,
+    "route": [
+     {
+      "path": [
+       "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+       "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+      ],
+      "venue": "Uniswap V2",
+      "via": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d"
+     }
+    ],
+    "size": 100.0,
+    "token": "WETH"
+   },
+   {
+    "context": 26139328,
+    "impact_buy": 9.62373308844855e-05,
+    "impact_sell": 9.579108030688399e-05,
+    "latency_ms": 368,
+    "round_trip_out": 993.817792,
+    "route": [
+     {
+      "path": [
+       "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+       "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+      ],
+      "venue": "Uniswap V2",
+      "via": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d"
+     }
+    ],
+    "size": 1000.0,
+    "token": "WETH"
+   },
+   {
+    "context": 26139328,
+    "impact_buy": 0.0,
+    "impact_sell": 0.0019257815870658002,
+    "latency_ms": 390,
+    "round_trip_out": 99.015261,
+    "route": [
+     {
+      "path": [
+       "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+       "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599"
+      ],
+      "venue": "Uniswap V2",
+      "via": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d"
+     }
+    ],
+    "size": 100.0,
+    "token": "WBTC"
+   },
+   {
+    "context": 26139328,
+    "impact_buy": 0.018896290050590236,
+    "impact_sell": 0.01866548791652589,
+    "latency_ms": 370,
+    "round_trip_out": 956.80855,
+    "route": [
+     {
+      "path": [
+       "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+       "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599"
+      ],
+      "venue": "Uniswap V2",
+      "via": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d"
+     }
+    ],
+    "size": 1000.0,
+    "token": "WBTC"
+   }
+  ]
+ },
+ "ethereum/uniswap_v3": {
+  "checked_at": 1791361873.642966,
+  "note": "4 round trips quoted on Uniswap V3",
+  "ok": true,
+  "samples": [
+   {
+    "context": 26139328,
+    "impact_buy": 6.72157957959385e-07,
+    "impact_sell": 1.1902023389076533e-06,
+    "latency_ms": 400,
+    "round_trip_out": 99.982881,
+    "route": [
+     {
+      "fee_tier": 500,
+      "path": [
+       "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+       "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+      ],
+      "venue": "Uniswap V3",
+      "via": "0x61ffe014ba17989e743c5f6cb21bf9697530b21e"
+     }
+    ],
+    "size": 100.0,
+    "token": "WETH"
+   },
+   {
+    "context": 26139328,
+    "impact_buy": 6.7215391261754576e-06,
+    "impact_sell": 1.775212437615803e-05,
+    "latency_ms": 354,
+    "round_trip_out": 999.806251,
+    "route": [
+     {
+      "fee_tier": 500,
+      "path": [
+       "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+       "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+      ],
+      "venue": "Uniswap V3",
+      "via": "0x61ffe014ba17989e743c5f6cb21bf9697530b21e"
+     }
+    ],
+    "size": 1000.0,
+    "token": "WETH"
+   },
+   {
+    "context": 26139328,
+    "impact_buy": 0.0,
+    "impact_sell": 0.0,
+    "latency_ms": 369,
+    "round_trip_out": 99.891238,
+    "route": [
+     {
+      "fee_tier": 500,
+      "path": [
+       "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+       "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599"
+      ],
+      "venue": "Uniswap V3",
+      "via": "0x61ffe014ba17989e743c5f6cb21bf9697530b21e"
+     }
+    ],
+    "size": 100.0,
+    "token": "WBTC"
+   },
+   {
+    "context": 26139329,
+    "impact_buy": 0.00014705882352950006,
+    "impact_sell": 0.0,
+    "latency_ms": 389,
+    "round_trip_out": 998.267107,
+    "route": [
+     {
+      "fee_tier": 500,
+      "path": [
+       "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+       "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599"
+      ],
+      "venue": "Uniswap V3",
+      "via": "0x61ffe014ba17989e743c5f6cb21bf9697530b21e"
+     }
+    ],
+    "size": 1000.0,
+    "token": "WBTC"
+   }
+  ]
+ },
+ "polygon/quickswap_v2": {
+  "checked_at": 1791361831.9955087,
+  "note": "4 round trips quoted on QuickSwap V2",
+  "ok": true,
+  "samples": [
+   {
+    "context": 95104412,
+    "impact_buy": 0.007421815259006426,
+    "impact_sell": 0.007338147799041184,
+    "latency_ms": 5950,
+    "round_trip_out": 97.937011,
+    "route": [
+     {
+      "path": [
+       "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+       "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619"
+      ],
+      "venue": "QuickSwap V2",
+      "via": "0xa5e0829caced8ffdd4de3c43696c57f7d7a678ff"
+     }
+    ],
+    "size": 100.0,
+    "token": "WETH"
+   },
+   {
+    "context": 95104420,
+    "impact_buy": 0.06956670035404788,
+    "impact_sell": 0.06485460542323451,
+    "latency_ms": 8373,
+    "round_trip_out": 864.752325,
+    "route": [
+     {
+      "path": [
+       "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+       "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619"
+      ],
+      "venue": "QuickSwap V2",
+      "via": "0xa5e0829caced8ffdd4de3c43696c57f7d7a678ff"
+     }
+    ],
+    "size": 1000.0,
+    "token": "WETH"
+   },
+   {
+    "context": 95104427,
+    "impact_buy": 0.1235889009847645,
+    "impact_sell": 0.10968881540422315,
+    "latency_ms": 3407,
+    "round_trip_out": 77.539872,
+    "route": [
+     {
+      "path": [
+       "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+       "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270"
+      ],
+      "venue": "QuickSwap V2",
+      "via": "0xa5e0829caced8ffdd4de3c43696c57f7d7a678ff"
+     }
+    ],
+    "size": 100.0,
+    "token": "WPOL"
+   },
+   {
+    "context": 95104431,
+    "impact_buy": 0.5847833359430679,
+    "impact_sell": 0.36816260263263945,
+    "latency_ms": 1491,
+    "round_trip_out": 260.257615,
+    "route": [
+     {
+      "path": [
+       "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+       "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270"
+      ],
+      "venue": "QuickSwap V2",
+      "via": "0xa5e0829caced8ffdd4de3c43696c57f7d7a678ff"
+     }
+    ],
+    "size": 1000.0,
+    "token": "WPOL"
+   }
+  ]
+ },
+ "polygon/sushiswap_v2": {
+  "checked_at": 1791361852.5649664,
+  "note": "4 round trips quoted on SushiSwap V2",
+  "ok": true,
+  "samples": [
+   {
+    "context": 95104431,
+    "impact_buy": 0.9981974872658795,
+    "impact_sell": 0.4936582278586956,
+    "latency_ms": 656,
+    "round_trip_out": 0.040001,
+    "route": [
+     {
+      "path": [
+       "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+       "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619"
+      ],
+      "venue": "SushiSwap V2",
+      "via": "0x1b02da8cb0d097eb8d57a175b88c7d8b47997506"
+     }
+    ],
+    "size": 100.0,
+    "token": "WETH"
+   },
+   {
+    "context": 95104433,
+    "impact_buy": 0.9989196906641874,
+    "impact_sell": 0.49348101266676836,
+    "latency_ms": 2809,
+    "round_trip_out": 0.040015,
+    "route": [
+     {
+      "path": [
+       "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+       "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619"
+      ],
+      "venue": "SushiSwap V2",
+      "via": "0x1b02da8cb0d097eb8d57a175b88c7d8b47997506"
+     }
+    ],
+    "size": 1000.0,
+    "token": "WETH"
+   },
+   {
+    "context": 95104439,
+    "impact_buy": 0.7756935084056886,
+    "impact_sell": 0.4358876627178956,
+    "latency_ms": 5661,
+    "round_trip_out": 12.523858,
+    "route": [
+     {
+      "path": [
+       "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+       "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270"
+      ],
+      "venue": "SushiSwap V2",
+      "via": "0x1b02da8cb0d097eb8d57a175b88c7d8b47997506"
+     }
+    ],
+    "size": 100.0,
+    "token": "WPOL"
+   },
+   {
+    "context": 95104443,
+    "impact_buy": 0.9710455599009216,
+    "impact_sell": 0.4916464893655307,
+    "latency_ms": 2070,
+    "round_trip_out": 14.125619,
+    "route": [
+     {
+      "path": [
+       "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+       "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270"
+      ],
+      "venue": "SushiSwap V2",
+      "via": "0x1b02da8cb0d097eb8d57a175b88c7d8b47997506"
+     }
+    ],
+    "size": 1000.0,
+    "token": "WPOL"
+   }
+  ]
+ },
+ "polygon/uniswap_v3": {
+  "checked_at": 1791361865.3053386,
+  "note": "4 round trips quoted on Uniswap V3",
+  "ok": true,
+  "samples": [
+   {
+    "context": 95104449,
+    "impact_buy": 5.0441867398665075e-05,
+    "impact_sell": 4.06530922926196e-05,
+    "latency_ms": 6290,
+    "round_trip_out": 99.889939,
+    "route": [
+     {
+      "fee_tier": 500,
+      "path": [
+       "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+       "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619"
+      ],
+      "venue": "Uniswap V3",
+      "via": "0x61ffe014ba17989e743c5f6cb21bf9697530b21e"
+     }
+    ],
+    "size": 100.0,
+    "token": "WETH"
+   },
+   {
+    "context": 95104451,
+    "impact_buy": 0.0005041765755191552,
+    "impact_sell": 0.0005038813414197651,
+    "latency_ms": 511,
+    "round_trip_out": 997.991877,
+    "route": [
+     {
+      "fee_tier": 500,
+      "path": [
+       "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+       "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619"
+      ],
+      "venue": "Uniswap V3",
+      "via": "0x61ffe014ba17989e743c5f6cb21bf9697530b21e"
+     }
+    ],
+    "size": 1000.0,
+    "token": "WETH"
+   },
+   {
+    "context": 95104452,
+    "impact_buy": 0.0001713747718019576,
+    "impact_sell": 0.00016255181113722372,
+    "latency_ms": 525,
+    "round_trip_out": 99.865764,
+    "route": [
+     {
+      "fee_tier": 500,
+      "path": [
+       "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+       "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270"
+      ],
+      "venue": "Uniswap V3",
+      "via": "0x61ffe014ba17989e743c5f6cb21bf9697530b21e"
+     }
+    ],
+    "size": 100.0,
+    "token": "WPOL"
+   },
+   {
+    "context": 95104452,
+    "impact_buy": 0.0017065782138918628,
+    "impact_sell": 0.0017009508759228131,
+    "latency_ms": 414,
+    "round_trip_out": 995.594657,
+    "route": [
+     {
+      "fee_tier": 500,
+      "path": [
+       "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+       "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270"
+      ],
+      "venue": "Uniswap V3",
+      "via": "0x61ffe014ba17989e743c5f6cb21bf9697530b21e"
+     }
+    ],
+    "size": 1000.0,
+    "token": "WPOL"
+   }
+  ]
+ },
+ "solana/meteora_dlmm": {
+  "checked_at": 1791361903.556957,
+  "note": "2 round trips quoted on Meteora DLMM",
+  "ok": true,
+  "samples": [
+   {
+    "context": 454169969,
+    "impact_buy": 0.0002489277059855281,
+    "impact_sell": 0.00011781461144469996,
+    "latency_ms": 154,
+    "round_trip_out": 999.633289,
+    "route": [
+     {
+      "amm": "HTvjzsfX3yU6BUodCjZ5vZkUrAxMDTrBs3CJaq43ashR",
+      "percent": 100,
+      "venue": "Meteora DLMM"
+     }
+    ],
+    "size": 1000.0,
+    "token": "SOL"
+   },
+   {
+    "context": 454169978,
+    "impact_buy": 0.0019423336202835449,
+    "impact_sell": 0.005230398530646698,
+    "latency_ms": 98,
+    "round_trip_out": 993.010969,
+    "route": [
+     {
+      "amm": "HfgjZDmexhFVD28Vkb1NbQwWeXP3uDcVTLPjSGHmRHhL",
+      "percent": 100,
+      "venue": "Meteora DLMM"
+     }
+    ],
+    "size": 1000.0,
+    "token": "JUP"
+   }
+  ]
+ },
+ "solana/orca_whirlpool": {
+  "checked_at": 1791361898.693618,
+  "note": "2 round trips quoted on Whirlpool",
+  "ok": true,
+  "samples": [
+   {
+    "context": 454169951,
+    "impact_buy": 0.00025974776601266633,
+    "impact_sell": 0.0004845938276891105,
+    "latency_ms": 94,
+    "round_trip_out": 999.197372,
+    "route": [
+     {
+      "amm": "Czfq3xZZDmsdGdUyrNLtRhGc47cXcZtLG4crryfu44zE",
+      "percent": 100,
+      "venue": "Whirlpool"
+     }
+    ],
+    "size": 1000.0,
+    "token": "SOL"
+   },
+   {
+    "context": 454169960,
+    "impact_buy": 0.02450427888303149,
+    "impact_sell": 0.02869682922331536,
+    "latency_ms": 88,
+    "round_trip_out": 947.502087,
+    "route": [
+     {
+      "amm": "4Ui9QdDNuUaAGqCPcDSp191QrixLzQiLxJ1Gnqvz3szP",
+      "percent": 100,
+      "venue": "Whirlpool"
+     }
+    ],
+    "size": 1000.0,
+    "token": "JUP"
+   }
+  ]
+ },
+ "solana/raydium": {
+  "checked_at": 1791361889.2510395,
+  "note": "buy JUP 1000.0: NO_ROUTE HTTPError: HTTP Error 400: Bad Request",
+  "ok": false,
+  "samples": [
+   {
+    "context": 454169919,
+    "impact_buy": 0.0019362515704220813,
+    "impact_sell": 0.0028386880609506766,
+    "latency_ms": 75,
+    "round_trip_out": 994.852788,
+    "route": [
+     {
+      "amm": "58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2",
+      "percent": 100,
+      "venue": "Raydium"
+     }
+    ],
+    "size": 1000.0,
+    "token": "SOL"
+   }
+  ]
+ },
+ "solana/raydium_clmm": {
+  "checked_at": 1791361893.9646094,
+  "note": "sell JUP 1000.0: NO_ROUTE HTTPError: HTTP Error 400: Bad Request",
+  "ok": false,
+  "samples": [
+   {
+    "context": 454169932,
+    "impact_buy": 0.00024274231052207794,
+    "impact_sell": 0.0007755782339155435,
+    "latency_ms": 54,
+    "round_trip_out": 999.191938,
+    "route": [
+     {
+      "amm": "3ucNos4NbumPLZNWztqGHNFFgkHeRMBQAVemeeomsUxv",
+      "percent": 100,
+      "venue": "Raydium CLMM"
+     }
+    ],
+    "size": 1000.0,
+    "token": "SOL"
+   }
+  ]
+ }
+}

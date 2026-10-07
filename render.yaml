@@ -1,4 +1,5 @@
-# Render Blueprint — KOL Radar (PAPER). One web service: stream listener + paper engine + dashboard.
+# Render Blueprint — KOL Radar site (name / hostname kept) now serving the DEX Arbitrage Paper Lab (PAPER ONLY).
+# One web service: DEX quote scanner + paper ledger + dashboard. Its database is dexarb.db next to KOL_DB on the disk.
 # Secrets are NOT stored here: `sync: false` makes Render ask for them in the dashboard.
 # Persistent disk: the SQLite ledger / KOL history / dev history live on /var/data and survive deploys and restarts.
 # A disk needs a paid instance (free instances cannot attach one). Disks can grow later but never shrink.
@@ -15,11 +16,11 @@ services:
     disk:
       name: kol-data
       mountPath: /var/data
-      sizeGB: 5                      # ~40 MB/day of token + dev history at current pump.fun volume -> ~4 months
+      sizeGB: 5                      # dexarb.db with quota DEXARB_DB_MAX_MB (default 1000 MB) + the old paper.db
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.10
-      - key: KOL_DB                  # the database on the persistent disk
+      - key: KOL_DB                  # the OLD database (only used to place dexarb.db beside it; the lab never opens it)
         value: /var/data/paper.db
       - key: APP_ACCESS_CODE          # required — the code you type once in the browser
         sync: false
