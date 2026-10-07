@@ -84,6 +84,43 @@
     "size": 1000.0,
     "token": "cbBTC"
    }
+  ],
+  "sim_checked_at": 1791365105.5316687,
+  "sim_note": "USDC->WETH: SIM_REVERT dev=None {'code': 3, 'message': 'execution reverted'}; WETH->USDC: SIM_REVERT dev=None {'code': 3, 'message': 'execution reverted'}; USDC->cbBTC: SIM_REVERT dev=None {'code': 3, 'message': 'execution reverted'}; cbBTC->USDC: SIM_REVERT dev=None {'code': 3, 'message': 'executio",
+  "sim_ok": false,
+  "sim_samples": [
+   {
+    "deviation": null,
+    "dir": "USDC->WETH",
+    "error": "{'code': 3, 'message': 'execution reverted'}",
+    "gas": null,
+    "router": "0x13f4ea83d0bd40e75c8222255bc855a974568dd4",
+    "status": "SIM_REVERT"
+   },
+   {
+    "deviation": null,
+    "dir": "WETH->USDC",
+    "error": "{'code': 3, 'message': 'execution reverted'}",
+    "gas": null,
+    "router": "0x13f4ea83d0bd40e75c8222255bc855a974568dd4",
+    "status": "SIM_REVERT"
+   },
+   {
+    "deviation": null,
+    "dir": "USDC->cbBTC",
+    "error": "{'code': 3, 'message': 'execution reverted'}",
+    "gas": null,
+    "router": "0x13f4ea83d0bd40e75c8222255bc855a974568dd4",
+    "status": "SIM_REVERT"
+   },
+   {
+    "deviation": null,
+    "dir": "cbBTC->USDC",
+    "error": "{'code': 3, 'message': 'execution reverted'}",
+    "gas": null,
+    "router": "0x13f4ea83d0bd40e75c8222255bc855a974568dd4",
+    "status": "SIM_REVERT"
+   }
   ]
  },
  "base/sushiswap_v2": {
@@ -128,6 +165,27 @@
     ],
     "size": 1000.0,
     "token": "WETH"
+   }
+  ],
+  "sim_checked_at": 1791365097.7495286,
+  "sim_note": "USDC->cbBTC: quote NO_ROUTE",
+  "sim_ok": false,
+  "sim_samples": [
+   {
+    "deviation": 0.0,
+    "dir": "USDC->WETH",
+    "error": "",
+    "gas": 120889,
+    "router": "0x6bded42c6da8fbf0d2ba55b2fa120c5e0c8d7891",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "WETH->USDC",
+    "error": "",
+    "gas": 116665,
+    "router": "0x6bded42c6da8fbf0d2ba55b2fa120c5e0c8d7891",
+    "status": "SIMULATED_OK"
    }
   ]
  },
@@ -211,6 +269,43 @@
     ],
     "size": 1000.0,
     "token": "cbBTC"
+   }
+  ],
+  "sim_checked_at": 1791365095.1540878,
+  "sim_note": "",
+  "sim_ok": true,
+  "sim_samples": [
+   {
+    "deviation": 0.0,
+    "dir": "USDC->WETH",
+    "error": "",
+    "gas": 120541,
+    "router": "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "WETH->USDC",
+    "error": "",
+    "gas": 116316,
+    "router": "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "USDC->cbBTC",
+    "error": "",
+    "gas": 153393,
+    "router": "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "cbBTC->USDC",
+    "error": "",
+    "gas": 136356,
+    "router": "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24",
+    "status": "SIMULATED_OK"
    }
   ]
  },
@@ -299,6 +394,43 @@
     "size": 1000.0,
     "token": "cbBTC"
    }
+  ],
+  "sim_checked_at": 1791365102.4353201,
+  "sim_note": "",
+  "sim_ok": true,
+  "sim_samples": [
+   {
+    "deviation": 0.0,
+    "dir": "USDC->WETH",
+    "error": "",
+    "gas": 129604,
+    "router": "0x2626664c2603336e57b271c5c0b26f421741e481",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "WETH->USDC",
+    "error": "",
+    "gas": 128552,
+    "router": "0x2626664c2603336e57b271c5c0b26f421741e481",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "USDC->cbBTC",
+    "error": "",
+    "gas": 159168,
+    "router": "0x2626664c2603336e57b271c5c0b26f421741e481",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "cbBTC->USDC",
+    "error": "",
+    "gas": 141940,
+    "router": "0x2626664c2603336e57b271c5c0b26f421741e481",
+    "status": "SIMULATED_OK"
+   }
   ]
  },
  "bnb/biswap_v2": {
@@ -382,6 +514,43 @@
     "size": 1000.0,
     "token": "ETH"
    }
+  ],
+  "sim_checked_at": 1791365368.3719404,
+  "sim_note": "",
+  "sim_ok": true,
+  "sim_samples": [
+   {
+    "deviation": 0.0,
+    "dir": "USDT->WBNB",
+    "error": "",
+    "gas": 131966,
+    "router": "0x3a6d8ca21d1cf76f653a67577fa0d27453350dd8",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "WBNB->USDT",
+    "error": "",
+    "gas": 109247,
+    "router": "0x3a6d8ca21d1cf76f653a67577fa0d27453350dd8",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "USDT->ETH",
+    "error": "",
+    "gas": 132053,
+    "router": "0x3a6d8ca21d1cf76f653a67577fa0d27453350dd8",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "ETH->USDT",
+    "error": "",
+    "gas": 114647,
+    "router": "0x3a6d8ca21d1cf76f653a67577fa0d27453350dd8",
+    "status": "SIMULATED_OK"
+   }
   ]
  },
  "bnb/pancakeswap_v2": {
@@ -464,6 +633,43 @@
     ],
     "size": 1000.0,
     "token": "ETH"
+   }
+  ],
+  "sim_checked_at": 1791365363.725917,
+  "sim_note": "",
+  "sim_ok": true,
+  "sim_samples": [
+   {
+    "deviation": 4.924533000246169e-07,
+    "dir": "USDT->WBNB",
+    "error": "",
+    "gas": 129102,
+    "router": "0x10ed43c718714eb63d5aa57b78b54704e256024e",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 1.9272955333673014e-06,
+    "dir": "WBNB->USDT",
+    "error": "",
+    "gas": 107831,
+    "router": "0x10ed43c718714eb63d5aa57b78b54704e256024e",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "USDT->ETH",
+    "error": "",
+    "gas": 129189,
+    "router": "0x10ed43c718714eb63d5aa57b78b54704e256024e",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "ETH->USDT",
+    "error": "",
+    "gas": 111783,
+    "router": "0x10ed43c718714eb63d5aa57b78b54704e256024e",
+    "status": "SIMULATED_OK"
    }
   ]
  },
@@ -552,6 +758,43 @@
     "size": 1000.0,
     "token": "ETH"
    }
+  ],
+  "sim_checked_at": 1791365372.9824407,
+  "sim_note": "",
+  "sim_ok": true,
+  "sim_samples": [
+   {
+    "deviation": 4.62665893226907e-06,
+    "dir": "USDT->WBNB",
+    "error": "",
+    "gas": 156645,
+    "router": "0x13f4ea83d0bd40e75c8222255bc855a974568dd4",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "WBNB->USDT",
+    "error": "",
+    "gas": 188327,
+    "router": "0x13f4ea83d0bd40e75c8222255bc855a974568dd4",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "USDT->ETH",
+    "error": "",
+    "gas": 194298,
+    "router": "0x13f4ea83d0bd40e75c8222255bc855a974568dd4",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "ETH->USDT",
+    "error": "",
+    "gas": 213314,
+    "router": "0x13f4ea83d0bd40e75c8222255bc855a974568dd4",
+    "status": "SIMULATED_OK"
+   }
   ]
  },
  "bnb/uniswap_v3": {
@@ -639,6 +882,43 @@
     "size": 1000.0,
     "token": "ETH"
    }
+  ],
+  "sim_checked_at": 1791365377.3691058,
+  "sim_note": "",
+  "sim_ok": true,
+  "sim_samples": [
+   {
+    "deviation": 3.4222892588937304e-05,
+    "dir": "USDT->WBNB",
+    "error": "",
+    "gas": 135465,
+    "router": "0xb971ef87ede563556b2ed4b1c0b0019111dd85d2",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "WBNB->USDT",
+    "error": "",
+    "gas": 118134,
+    "router": "0xb971ef87ede563556b2ed4b1c0b0019111dd85d2",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "USDT->ETH",
+    "error": "",
+    "gas": 172299,
+    "router": "0xb971ef87ede563556b2ed4b1c0b0019111dd85d2",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "ETH->USDT",
+    "error": "",
+    "gas": 180114,
+    "router": "0xb971ef87ede563556b2ed4b1c0b0019111dd85d2",
+    "status": "SIMULATED_OK"
+   }
   ]
  },
  "ethereum/sushiswap_v2": {
@@ -683,6 +963,27 @@
     ],
     "size": 1000.0,
     "token": "WETH"
+   }
+  ],
+  "sim_checked_at": 1791365125.8295825,
+  "sim_note": "USDC->WBTC: quote NO_ROUTE",
+  "sim_ok": false,
+  "sim_samples": [
+   {
+    "deviation": 0.0,
+    "dir": "USDC->WETH",
+    "error": "",
+    "gas": 138931,
+    "router": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "WETH->USDC",
+    "error": "",
+    "gas": 117379,
+    "router": "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f",
+    "status": "SIMULATED_OK"
    }
   ]
  },
@@ -766,6 +1067,43 @@
     ],
     "size": 1000.0,
     "token": "WBTC"
+   }
+  ],
+  "sim_checked_at": 1791365123.2019217,
+  "sim_note": "",
+  "sim_ok": true,
+  "sim_samples": [
+   {
+    "deviation": 0.0,
+    "dir": "USDC->WETH",
+    "error": "",
+    "gas": 137981,
+    "router": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "WETH->USDC",
+    "error": "",
+    "gas": 116427,
+    "router": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "USDC->WBTC",
+    "error": "",
+    "gas": 141196,
+    "router": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "WBTC->USDC",
+    "error": "",
+    "gas": 121527,
+    "router": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+    "status": "SIMULATED_OK"
    }
   ]
  },
@@ -854,6 +1192,43 @@
     "size": 1000.0,
     "token": "WBTC"
    }
+  ],
+  "sim_checked_at": 1791365130.3906236,
+  "sim_note": "",
+  "sim_ok": true,
+  "sim_samples": [
+   {
+    "deviation": 0.0,
+    "dir": "USDC->WETH",
+    "error": "",
+    "gas": 145760,
+    "router": "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "WETH->USDC",
+    "error": "",
+    "gas": 129003,
+    "router": "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "USDC->WBTC",
+    "error": "",
+    "gas": 156691,
+    "router": "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "WBTC->USDC",
+    "error": "",
+    "gas": 127299,
+    "router": "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45",
+    "status": "SIMULATED_OK"
+   }
   ]
  },
  "polygon/quickswap_v2": {
@@ -937,6 +1312,43 @@
     "size": 1000.0,
     "token": "WPOL"
    }
+  ],
+  "sim_checked_at": 1791365273.140358,
+  "sim_note": "",
+  "sim_ok": true,
+  "sim_samples": [
+   {
+    "deviation": 0.0,
+    "dir": "USDC->WETH",
+    "error": "",
+    "gas": 182720,
+    "router": "0xa5e0829caced8ffdd4de3c43696c57f7d7a678ff",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "WETH->USDC",
+    "error": "",
+    "gas": 179176,
+    "router": "0xa5e0829caced8ffdd4de3c43696c57f7d7a678ff",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "USDC->WPOL",
+    "error": "",
+    "gas": 182399,
+    "router": "0xa5e0829caced8ffdd4de3c43696c57f7d7a678ff",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "WPOL->USDC",
+    "error": "",
+    "gas": 174068,
+    "router": "0xa5e0829caced8ffdd4de3c43696c57f7d7a678ff",
+    "status": "SIMULATED_OK"
+   }
   ]
  },
  "polygon/sushiswap_v2": {
@@ -1019,6 +1431,43 @@
     ],
     "size": 1000.0,
     "token": "WPOL"
+   }
+  ],
+  "sim_checked_at": 1791365314.6665785,
+  "sim_note": "",
+  "sim_ok": true,
+  "sim_samples": [
+   {
+    "deviation": 0.0,
+    "dir": "USDC->WETH",
+    "error": "",
+    "gas": 183671,
+    "router": "0x1b02da8cb0d097eb8d57a175b88c7d8b47997506",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "WETH->USDC",
+    "error": "",
+    "gas": 180114,
+    "router": "0x1b02da8cb0d097eb8d57a175b88c7d8b47997506",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "USDC->WPOL",
+    "error": "",
+    "gas": 183349,
+    "router": "0x1b02da8cb0d097eb8d57a175b88c7d8b47997506",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "WPOL->USDC",
+    "error": "",
+    "gas": 175018,
+    "router": "0x1b02da8cb0d097eb8d57a175b88c7d8b47997506",
+    "status": "SIMULATED_OK"
    }
   ]
  },
@@ -1106,6 +1555,43 @@
     ],
     "size": 1000.0,
     "token": "WPOL"
+   }
+  ],
+  "sim_checked_at": 1791365352.3359556,
+  "sim_note": "",
+  "sim_ok": true,
+  "sim_samples": [
+   {
+    "deviation": 0.0,
+    "dir": "USDC->WETH",
+    "error": "",
+    "gas": 202079,
+    "router": "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "WETH->USDC",
+    "error": "",
+    "gas": 196708,
+    "router": "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "USDC->WPOL",
+    "error": "",
+    "gas": 280833,
+    "router": "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45",
+    "status": "SIMULATED_OK"
+   },
+   {
+    "deviation": 0.0,
+    "dir": "WPOL->USDC",
+    "error": "",
+    "gas": 306407,
+    "router": "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45",
+    "status": "SIMULATED_OK"
    }
   ]
  },

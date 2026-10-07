@@ -1,70 +1,83 @@
-# DEX Arbitrage Paper Lab — handover (2026-10-07). NOT deployed. No real transaction.
+# DEX Arbitrage Paper Lab — handover (updated 2026-10-07 ~10:00 UTC). NOT deployed. No real transaction.
 
-## 1. Repo / branch / commits
-Repo `luckyleaf2204-jpg/kol-radar`. Production = `origin/main` = `938c4e4` (pushed 07:48 UTC; Render autoDeploy from
-main; `/healthz` 07:57 UTC: connected, `/var/data/paper.db`, durable). The deployed commit is not exposed by the
-site, so "938c4e4 is live" is inferred from the push + healthy redeploy, not read from the server. Work branch
-`dexarb-lab` from `938c4e4`; result commit: see `git log dexarb-lab` (not pushed).
+## 1. Production KOL data — NOT cleaned (blocked, by design)
+* **No Render Shell access** from this machine: no Render CLI, no Render config / API key, and the dashboard
+  (dashboard.render.com) shows the sign-in page in the in-app browser. No credential was asked for or entered.
+  Per the instruction, the production cleanup stops here: nothing was deleted, nothing deployed.
+* **KOL writers still active in production** (commit `938c4e4`, read from the code): the KOL copy engine saves
+  `state` ('engine') and `trades` / `gaps` (engine stopped taking new copies, but its 3 open positions still close
+  and gaps are still written); `KolHistory` writes `kols` / `kol_daily` on every `hist.tick()`; `SmartTracker` deletes
+  and re-inserts `kol_roster` at every start; `SignalEngine` writes `signals`. Stopping them without stopping the site
+  means replacing the app (deploying `dexarb-lab`, which has none of these writers) — not allowed in this task.
+  Suspending the Render service would take the whole site down.
+* **Not verified** (needs the Render account): the production DB path beyond `/healthz` (`/var/data/paper.db`,
+  durable true), the latest disk snapshot / backup and a restore of it.
+* **Procedure once access and a deploy are approved:** deploy → `/healthz` shows `app: dexarb` → Render Shell:
+  `python tools/kol_cleanup.py --db /var/data/paper.db --report /var/data/kol_cleanup_dryrun.json` → confirm a disk
+  snapshot exists → apply with `--backup-confirmed "<snapshot id/date>" --expect-fingerprint <from the dry run>` →
+  re-run the dry run (KOL tables absent, `signals WHERE source='kol'` = 0, files gone) → check `/healthz`.
+* **Smart Wallet rows of KOL wallets (sw_trades / sw_open / sw_wallets)**: written by the Smart Wallet tracker for
+  every wallet with the same code path, i.e. they ARE Smart Wallet data, not rows owned by the KOL bot → kept and
+  reported, never deleted by the tool (local copy: 565 / 70 / 94 rows).
+* Local dry run (data/paper.db, NOT production): kols 565 rows, kol_roster 565, kol_daily 29, trades 64, gaps 2,
+  state 1, signals(kol) 0, two kol book files of 53 kB each.
 
-## 2. KOL data / code
-Code removed from the app on `dexarb-lab`: `kolbot/` (KOL copy engine, KOL roster, signals, Smart Wallet, devs,
-S1–S3 books, UI), `kols.json`, `run.bat`, `tools/demo_db.py`, old tests. History stays in git; old
-pre-registrations moved to `docs/history/`.
-Production KOL **data was NOT deleted**: production is only reachable by deploying (forbidden here) or a Render
-shell. `tools/kol_cleanup.py` (dry-run default; apply needs `--backup-confirmed` + the dry-run fingerprint) removes:
-tables kols, kol_roster, kol_daily, trades, gaps; row state 'engine'; signals with source='kol'; files
-signal_paper_kol5.db / kol10.db. Dry-run on the LOCAL copy of paper.db (not production): kols 565 rows (56 kB data),
-kol_roster 565 (25 kB), kol_daily 29 (4 kB), trades 64 (20 kB), gaps 2, state 1 row, signals(kol) 0, two files of
-53 kB each; file 78.8 MB. Not deletable safely (kept, reported): Smart Wallet rows of KOL wallets (local: sw_trades
-565, sw_open 70, sw_wallets 94).
+## 2. Fresh `dexarb.db` (verified locally on the live smoke-run DB)
+schema_version 1, WAL, 23 tables, none of the old tables (kols, kol_roster, trades, sw_*, signals, devs, tokens,
+gaps, state). Backup (sqlite online backup) integrity ok; restore to a new file integrity ok, schema 1, row counts
+equal at backup time. Retention dry run: 26 quote rows / 5 rejected rows eligible at +40 d, 0 deleted. Quota
+1,000 MB, 0.9 MB used. Production path will be `/var/data/dexarb.db` (next to KOL_DB); not created yet (no deploy).
+The app never opens paper.db (Store refuses the old names). Site name "KOL Radar", service `kol-radar`, hostname,
+disk, `KOL_DB`, `APP_ACCESS_CODE` (value stays in Render) unchanged.
 
-## 3. New database
-`dexarb.db` next to `KOL_DB` (production: `/var/data/dexarb.db`), schema_version 1, WAL; refuses paper.db / KOL
-files. Not durable host → paper sample disabled. Quota 1,000 MB. Retention: raw quotes 7 d, raw rejected rows 30 d
-(dry-run unless DEXARB_RETENTION=apply), rollups / ledger / audit kept. Backup (sqlite backup API + integrity) and
-restore tested.
+## 3. Cost / fill provenance
+| Item | Level | Source |
+|---|---|---|
+| EVM gas price | MEASURED | eth_feeHistory (next base fee + p50 tip) |
+| EVM swap gas, paper leg, 11 venues | SIMULATED | eth_estimateGas of the exact unsigned swap (state override) |
+| EVM swap gas, detection; other venues | ESTIMATED | median gasUsed of recent same-pool txs (protocol fallback) |
+| Base L1 data fee | ESTIMATED | median l1Fee of the same-pool sample |
+| EVM approval | SIMULATED | eth_estimateGas approve(router) from the paper address |
+| Paper fill, 11 EVM venues | SIMULATED | eth_call of the exact unsigned swap with min-out (revert = REVERTED, gas paid) |
+| Paper fill, Solana / PancakeSwap V3 Base / no token layout | QUOTE_ONLY | provider / on-chain quote, labelled so |
+| Solana base fee | ESTIMATED | 5,000 lamports / signature |
+| Solana priority | MEASURED price × ESTIMATED 1.4 M CU upper bound | getRecentPrioritizationFees |
+| Solana token-account rent | MEASURED | getMinimumBalanceForRentExemption(165) |
+| Native → quote asset | MEASURED | DEX quote of 1 wrapped native, timestamped |
+| Anything missing | UNKNOWN | opportunity rejected (cost_unknown) |
+Simulation check (`tools/dexarb_verify.py --sim`, live, read-only): simulated output equal to the quote (max
+deviation 3.4e-5) on Base Uniswap V2/V3, Ethereum Uniswap V2/V3, Polygon QuickSwap/Sushi V2/Uniswap V3, BNB
+PancakeSwap V2/V3, BiSwap, Uniswap V3; PancakeSwap V3 on Base reverted (router / ABI) → QUOTE_ONLY. Solana: no
+funded account and no balance override in simulateTransaction → QUOTE_ONLY. Nothing is signed or broadcast.
 
-## 4. Chains / DEX (live read-only check 2026-10-07, docs/dexarb_connector_verification.json)
-SUPPORTED: Base Uniswap V2, Uniswap V3, PancakeSwap V3; Polygon QuickSwap V2, SushiSwap V2, Uniswap V3; Ethereum
-Uniswap V2, Uniswap V3; BNB PancakeSwap V2, BiSwap V2, PancakeSwap V3, Uniswap V3; Solana Orca Whirlpool, Meteora
-DLMM. UNVERIFIED: Base SushiSwap V2 (no cbBTC pool), Ethereum SushiSwap V2 (no WBTC pool), Solana Raydium and Raydium
-CLMM (no JUP route at the size). Atomic model B: NOT_SUPPORTED everywhere. Wallets: Trust Wallet all five; Phantom
-Solana / Ethereum / Base / Polygon, BNB UNVERIFIED. Sources: public RPC (publicnode; Solana mainnet-beta) + Jupiter
-lite quote API; no key, no cost. BNB public RPC returned HTTP 429 during runs (feed UNAVAILABLE / gas UNKNOWN);
-Polygon batches ~3–6 s (quote_stale rejections).
+## 4. Sequential model, baseline, connectors
+Two legs, leg 2 re-quoted (and re-simulated) after the latency, gas charged on reverts, position OPEN_EXPOSURE
+until a real fill; pending legs survive a restart (verified live: 3 cycles stuck by a crash were re-decided with
+fresh quotes and closed after restart). Baseline uses the candidate execution limits. Amendment 1 (timestamped) in
+docs/prereg_dex_arbitrage.md records the smoke-test changes before any sample. UNVERIFIED connectors (never used):
+Sushi V2 Base, Sushi V2 Ethereum, Raydium, Raydium CLMM.
 
-## 5. Measurement levels
-MEASURED: gas price (eth_feeHistory), Solana priority fees, rent, native price (DEX quote). SIMULATED: EVM approval
-gas (eth_estimateGas). ESTIMATED: EVM swap gas (median of recent same-pool txs, protocol fallback), Solana base fee
-and 1.4 M CU upper bound. Quotes: exact size, block / slot context, latency. Swap simulation itself: not done
-(needs a funded wallet; none used) → swap execution is quote-based paper fill.
+## 5. Bugs found and fixed in this round
+18-decimal simulated amounts overflowed SQLite INTEGER and crashed the server; one failing paper event stopped the
+timer loop (now retried and logged; timer loop cannot die); retention NOT IN with NULLs deleted nothing; pending
+cycles did not reserve capital (overdraft); rollups showed gross 0 for failed quotes; baseline ignored the impact cap.
 
-## 6. Paper model
-A (sequential wallet swaps) with arms A_fast (2 s / 4 s) and A_slow (5 s / 15 s); B atomic NOT_SUPPORTED.
+## 6. RPC / coverage (public endpoints, smoke runs 08:44–09:46 UTC)
+Base, Ethereum, Polygon, Solana feeds OK; BNB had HTTP 429 runs earlier (later run OK); Polygon batches 3–6 s
+(quote_stale). Sustained 24 h behaviour on public endpoints: UNVERIFIED.
 
-## 7. Tests
-`python -m pytest -q tests/` → 47 passed. No signing / sending: RPC allow-list (single + batch), quote client only
-reads /quote, source scan, no POST route.
+## 7. Storage
+≈ 19 MB/day measured (16-min run, vacuumed copy minus empty schema, no candidates). Paper legs / simulations add a
+few kB per cycle.
 
-## 8. Sample (local smoke runs, public endpoints, 2026-10-07 08:44–09:11 UTC)
-Run 2 (16 min, after fixes): 4,810 evaluations, 0 candidates, best gross spread per chain all ≤ 0 (Base −0.002 /
-−0.04, Ethereum −0.02 / −0.30, Polygon −0.74 / −70.1, Solana −0.28 at 1,000; BNB only failed quotes / ≤ 0).
-Rejections: negative_spread 3,622, impact_high 651, cost_unknown 234, quote_failed 168, quote_stale 135. Benchmark
-round trips (random pair, paper): Solana SOL 1,000: −0.71 (fast) / −1.00 (slow) USDC; Ethereum WETH 100: −1.71
-(gas 1.16); Ethereum WBTC 100: −1.26; BNB ETH 1,000: −3.23 USDT; Base cbBTC 1,000: −5.20; Base WETH 100: −0.53;
-Polygon WPOL 100: −12.5; Polygon WETH 100 via SushiSwap V2: −99.97 (illiquid) → baseline now applies the same
-execution limits (set during the smoke test, before any sample).
-These are smoke-test numbers, not the pre-registered sample (which starts at deployment, after a 24 h warm-up).
+## 8. Smoke-run results (not the pre-registered sample)
+0 candidates; every gross spread ≤ 0. Benchmark round trips (paper, net): Solana SOL 1,000 −0.97 / −1.33; Ethereum
+WETH 100 −0.85 (simulated gas 0.19), WBTC 100 −0.52; Base cbBTC 100 −0.08, cbBTC 1,000 −10.30 (held through a crash
+→ exposure); BNB ETH 100 −0.22, WBNB 100 −0.52.
 
-## 9. Storage
-Run 2: 0.213 MB of data in 16 min ≈ 19 MB/day (vacuumed copy minus empty schema; no candidates in that window).
+## 9. Tests
+`python -m pytest -q tests/` → 53 passed.
 
-## 10. FAIL / UNVERIFIED
-UNVERIFIED: production KOL deletion (not run), Phantom on BNB, 5 connectors (above), swap simulation, sustained
-public-RPC coverage (BNB 429, Polygon slow), the deployed commit id. FAIL: none of the acceptance tests.
-
-## 11. Site
-Service `kol-radar`, hostname, plan, disk `/var/data`, `KOL_DB`, `APP_ACCESS_CODE` (secret stays in Render), health
-path unchanged; page title "KOL Radar"; the stored access code key is reused.
-
-## 12. Not deployed; no real transaction; no signing.
+## 10. Still open
+Render access for the production cleanup; deploy decision (replaces the KOL app); Phantom on BNB; Solana simulation;
+24 h public-RPC coverage.

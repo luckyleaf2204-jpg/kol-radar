@@ -15,6 +15,7 @@ from dexarb.fees import Cost, EvmFees, SolanaFees, to_quote
 from dexarb.protocols import V3_TIERS, Quote, evm_quotes, jupiter_quote
 from dexarb.registry import ATOMIC, CHAINS, coverage, supported, verification
 from dexarb.rpc import Rpc
+from dexarb.simulate import Simulator
 from dexarb.store import Store
 
 SOL_REQ_SPACING_S = 1.05                # Jupiter public endpoint: about one request per second
@@ -57,8 +58,9 @@ class Lab:
         self.stats = {c: {"scans": 0, "evaluated": 0, "candidates": 0, "rejected": {}, "last_scan": None,
                           "last_error": ""} for c in self.chains}
         self.paper_enabled = paper_enabled
-        self.arms = {a: E.PaperA(store, self.quote_one, self.leg_costs, a, clock) for a in C.ARMS} \
-            if paper_enabled else {}
+        self.sims = {c: Simulator(c, self.rpc[c], clock) for c in self.chains if CHAINS[c].kind == "evm"}
+        self.arms = {a: E.PaperA(store, self.quote_one, self.leg_costs, a, clock, simulate=self.sim_leg)
+                     for a in C.ARMS} if paper_enabled else {}
         for arm in self.arms.values():
             arm.venues = {c: [p.key for p in supported(c, self.ver)] for c in self.chains}
         self.last_baseline: dict[tuple, float] = {}
@@ -151,6 +153,23 @@ class Lab:
                     and (chain, pk, a_in.symbol) not in account.setup_done and key not in account.setup_done:
                 setup_n = f.ata_rent()
         return to_quote(gas_n, price), gas_n, to_quote(setup_n, price)
+
+    def sim_leg(self, chain, pk, a_in, a_out, amount_raw, min_out_raw, q):
+        """Unsigned-swap simulation for venues whose simulation matched the quote in the live check (sim_ok)."""
+        if chain not in self.sims or not (self.ver.get(f"{chain}/{pk}") or {}).get("sim_ok"):
+            return None, None, None
+        fee = q.route[0].get("fee_tier") if q is not None and q.route else None
+        sim = self.sims[chain].swap(self._proto(chain, pk), a_in, a_out, amount_raw, min_out_raw, fee)
+        gp = self._gas_price.get(chain)
+        if sim.status != "SIMULATED_OK" or sim.gas_units is None or gp is None or not gp.known:
+            return sim, None, None
+        proto, f = self._proto(chain, pk), self.fees[chain]
+        _, l1, _ = f.swap_gas_units(proto, f.pool_of(proto, a_in.address, a_out.address, fee))
+        gn = Cost(sim.gas_units * gp.native + (l1 or 0.0), "SIMULATED",
+                  f"eth_estimateGas of the exact unsigned swap = {sim.gas_units} gas x {gp.source}"
+                  + (f" + L1 data fee {l1:.3g} native (ESTIMATED, same-pool sample)" if l1 else ""))
+        price = self.price.get(chain) or Cost(None, "UNKNOWN", "no native price")
+        return sim, gn, to_quote(gn, price)
 
     # --- scan -----------------------------------------------------------------------------------------------------
     def scan(self, chain: str) -> dict:
@@ -342,7 +361,11 @@ class Lab:
         with self.lock:
             now = self.clock()
             for arm in self.arms.values():
-                arm.tick(now)
+                try:
+                    arm.tick(now)
+                except Exception as e:
+                    self.log(f"[dexarb] paper tick error {type(e).__name__}: {e}")
+                    self.store.audit("tick_error", {"error": f"{type(e).__name__}: {str(e)[:200]}"})
             if now - self.last_metrics >= METRICS_EVERY_S:
                 self.last_metrics = now
                 self.store.record_metrics()
@@ -363,7 +386,10 @@ class Lab:
 
         async def timers():
             while not stop.is_set():
-                await asyncio.to_thread(self.tick)
+                try:
+                    await asyncio.to_thread(self.tick)
+                except Exception as e:          # the timer loop must never die
+                    self.log(f"[dexarb] tick error {type(e).__name__}: {e}")
                 await asyncio.sleep(0.5)
         await asyncio.gather(timers(), *[chain_loop(c) for c in self.chains])
 

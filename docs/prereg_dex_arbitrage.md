@@ -92,3 +92,22 @@ New `dexarb.db` next to the existing persistent database (Render: /var/data), sc
 writes paper.db / KOL / Smart Wallet / S1–S3 data. Raw quote snapshots 7 days; rejected raw rows 30 days; rollups,
 ledger, cycles, legs and audit events kept. Quota DEXARB_DB_MAX_MB (1,000). If the host has no persistent disk the
 paper sample does not start.
+
+## Amendment 1 — 2026-10-07 09:31 UTC (before the official sample; the lab has never been deployed, no sample exists)
+
+Found during local smoke runs (data quality / fairness, not results):
+1. **Unsigned-swap simulation (EVM).** For venues whose simulation matched the quote in the live check
+   (`tools/dexarb_verify.py --sim`: 11 of 13 EVM connectors; not PancakeSwap V3 on Base, not the UNVERIFIED Sushi
+   V2 on Base / Ethereum), each paper leg's exact unsigned swap (router, amount, min-out = the leg's min-out, paper
+   address) is simulated with eth_call + eth_estimateGas under a state override that gives the paper address the
+   input balance and allowance. Fill = simulated output; leg gas = simulated gasUsed × measured gas price (+ the
+   ESTIMATED L1 fee on Base); a simulated revert = REVERTED with gas charged. Legs record fill_basis=SIMULATED or
+   fill_basis=QUOTE_ONLY (no simulation: Solana, unverified venues, unknown token layout); a quote-based fill is never
+   called simulated. Detection still uses quotes + ESTIMATED gas.
+2. **Baseline execution limits** — the random benchmark uses exactly the candidate limits (fresh OK quotes,
+   context, impact ≤ 1 % per leg); otherwise skipped and logged.
+3. **Gas sample fallback** — pool without a recent swap → median of sampled pools of the same protocol on the chain.
+4. **Context check** — a sell quote read more than 1 block / slot behind the buy quote is rejected
+   (context_mismatch).
+5. **Storage** — rejected evaluations with gross spread ≤ 0 are counted in rollups with a 1 % raw sample.
+Connectors without a route for a registered pair stay UNVERIFIED and are never used.

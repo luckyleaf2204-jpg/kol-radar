@@ -116,8 +116,12 @@ class PaperA:
     costs(chain, proto, a_in, a_out, quote) -> (gas Cost in quote units, gas Cost in native, setup Cost in quote
     units) for that leg given the paper account's approvals / token accounts."""
 
-    def __init__(self, store, quote, costs, arm: str, clock=time.time, rng: random.Random | None = None):
+    def __init__(self, store, quote, costs, arm: str, clock=time.time, rng: random.Random | None = None,
+                 simulate=None):
         self.store, self.quote, self.costs, self.arm, self.clock = store, quote, costs, arm, clock
+        # simulate(chain, proto, a_in, a_out, amount_raw, min_out_raw, quote) -> (SimResult | None, gas native Cost,
+        # gas quote Cost); None = no unsigned-swap simulation for that venue (fill stays QUOTE_ONLY)
+        self.simulate = simulate
         self.l1, self.l2 = C.ARMS[arm]
         self.account = f"A:{arm}"
         self.rng = rng or random.Random(arm)
@@ -211,12 +215,20 @@ class PaperA:
         due = sorted(e for e in self.events if e[0] <= now)
         self.events = [e for e in self.events if e[0] > now]
         for _, _, kind, cid in due:
-            if kind == "leg1":
-                self._leg1(cid, now)
-            elif kind == "leg2_decide":
-                self._leg2_decide(cid, now, attempt=2)
-            else:
-                self._leg2(cid, now)
+            try:
+                if kind == "leg1":
+                    self._leg1(cid, now)
+                elif kind == "leg2_decide":
+                    self._leg2_decide(cid, now, attempt=2)
+                else:
+                    self._leg2(cid, now)
+            except Exception as e:              # one failing event never stops the ledger; it is retried
+                self.store.audit("paper_error", {"account": self.account, "cycle": cid, "event": kind,
+                                                 "error": f"{type(e).__name__}: {str(e)[:200]}"})
+                if kind != "leg1":              # a leg-1 failure leaves no position: the cycle is aborted
+                    self._at(now + C.RETRY_S, "leg2_decide", cid)
+                else:
+                    self._close(cid, "ABORTED", f"leg1_error_{type(e).__name__}", now)
         self.store.commit()
 
     # --- legs -----------------------------------------------------------------------------------------------------
@@ -286,13 +298,13 @@ class PaperA:
             return
         dec_out = opp[1] if opp else None                  # detection-time buy quote (tokens) -> min-out
         min_out = (dec_out if dec_out is not None else human(q_buy.amount_out, tok)) * (1 - C.SLIPPAGE_TOL_BPS / 1e4)
-        got = human(q_buy.amount_out, tok)
+        ok, got, gas_q, gas_n, basis = self._fill(c["chain"], c["buy_protocol"], qa, tok, q_buy, min_out, gas_q, gas_n)
         setup_native = (setup_q.native or 0.0)
         self.move(c["chain"], ch.native, -gas_n.native)
-        if got < min_out:                       # reverted on chain: gas paid, nothing swapped
+        if not ok:                              # reverted on chain: gas paid, nothing swapped
             self._leg_row(cid, 1, 1, c["buy_protocol"], qa.symbol, tok.symbol, c["size"], c["started_at"], dec_out,
                           min_out, now, q_buy, qid, None, "REVERTED", gas_n.native, gas_q.native, gas_q.status,
-                          "fresh quote below min-out")
+                          f"below min-out; {basis}")
             self._close(cid, "FAILED", "leg1_reverted_slippage", now, gas_cost=gas_q.native, spent=0.0, net=-gas_q.native,
                         unknown_costs=int(unknown))
             return
@@ -300,12 +312,34 @@ class PaperA:
         self.move(c["chain"], tok.symbol, got)
         self._mark_setup(c["chain"], c["buy_protocol"], qa)
         self._leg_row(cid, 1, 1, c["buy_protocol"], qa.symbol, tok.symbol, c["size"], c["started_at"], dec_out, min_out,
-                      now, q_buy, qid, got, "FILLED", gas_n.native, gas_q.native, gas_q.status)
+                      now, q_buy, qid, got, "FILLED", gas_n.native, gas_q.native, gas_q.status, basis)
         self.store.db.execute("INSERT INTO paper_positions (account, chain, token, amount, cycle_id, status, opened_at) "
                               "VALUES (?,?,?,?,?,'OPEN',?)", (self.account, c["chain"], tok.symbol, got, cid, now))
         self._close(cid, "LEG1", "", now, spent=c["size"], gas_cost=gas_q.native,
                     setup_cost=setup_native, unknown_costs=int(unknown))
         self._leg2_decide(cid, now, attempt=1)
+
+    def _fill(self, chain, proto, a_in: Asset, a_out: Asset, q, min_out: float, gas_q, gas_n):
+        """(executes?, output, gas quote Cost, gas native Cost, fill basis note). SIMULATED only when the exact
+        unsigned swap was simulated on current state with min-out; else QUOTE_ONLY (never called simulated)."""
+        sim = gq = gn = None
+        if self.simulate is not None:
+            sim, gn, gq = self.simulate(chain, proto, a_in, a_out, q.amount_in, raw(min_out, a_out), q)
+        if sim is None or sim.status == "UNAVAILABLE":
+            got = human(q.amount_out, a_out)
+            why = f" (simulation unavailable: {sim.error[:80]})" if sim is not None else ""
+            return got >= min_out, got, gas_q, gas_n, "fill_basis=QUOTE_ONLY" + why
+        sid = self.store.db.execute(
+            "INSERT INTO simulation_results (chain, kind, target, status, value, detail, at) VALUES (?,?,?,?,?,?,?)",
+            (chain, f"swap_leg:{proto}", sim.target, sim.status,
+             None if sim.amount_out is None else float(sim.amount_out),     # 18-decimal raw amounts exceed int64
+             json.dumps({"gas_units": sim.gas_units, "error": sim.error, "quote_out": q.amount_out,
+                         "min_out_raw": raw(min_out, a_out)}), sim.at)).lastrowid
+        if gn is not None and gn.known:
+            gas_q, gas_n = gq, gn
+        if sim.status == "SIM_REVERT":
+            return False, None, gas_q, gas_n, f"fill_basis=SIMULATED revert sim_id={sid}: {sim.error[:80]}"
+        return True, human(sim.amount_out, a_out), gas_q, gas_n, f"fill_basis=SIMULATED sim_id={sid}"
 
     def _detect_nab(self, cid):
         r = self.store.db.execute("SELECT detect_net_after_buffer FROM paper_cycles WHERE id=?", (cid,)).fetchone()
@@ -370,13 +404,16 @@ class PaperA:
             self._close(cid, "OPEN_EXPOSURE", "leg2_gas_unknown_or_insufficient", now)
             self._leg2_decide(cid, now, attempt + 1)
             return
-        out = human(q.amount_out, qa)
         min_out = dec_out * (1 - C.SLIPPAGE_TOL_BPS / 1e4) if dec_out is not None else None
+        if min_out is None:
+            ok, out, basis = False, None, "no decision quote"
+        else:
+            ok, out, gas_q, gas_n, basis = self._fill(c["chain"], venue, tok, qa, q, min_out, gas_q, gas_n)
         self.move(c["chain"], ch.native, -gas_n.native)
         gas_total = (c["gas_cost"] or 0) + gas_q.native
-        if min_out is None or out < min_out:
+        if not ok:
             self._leg_row(cid, 2, attempt, venue, tok.symbol, qa.symbol, amt, dec_at, dec_out, min_out, now,
-                          q, qid, None, "REVERTED", gas_n.native, gas_q.native, gas_q.status, "below min-out")
+                          q, qid, None, "REVERTED", gas_n.native, gas_q.native, gas_q.status, f"below min-out; {basis}")
             self._close(cid, "OPEN_EXPOSURE", "leg2_reverted_slippage", now, gas_cost=gas_total)
             self._leg2_decide(cid, now, attempt + 1)
             return
@@ -384,7 +421,7 @@ class PaperA:
         self.move(c["chain"], qa.symbol, out)
         self._mark_setup(c["chain"], venue, tok)
         self._leg_row(cid, 2, attempt, venue, tok.symbol, qa.symbol, amt, dec_at, dec_out, min_out, now, q,
-                      qid, out, "FILLED", gas_n.native, gas_q.native, gas_q.status)
+                      qid, out, "FILLED", gas_n.native, gas_q.native, gas_q.status, basis)
         self.store.db.execute("UPDATE paper_positions SET status='CLOSED', closed_at=? WHERE cycle_id=? AND status='OPEN'",
                               (now, cid))
         setup_total = (c["setup_cost"] or 0) + (setup_q.native or 0)

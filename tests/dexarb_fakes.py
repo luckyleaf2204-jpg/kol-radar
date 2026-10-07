@@ -11,6 +11,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from dexarb.fees import SEL_APPROVE, SEL_FACTORY, SEL_GET_PAIR, SEL_GET_POOL  # noqa: E402
 from dexarb.protocols import SEL_GAO, SEL_Q1  # noqa: E402
 from dexarb.registry import CHAINS  # noqa: E402
+from dexarb.simulate import (EXEC_ROUTERS, SEL_ALW, SEL_BAL, SEL_V2_SWAP, SEL_V3_SWAP, allowance_key,  # noqa: E402
+                             balance_key)
+from dexarb.fees import PAPER_EVM_ADDRESS  # noqa: E402
 
 BASE = CHAINS["base"]
 USDC, WETH, CBBTC = BASE.quote_asset, BASE.tokens[0], BASE.tokens[1]
@@ -33,6 +36,29 @@ class FakeEvm:
         self.base_fee = 10 ** 9
         self.tip = 10 ** 8
         self.gas_used = 150_000
+        self.sim_gas = 121_000
+        self.layout_known = True
+        self.exec_routers = {r: p for (c, p), r in EXEC_ROUTERS.items() if c == "base"}
+
+    def swap_call(self, p):
+        """Unsigned swap with state override: needs the override; reverts below min-out."""
+        tx, ov = p[0], (p[2] if len(p) > 2 else {})
+        data, to = tx["data"], tx["to"]
+        w = [int(data[10 + 64 * i:74 + 64 * i], 16) for i in range((len(data) - 10) // 64)]
+        if data.startswith(SEL_V2_SWAP):
+            amt, mino, a_in, a_out, venue = w[0], w[1], f"0x{w[6]:040x}", f"0x{w[7]:040x}", to
+        else:
+            a_in, a_out, amt, mino = f"0x{w[0]:040x}", f"0x{w[1]:040x}", w[4], w[5]
+            pk = self.exec_routers.get(to)
+            venue = VENUES.get(pk) if pk else None
+            if venue is None:
+                return None, "execution reverted"
+        if not ov.get(a_in, {}).get("stateDiff"):
+            return None, "execution reverted: insufficient balance"
+        o = self.out(venue, a_in, a_out, amt)
+        if o is None or o < mino:
+            return None, "execution reverted: INSUFFICIENT_OUTPUT_AMOUNT"
+        return o, None
 
     def price(self, venue, token, factor):
         q, t = self.reserves[venue][token]
@@ -61,11 +87,25 @@ class FakeEvm:
         elif m == "eth_gasPrice":
             res = hex(self.base_fee + self.tip)
         elif m == "eth_estimateGas":
-            res = hex(46_000) if p[0]["data"].startswith(SEL_APPROVE) else None
+            if p[0]["data"].startswith(SEL_APPROVE):
+                res = hex(46_000)
+            else:
+                o, e = self.swap_call(p)
+                res, err = (hex(self.sim_gas), None) if o is not None else (None, e)
         elif m == "eth_getLogs":
             res = [{"transactionHash": f"0x{i:064x}"} for i in range(5)]
         elif m == "eth_getTransactionReceipt":
             res = {"gasUsed": hex(self.gas_used), "l1Fee": hex(0)}
+        elif m == "eth_call" and (p[0]["data"].startswith(SEL_V2_SWAP) or p[0]["data"].startswith(SEL_V3_SWAP)):
+            o, err = self.swap_call(p)
+            if o is not None:
+                res = ("0x" + f"{32:064x}{2:064x}{0:064x}{o:064x}") if p[0]["data"].startswith(SEL_V2_SWAP) \
+                    else "0x" + f"{o:064x}" + "0" * 192
+        elif m == "eth_call" and (p[0]["data"].startswith(SEL_BAL) or p[0]["data"].startswith(SEL_ALW)):
+            ov = (p[2] if len(p) > 2 else {}).get(p[0]["to"], {}).get("stateDiff", {})
+            spender = "0x" + p[0]["data"][-40:] if p[0]["data"].startswith(SEL_ALW) else None
+            key = balance_key(PAPER_EVM_ADDRESS, 9) if spender is None else allowance_key(PAPER_EVM_ADDRESS, spender, 10)
+            res = ov.get(key, "0x" + "0" * 64) if self.layout_known else "0x" + "0" * 64
         elif m == "eth_call":
             to, data = p[0]["to"], p[0]["data"]
             w = [int(data[10 + 64 * i:74 + 64 * i], 16) for i in range((len(data) - 10) // 64)]

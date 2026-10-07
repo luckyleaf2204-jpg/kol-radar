@@ -300,3 +300,96 @@ def test_gas_fallback_to_same_protocol_median_when_pool_is_idle():
     other = CHAINS["base"].protocols[2]
     f.swap_gas[(other.key, "0xidle2")] = ((None, 0.0, "no swap"), f.clock())
     assert f.swap_gas_units(other, "0xidle2")[0] is None                                # no sample of that protocol
+
+
+# --- unsigned-swap simulation (state override, read-only) -------------------------------------------------------------
+VER_SIM = {k: dict(v, sim_ok=True) for k, v in VER_ALL.items()}
+
+
+def lab_sim(tmp_path, ver=None):
+    evm, clk = FakeEvm(), Clock()
+    st = Store(tmp_path / "dexarb.db", clock=clk)
+    lb = Lab(st, ["base"], rpc_factory=lambda c: Rpc("fake", transport=evm.transport), clock=clk,
+             log=lambda *_: None, ver=ver or VER_SIM, sleep=lambda s: None)
+    return lb, st, evm, clk
+
+
+def test_simulator_finds_storage_layout_and_matches_quote():
+    from dexarb.simulate import Simulator
+    evm = FakeEvm()
+    rpc = Rpc("fake", transport=evm.transport)
+    sim = Simulator("base", rpc)
+    assert sim.find_slots(USDC.address) == (9, 10)
+    p = CHAINS["base"].protocols[0]
+    q = evm_quotes(rpc, "base", [p], [(p.key, USDC, WETH, 10 ** 9)])[0]
+    r = sim.swap(p, USDC, WETH, 10 ** 9, 0, None)
+    assert r.status == "SIMULATED_OK" and r.amount_out == q.amount_out and r.gas_units == 121_000
+    assert sim.swap(p, USDC, WETH, 10 ** 9, q.amount_out + 1, None).status == "SIM_REVERT"   # min-out enforced
+    evm.layout_known = False
+    assert Simulator("base", rpc).swap(p, USDC, WETH, 10 ** 9, 0, None).status == "UNAVAILABLE"
+
+
+def test_paper_legs_are_simulated_when_verified(tmp_path):
+    lb, st, evm, clk = lab_sim(tmp_path)
+    evm.price(VENUES["uniswap_v2"], WETH.address, 0.98)
+    lb.scan("base")
+    run_until(lb, clk, 30)
+    notes = [r[0] for r in st.db.execute("SELECT note FROM paper_legs WHERE status='FILLED'")]
+    assert notes and all(n.startswith("fill_basis=SIMULATED sim_id=") for n in notes)
+    sims = st.db.execute("SELECT status, detail FROM simulation_results").fetchall()
+    assert sims and all(s == "SIMULATED_OK" for s, _ in sims)
+    g = st.db.execute("SELECT cost_status, gas_native FROM paper_legs WHERE status='FILLED'").fetchall()
+    assert all(c == "SIMULATED" for c, _ in g) and all(x == pytest.approx(121_000 * 1.1e-9) for _, x in g)
+
+
+def test_simulated_revert_charges_gas_and_keeps_position_open(tmp_path):
+    lb, st, evm, clk = lab_sim(tmp_path)
+    evm.price(VENUES["uniswap_v2"], WETH.address, 0.98)
+    lb.scan("base")
+    run_until(lb, clk, C.ARMS["A_fast"][0] + 0.5)
+    for v in VENUES.values():
+        evm.price(v, WETH.address, 0.9)
+    run_until(lb, clk, C.ARMS["A_fast"][1] + 1)
+    rev = st.db.execute("SELECT note, gas_native FROM paper_legs WHERE leg=2 AND status='REVERTED'").fetchall()
+    assert rev and all("fill_basis=SIMULATED revert" in n and g > 0 for n, g in rev)
+    assert st.db.execute("SELECT COUNT(*) FROM paper_positions WHERE status='OPEN'").fetchone()[0] >= 1
+
+
+def test_unverified_simulation_stays_quote_only(tmp_path):
+    lb, st, evm, clk = lab_sim(tmp_path, ver=VER_ALL)            # live check never confirmed the simulation
+    evm.price(VENUES["uniswap_v2"], WETH.address, 0.98)
+    lb.scan("base")
+    run_until(lb, clk, 30)
+    notes = [r[0] for r in st.db.execute("SELECT note FROM paper_legs WHERE status='FILLED'")]
+    assert notes and all(n.startswith("fill_basis=QUOTE_ONLY") for n in notes)
+    assert st.db.execute("SELECT COUNT(*) FROM simulation_results").fetchone()[0] == 0
+
+
+def test_18_decimal_simulation_amount_is_stored(tmp_path):
+    from dexarb.simulate import SimResult
+    lb, st, evm, clk = lab_sim(tmp_path)
+    arm = lb.arms["A_fast"]
+    arm.simulate = lambda *a: (SimResult("SIMULATED_OK", 10 ** 21, 120_000, "", "0xr", clk()), None, None)
+    qq = Quote("base", "uniswap_v2", "WETH", "USDC", 10 ** 21, 10 ** 21, fetched_at=clk())
+    ok, got, *_ = arm._fill("base", "uniswap_v2", WETH, WETH, qq, 0.0, Cost(1, "ESTIMATED", ""), Cost(1, "ESTIMATED", ""))
+    assert ok and got == 1000.0 and st.db.execute("SELECT value FROM simulation_results").fetchone()[0] == 1e21
+
+
+def test_a_failing_event_is_retried_not_fatal(tmp_path):
+    lb, st, evm, clk = lab(tmp_path)
+    evm.price(VENUES["uniswap_v2"], WETH.address, 0.98)
+    lb.scan("base")
+    arm = lb.arms["A_fast"]
+    real = arm._leg2
+    calls = {"n": 0}
+
+    def flaky(cid, now):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise ValueError("boom")
+        return real(cid, now)
+    arm._leg2 = flaky
+    run_until(lb, clk, 120)
+    assert st.db.execute("SELECT COUNT(*) FROM audit_events WHERE kind='paper_error'").fetchone()[0] == 1
+    assert st.db.execute("SELECT COUNT(*) FROM paper_cycles WHERE account='A:A_fast' AND status='CLOSED' AND "
+                         "baseline=0").fetchone()[0] >= 1
