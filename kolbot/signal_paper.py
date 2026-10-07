@@ -205,6 +205,11 @@ class SignalPaper:
             return {"started": False, "start_usd": START_USD, "trade_usd": TRADE_USD, "label": self.label}
         e, symbols = self.eng, symbols or {}
         s = summarize(e.closed)
+        s["ci_by"] = "source"
+        if s.get("n", 0) >= 2 and s.get("ci95_by_kol") is None:   # one source wallet only: resample trades
+            from kolbot.api import boot_ci
+            s["ci95_by_kol"] = boot_ci([c["net_pct"] for c in e.closed if not c.get("gap")])
+            s["ci_by"] = "trade"
         start_sol = e.cfg.starting_sol
         eq = e.equity()
         sim = eq - e.topped_up                            # balance if the book had only its $500

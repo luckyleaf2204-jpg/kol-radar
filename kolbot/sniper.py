@@ -6,7 +6,7 @@ S1 launch sniper: buy every NEW token seen on the stream ~3 s after its creation
      - >= 3 different non-creator wallets bought in the creation second (bundle / creator-funded sniping),
      - the creator's profile risk is HIGH RISK, REPEAT FAILURE or SUSPICIOUS / RUG HISTORY.
    Exit: take profit +50 %, stop loss -30 % (net sale value), 5 min max, migrated = last curve price.
-S2 sniper copy: the Top 10 non-KOL wallets with >= 100 resolved round trips, average hold < 60 s, CI of the mean
+S2 sniper copy (amended 2026-10-07: only the #1 of this list): the Top 10 non-KOL wallets with >= 100 resolved round trips, average hold < 60 s, CI of the mean
    ROI > 0 and not trading their own tokens; a buy >= 0.05 SOL -> paper buy 3 s later; exit 3 s after the
    wallet's first sell (24 h max).
 Both reuse the paper engine's fill model unchanged (curve reserves, pump.fun fees, 1 % slippage, network + priority

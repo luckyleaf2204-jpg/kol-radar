@@ -120,8 +120,9 @@ def main():
                      log=lambda m: print(m.replace("[kol] COPY", "[sigpaper s1] PAPER BUY"), flush=True))
     s1_launch = LaunchSniper(s1, lambda w: (db.execute("SELECT risk FROM devs WHERE wallet=?", (w,)).fetchone()
                                             or [None])[0])
-    s2 = SignalPaper(Path(a.db).with_name("signal_paper_s2.db"), lambda: meta.sol_usd, top_n=10,
-                     label="S2 · copy bot sniper", entry="topn",
+    # S2 amended 2026-10-07 (user): follow only the #1 sniper wallet; new file, the Top 10 run is kept apart
+    s2 = SignalPaper(Path(a.db).with_name("signal_paper_s2_top1.db"), lambda: meta.sol_usd, top_n=1,
+                     label="S2 · copy bot sniper #1", entry="topn",
                      log=lambda m: print(m.replace("[kol] COPY", "[sigpaper s2] PAPER BUY"), flush=True))
     sniper_src = SniperSources(db)
     # pre-registered H1 / H2 (docs/prereg_signal_books.md, 2026-10-06): later exit; >= 2 sources within 10 min

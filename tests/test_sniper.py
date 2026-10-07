@@ -110,3 +110,22 @@ def test_s2_sources_are_fast_profitable_non_kol_wallets(tmp_path):
     assert src.source_of(tr("FAST", "T", True, NOW, sol=0.1))["rank"] == 1
     assert src.source_of(tr("FAST", "T", True, NOW, sol=0.01)) is None
     assert src.source_of(tr("FAST", "T", False, NOW)) is None
+
+
+def test_s2_top1_book_follows_only_rank_1(tmp_path):
+    b = SignalPaper(tmp_path / "s2.db", lambda: PX, clock=Clock(NOW), log=lambda *_: None, top_n=1, entry="topn")
+    b.on_event(tr("R2", "A", True, NOW, sol=0.5), None, {"rank": 2, "source": "sniper"})
+    b.on_event(tr("R1", "B", True, NOW, sol=0.5), None, {"rank": 1, "source": "sniper"})
+    assert set(b.eng.pending) == {"B"}
+
+
+def test_single_source_book_gets_a_trade_level_ci(tmp_path):
+    b = SignalPaper(tmp_path / "s2c.db", lambda: PX, clock=Clock(NOW), log=lambda *_: None, top_n=1, entry="topn")
+    for k in range(5):
+        m = f"T{k}"
+        b.on_event(tr("R1", m, True, NOW + k * 100, sol=0.5), None, {"rank": 1, "source": "sniper"})
+        b.on_event(tr("x", m, True, NOW + k * 100 + 4), None)
+        b.on_event(tr("R1", m, False, NOW + k * 100 + 10, vs=20 * L, vt=15 * 10 ** 14), None)
+        b.on_event(tr("x", m, False, NOW + k * 100 + 14, vs=20 * L, vt=15 * 10 ** 14), None)
+    r = b.report()
+    assert r["summary"]["n"] == 5 and r["summary"]["ci_by"] == "trade" and r["summary"]["ci95_by_kol"][1] < 0

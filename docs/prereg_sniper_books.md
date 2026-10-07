@@ -43,3 +43,11 @@ after costs with a 95 % bootstrap CI (clusters: creator for S1, source wallet fo
 (never PASS: no control); otherwise REJECT. No real money unless a book passes and stays positive over a fresh
 forward period of equal length, then 2-4 weeks of unchanged paper. Building real sniping would also need paid
 low-latency infrastructure; that cost is not in these numbers.
+
+## Amendment 1 — 2026-10-07, user decision (before the amended S2 has any data)
+
+S2 now follows ONLY the #1 wallet of the S2 source list (same eligibility, same order; today BwWK17cb…, 2,028
+round trips, 96.4 % wins, 15 s average hold). This is a new test: it records into a new file
+(signal_paper_s2_top1.db). The first S2 run (Top 10 sources, 12 closed trades locally, mean -15.2 %) is kept apart
+and not mixed in. Entry, exit, costs and the decision rule are unchanged, except that with a single source
+wallet the 95 % CI resamples trades (a CI by source wallet needs >= 2 wallets).
