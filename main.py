@@ -124,6 +124,10 @@ def main():
     s2 = SignalPaper(Path(a.db).with_name("signal_paper_s2_top1.db"), lambda: meta.sol_usd, top_n=1,
                      label="S2 · copy bot sniper #1", entry="topn",
                      log=lambda m: print(m.replace("[kol] COPY", "[sigpaper s2] PAPER BUY"), flush=True))
+    # S2b (user, 2026-10-07): S2 with a 1 s delay instead of 3 s (prereg amendment 2)
+    s2b = SignalPaper(Path(a.db).with_name("signal_paper_s2b.db"), lambda: meta.sol_usd, top_n=1,
+                      label="S2b · copy sniper #1, trễ 1s", entry="topn", cfg_overrides={"delay_s": 1.0},
+                      log=lambda m: print(m.replace("[kol] COPY", "[sigpaper s2b] PAPER BUY"), flush=True))
     sniper_src = SniperSources(db)
     # pre-registered H1 / H2 (docs/prereg_signal_books.md, 2026-10-06): later exit; >= 2 sources within 10 min
     for key, entry, label in (("h1", "signal", "H1 · thoát khi nguồn bán ≥50%"),
@@ -146,7 +150,9 @@ def main():
         sig = signals.on_event(ev)
         src = signals.source_of(ev)
         s1_launch.on_event(ev)                     # 2026-10-07 (user): only S1 / S2 run; the other books are paused
-        s2.on_event(ev, None, sniper_src.source_of(ev))
+        ssrc = sniper_src.source_of(ev)
+        s2.on_event(ev, None, ssrc)
+        s2b.on_event(ev, None, ssrc)
         if is_kol and ev["kind"] == "trade":
             hist.on_kol_event(ev["user"], ev["ts"])
 
@@ -172,6 +178,7 @@ def main():
             s1_launch.tick()
             s1.tick()
             s2.tick()
+            s2b.tick()
             if time.time() - last >= 600:
                 last = time.time()
                 print(time.strftime("[kol] %Y-%m-%d %H:%M:%S\n") + report(eng, names))
@@ -204,7 +211,7 @@ def main():
                                                  kols_tracked=len(names)),
                          symbols=lambda: {m: c.get("symbol") for m, c in meta.coins.items() if c.get("symbol")},
                          want_creator=meta.want_creator, signal_engine=signals, want_coin=meta.want,
-                         signal_paper={**books, "s1": s1, "s2": s2},
+                         signal_paper={**books, "s1": s1, "s2": s2, "s2b": s2b},
                          now_mc=lambda: {m: c.vsol / c.vtok * 1e6 for m, c in list(eng.curves.items())})
 
     signals.refresh(force=True)
@@ -228,7 +235,7 @@ def main():
         hist.tick(force=True)
         smart.flush()
         eng.store.save(eng)
-        for b in (*books.values(), s1, s2):
+        for b in (*books.values(), s1, s2, s2b):
             if b.eng:
                 b.store.save(b.eng)
 

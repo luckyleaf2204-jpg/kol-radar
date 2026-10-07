@@ -51,3 +51,9 @@ round trips, 96.4 % wins, 15 s average hold). This is a new test: it records int
 (signal_paper_s2_top1.db). The first S2 run (Top 10 sources, 12 closed trades locally, mean -15.2 %) is kept apart
 and not mixed in. Entry, exit, costs and the decision rule are unchanged, except that with a single source
 wallet the 95 % CI resamples trades (a CI by source wallet needs >= 2 wallets).
+
+## Amendment 2 — 2026-10-07, user request (before S2b has any data)
+
+New book S2b = S2 (follow only the #1 source) with a 1 s delay for both entry and exit instead of 3 s (paper fill
+at the first trade >= 1 s after the source's buy / sell). Own file signal_paper_s2b.db; S2 keeps running unchanged
+for comparison. 1 s is optimistic for a follower that only sees confirmed transactions. Same costs and decision rule.

@@ -129,3 +129,14 @@ def test_single_source_book_gets_a_trade_level_ci(tmp_path):
         b.on_event(tr("x", m, False, NOW + k * 100 + 14, vs=20 * L, vt=15 * 10 ** 14), None)
     r = b.report()
     assert r["summary"]["n"] == 5 and r["summary"]["ci_by"] == "trade" and r["summary"]["ci95_by_kol"][1] < 0
+
+
+def test_s2b_uses_one_second_delay(tmp_path):
+    b = SignalPaper(tmp_path / "s2b.db", lambda: PX, clock=Clock(NOW), log=lambda *_: None, top_n=1, entry="topn",
+                    cfg_overrides={"delay_s": 1.0})
+    b.on_event(tr("R1", "A", True, NOW, sol=0.5), None, {"rank": 1, "source": "sniper"})
+    assert b.eng.pending["A"].due_ts == NOW + 1
+    b.on_event(tr("x", "A", True, NOW + 1), None)
+    assert "A" in b.eng.positions
+    b.on_event(tr("R1", "A", False, NOW + 3), None)
+    assert b.eng.positions["A"].sell_due_ts == NOW + 4
