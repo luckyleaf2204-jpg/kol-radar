@@ -23,6 +23,7 @@ from kolbot.kolhist import KolHistory  # noqa: E402
 from kolbot.smart import SmartTracker  # noqa: E402
 from kolbot.signals import SignalEngine, refuse_auto_trade  # noqa: E402
 from kolbot.signal_paper import SignalPaper  # noqa: E402
+from kolbot.sniper import S1_CFG, LaunchSniper, SniperSources  # noqa: E402
 from kolbot.engine import Engine  # noqa: E402
 from kolbot.meta import Meta  # noqa: E402
 from kolbot.report import by_kol, summarize  # noqa: E402
@@ -113,6 +114,16 @@ def main():
         books[key] = SignalPaper(Path(a.db).with_name(fname), lambda: meta.sol_usd, top_n=n, source=src, label=label,
                                  log=lambda m, k=key: print(m.replace("[kol] COPY", f"[sigpaper {k}] PAPER BUY"),
                                                             flush=True))
+    # pre-registered sniper books (docs/prereg_sniper_books.md, 2026-10-07): S1 launch sniper, S2 copy sniper bots
+    s1 = SignalPaper(Path(a.db).with_name("signal_paper_s1.db"), lambda: meta.sol_usd, label="S1 · tự snipe token mới",
+                     entry="launch", exit="none", cfg_overrides=S1_CFG,
+                     log=lambda m: print(m.replace("[kol] COPY", "[sigpaper s1] PAPER BUY"), flush=True))
+    s1_launch = LaunchSniper(s1, lambda w: (db.execute("SELECT risk FROM devs WHERE wallet=?", (w,)).fetchone()
+                                            or [None])[0])
+    s2 = SignalPaper(Path(a.db).with_name("signal_paper_s2.db"), lambda: meta.sol_usd, top_n=10,
+                     label="S2 · copy bot sniper", entry="topn",
+                     log=lambda m: print(m.replace("[kol] COPY", "[sigpaper s2] PAPER BUY"), flush=True))
+    sniper_src = SniperSources(db)
     # pre-registered H1 / H2 (docs/prereg_signal_books.md, 2026-10-06): later exit; >= 2 sources within 10 min
     for key, entry, label in (("h1", "signal", "H1 · thoát khi nguồn bán ≥50%"),
                               ("h2", "confluence", "H2 · ≥2 ví nguồn cùng mua")):
@@ -133,6 +144,8 @@ def main():
         src = signals.source_of(ev)
         for b in books.values():
             b.on_event(ev, sig, src)
+        s1_launch.on_event(ev)
+        s2.on_event(ev, None, sniper_src.source_of(ev))
         if is_kol and ev["kind"] == "trade":
             hist.on_kol_event(ev["user"], ev["ts"])
 
@@ -156,6 +169,10 @@ def main():
             signals.tick()
             for b in books.values():
                 b.tick()
+            sniper_src.refresh()
+            s1_launch.tick()
+            s1.tick()
+            s2.tick()
             if time.time() - last >= 600:
                 last = time.time()
                 print(time.strftime("[kol] %Y-%m-%d %H:%M:%S\n") + report(eng, names))
@@ -188,7 +205,7 @@ def main():
                                                  kols_tracked=len(names)),
                          symbols=lambda: {m: c.get("symbol") for m, c in meta.coins.items() if c.get("symbol")},
                          want_creator=meta.want_creator, signal_engine=signals, want_coin=meta.want,
-                         signal_paper=books,
+                         signal_paper={**books, "s1": s1, "s2": s2},
                          now_mc=lambda: {m: c.vsol / c.vtok * 1e6 for m, c in list(eng.curves.items())})
 
     signals.refresh(force=True)
@@ -212,7 +229,7 @@ def main():
         hist.tick(force=True)
         smart.flush()
         eng.store.save(eng)
-        for b in books.values():
+        for b in (*books.values(), s1, s2):
             if b.eng:
                 b.store.save(b.eng)
 

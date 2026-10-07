@@ -62,6 +62,8 @@ class FollowEngine(Engine):
         if ev["kind"] != "trade":
             return
         mint, user = ev["mint"], ev["user"]
+        if self.exit_mode == "none":             # exits only by SL / TP / time / migration (sniper S1)
+            return
         if self.exit_mode == "first_sell":
             if not ev["is_buy"]:
                 pos, p = self.positions.get(mint), self.pending.get(mint)
@@ -99,10 +101,11 @@ class FollowEngine(Engine):
 class SignalPaper:
     def __init__(self, db_path: Path, get_sol_usd, clock=time.time, log=print, top_n: int | None = None,
                  source: str | None = None, label: str | None = None, entry: str | None = None,
-                 exit: str = "first_sell"):
+                 exit: str = "first_sell", cfg_overrides: dict | None = None):
         # entry: "signal" (top_n None), "topn" (top_n set) or "confluence"; source None = both lists
         self.entry = entry or ("signal" if top_n is None else "topn")
         self.exit, self.top_n, self.source = exit, top_n, source
+        self.cfg_overrides = cfg_overrides or {}
         self.label = label or f"Top {top_n or 10}"
         self.last_trigger: dict = {}
         self.recent: dict[str, dict[str, tuple]] = {}     # confluence: mint -> {wallet: (ts, tokens)}
@@ -135,6 +138,8 @@ class SignalPaper:
             self.store.db.commit()
         cfg = Config(starting_sol=START_USD / px, position_sol=TRADE_USD / (self.get_sol_usd() or px),
                      max_open=MAX_OPEN, min_kol_buy_sol=0.05, daily_loss_limit_sol=1e12)
+        for k, v in self.cfg_overrides.items():
+            setattr(cfg, k, v)
         eng = FollowEngine(cfg, set(), self.store, clock=self.clock, log=self.log)
         eng.exit_mode = self.exit
         eng.topped_up = self._meta("topped_up_sol") or 0.0
