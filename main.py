@@ -24,6 +24,7 @@ from kolbot.smart import SmartTracker  # noqa: E402
 from kolbot.signals import SignalEngine, refuse_auto_trade  # noqa: E402
 from kolbot.signal_paper import SignalPaper  # noqa: E402
 from kolbot.sniper import S1_CFG, LaunchSniper, SniperSources, pinned_source_of  # noqa: E402
+from kolbot.s3 import WINDOWS_MS, PreSniper  # noqa: E402
 from kolbot.engine import Engine  # noqa: E402
 from kolbot.meta import Meta  # noqa: E402
 from kolbot.report import by_kol, summarize  # noqa: E402
@@ -129,6 +130,13 @@ def main():
                       label="S2b · copy sniper #1, trễ 1s", entry="topn", cfg_overrides={"delay_s": 1.0},
                       log=lambda m: print(m.replace("[kol] COPY", "[sigpaper s2b] PAPER BUY"), flush=True))
     sniper_src = SniperSources(db)
+    # S3 PRE_SNIPER_SIGNAL (prereg section S3, 2026-10-07): one paper book per fixed window, research only
+    s3_books = {w: SignalPaper(Path(a.db).with_name(f"signal_paper_s3_{w}ms.db"), lambda: meta.sol_usd,
+                               label=f"S3 · cửa sổ {w}ms", entry="pre_sniper", exit="none", cfg_overrides=S1_CFG,
+                               log=lambda m, w=w: print(m.replace("[kol] COPY", f"[s3 {w}ms] PAPER BUY"), flush=True))
+                for w in WINDOWS_MS}
+    s3 = PreSniper(Path(a.db).with_name("s3_signals.db"), s3_books,
+                   lambda w: (db.execute("SELECT risk FROM devs WHERE wallet=?", (w,)).fetchone() or [None])[0])
     # pre-registered H1 / H2 (docs/prereg_signal_books.md, 2026-10-06): later exit; >= 2 sources within 10 min
     for key, entry, label in (("h1", "signal", "H1 · thoát khi nguồn bán ≥50%"),
                               ("h2", "confluence", "H2 · ≥2 ví nguồn cùng mua")):
@@ -141,7 +149,8 @@ def main():
     status = {"connected": False, "last_event": 0.0, "events": 0}
 
     def on_event(ev):
-        status["last_event"], status["events"] = time.time(), status["events"] + 1
+        ev["recv"] = time.time()                   # receive clock (ms): S3 windows are measured on it
+        status["last_event"], status["events"] = ev["recv"], status["events"] + 1
         eng.on_event(ev)
         watch.on_event(ev)
         is_kol = ev.get("user") in names
@@ -153,6 +162,7 @@ def main():
         ssrc = pinned_source_of(ev)                # S2 / S2b pinned to BwWK17cb (amendment 3)
         s2.on_event(ev, None, ssrc)
         s2b.on_event(ev, None, ssrc)
+        s3.on_event(ev)
         if is_kol and ev["kind"] == "trade":
             hist.on_kol_event(ev["user"], ev["ts"])
 
@@ -179,6 +189,7 @@ def main():
             s1.tick()
             s2.tick()
             s2b.tick()
+            s3.tick()
             if time.time() - last >= 600:
                 last = time.time()
                 print(time.strftime("[kol] %Y-%m-%d %H:%M:%S\n") + report(eng, names))
@@ -211,7 +222,9 @@ def main():
                                                  kols_tracked=len(names)),
                          symbols=lambda: {m: c.get("symbol") for m, c in meta.coins.items() if c.get("symbol")},
                          want_creator=meta.want_creator, signal_engine=signals, want_coin=meta.want,
-                         signal_paper={**books, "s1": s1, "s2": s2, "s2b": s2b},
+                         signal_paper={**books, "s1": s1, "s2": s2, "s2b": s2b,
+                                       **{f"s3_{w}": b for w, b in s3_books.items()}},
+                         s3_report=s3.report,
                          now_mc=lambda: {m: c.vsol / c.vtok * 1e6 for m, c in list(eng.curves.items())})
 
     signals.refresh(force=True)
@@ -235,7 +248,7 @@ def main():
         hist.tick(force=True)
         smart.flush()
         eng.store.save(eng)
-        for b in (*books.values(), s1, s2, s2b):
+        for b in (*books.values(), s1, s2, s2b, *s3_books.values()):
             if b.eng:
                 b.store.save(b.eng)
 

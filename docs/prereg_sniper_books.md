@@ -64,3 +64,54 @@ S2 and S2b are pinned to the wallet BwWK17cbHxwWBKZkUYvzxLcNQ1YVyaFezduWbtm2de6s
 list) instead of "whatever wallet ranks #1". Data so far is kept: the #1 has been this wallet since both books
 started (checked locally; the production ranking cannot be read without the access code, so a change of #1 on
 production before this amendment cannot be excluded). Everything else unchanged.
+
+## S3 — PRE_SNIPER_SIGNAL (registered 2026-10-07, before any S3 code ran on live data)
+
+Research / paper only; not an auto-buy, not a trade candidate, not part of any production strategy or D1-D8.
+S1, S2, S2b (pinned to BwWK17cb), Direction B / C, KOL and Smart Wallet methodology, recorder, copy rules and costs
+are unchanged; S1 / S2 / S2b keep running as controls. Code: kolbot/s3.py.
+
+**Question.** Before the sniper wallet BwWK17cb buys a token, does the early transaction flow show a fingerprint that
+predicts incoming sniper money? Not an attempt to predict BwWK17cb itself.
+
+**No look-ahead / no sniper data.**
+* Clock = the bot's receive clock (ms). On-chain block times have 1 s resolution, so sub-second windows can only be
+  measured on the receive clock, which is also the clock a live bot decides on.
+* A fingerprint for window W is computed only from events received up to creation-receive time + W.
+* BwWK17cb's transactions are removed before any feature is computed; its P&L, buys and sells are never inputs.
+* If a BwWK17cb buy of the token was received before the signal time, the signal is INVALID_BWWK: stored, never
+  traded, never counted. BwWK17cb's later buy time is stored only for the post-hoc latency metric.
+* No future price, market cap, buyer count or token outcome is used for entry.
+
+**Windows.** 100, 250, 500, 1000, 2000, 3000 ms after the creation event is received. Each window is its own
+experiment and paper book; all are reported; no window will be "picked" afterwards.
+
+**Fingerprint** (identical thresholds for every window, fixed now, not tuned):
+* A/C. distinct non-creator buying wallets >= 3;
+* B. SOL inflow from non-creator buys >= 1.0 SOL; buy share = buy SOL / (buy + sell SOL) of non-creators >= 0.8;
+* C. largest single buyer's share of that inflow <= 0.6;
+* E. creator holds <= 10 % of the supply from its own trades; the creator's stored profile risk (as stored at that
+  moment) is not HIGH RISK, REPEAT FAILURE or SUSPICIOUS / RUG HISTORY.
+* Stored for analysis but NOT used for entry: transaction count, acceleration (second-half vs first-half events).
+* D/F (co-occurring early wallets, clusters) are NOT used in S3: no independent history exists yet. If wanted,
+  they will be registered as S3b with clusters built only from data before the S3b start.
+
+**Entry.** Paper buy ~$50 on the curve state 1 s after the signal (S2b's latency), recorded as
+PRE_SNIPER_SIGNAL with the exact signal time and features. At most one entry per token per window; at most 10 open
+per window book; same gates and funding as the other books.
+
+**Exit.** TP +50 %, SL -30 % (net value a sale would return), 5 min max hold, migrated token = last curve price.
+
+**Costs.** The shared model: real curve reserves, pump.fun fees, 1 % extra slippage per side, network + priority fee
+per transaction. No special cost model.
+
+**Metrics.** Per window: tokens evaluated, signals, trades, INVALID_BWWK count, number of signals followed by a
+BwWK17cb buy, median signal -> BwWK17cb buy latency; per book: closed trades, wins, losses, win rate, mean /
+median P&L, total P&L, ROI, best / worst, 95 % CI (clusters = creator).
+
+**Decision rule.** n < 100 closed trades: no conclusion. n >= 100: CI lower bound > 0 = initial evidence of an edge
+(PROVISIONAL, never PASS); otherwise no evidence. No re-tuning: any other threshold / exit is S3b, registered before
+it runs, and S3 stays as the benchmark. The S3 sample starts when this registration is committed and deployed;
+anything run before (local tests) is not part of it.
+
+**Storage.** One row per fingerprint that passed (plus INVALID ones) and one per paper trade; no raw events.

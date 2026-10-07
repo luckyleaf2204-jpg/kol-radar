@@ -69,7 +69,7 @@ def build_state(eng, watch, meta, names: dict[str, str], status: dict) -> dict:
 
 
 def make_routes(db, roster: dict, get_live=None, get_status=None, symbols=None, want_creator=None,
-                signal_engine=None, now_mc=None, want_coin=None, signal_paper=None) -> dict:
+                signal_engine=None, now_mc=None, want_coin=None, signal_paper=None, s3_report=None) -> dict:
     """path -> handler(query) returning (content_type, body). All handlers only read."""
     def q1(q, k, d=""):
         return (q.get(k) or [d])[0]
@@ -189,6 +189,7 @@ def make_routes(db, roster: dict, get_live=None, get_status=None, symbols=None, 
         n = n if n in books else ("s1" if "s1" in books else next(iter(books)))
         out = _book_report(books[n])
         out["book"] = n
+        out["s3"] = s3_report() if s3_report else None
         out["books"] = {}
         for k, b in books.items():                      # side-by-side comparison of every book
             r = _book_report(b) if k != n else out
