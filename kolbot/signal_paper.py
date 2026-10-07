@@ -170,6 +170,8 @@ class SignalPaper:
                 if len(self.recent) > 50_000:
                     self.recent = {k: v for k, v in self.recent.items()
                                    if any(ev["ts"] - x[0] <= CONFLUENCE_S for x in v.values())}
+        if self.paused:                                   # stopped: no new entries; open positions still exit
+            sig, init = None, None
         before = len(self.eng.track)
         self.eng.on_signal_event(ev, sig, init)
         if self.exit == "half_sold" and (sig or len(self.eng.track) != before or ev["mint"] in self.eng.track):

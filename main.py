@@ -147,6 +147,11 @@ def main():
                                                             flush=True))
     for b in books.values():                       # paused (user, 2026-10-07): data kept and shown, no new trades
         b.paused = True
+    # 2026-10-07 (user): ALL experiments stopped — no new paper entries anywhere; open positions still exit by their
+    # own rules; every book's data stays visible. KOL copy bot, S1, S2, S2b, S3 included.
+    for b in (s1, s2, s2b, *s3_books.values()):
+        b.paused = True
+    eng.stopped = True
     status = {"connected": False, "last_event": 0.0, "events": 0}
 
     def on_event(ev):

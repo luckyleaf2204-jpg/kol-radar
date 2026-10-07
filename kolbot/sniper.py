@@ -40,6 +40,9 @@ class LaunchSniper:
             return
         e = b.eng
         e.on_signal_event(ev, None)                     # curve state, fills, SL / TP / time exits
+        if b.paused:                                    # stopped: open positions still exit, no new launches
+            self.cands.clear()
+            return
         if ev["kind"] == "create":
             if len(self.cands) < 5000:
                 self.cands[ev["mint"]] = {"ts": ev["ts"], "creator": ev.get("creator"), "dev_tok": 0,
@@ -62,6 +65,9 @@ class LaunchSniper:
         if not b.eng:
             return
         now = self.clock()
+        if b.paused:
+            self.cands.clear()
+            return
         for m, c in list(self.cands.items()):
             if now >= c["wall_due"] + b.eng.cfg.fill_grace_s:
                 if m in b.eng.curves:

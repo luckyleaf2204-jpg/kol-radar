@@ -49,7 +49,7 @@ MAX_CANDS = 5000
 LATENCY_TRACK_S = 1800            # keep watching a signalled token for a later BwWK buy (post-hoc metric only)
 STREAM_STALE_S = 5.0              # no fill when no event has been received for this long (stream maybe down)
 HEARTBEAT_GAP_S = 5.0             # heartbeat older than this at start = downtime gap
-INVALID = ("INVALID_BWWK", "GAP_INVALID", "INVALID_RESTART")
+INVALID = ("INVALID_BWWK", "GAP_INVALID", "INVALID_RESTART", "STOPPED")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS s3_signals (id INTEGER PRIMARY KEY, window_ms INTEGER, mint TEXT, creator TEXT,
@@ -188,6 +188,8 @@ class PreSniper:
         for b in self.books.values():                  # curve state, SL / TP / time / migration exits
             if b.eng or b._try_start():
                 b.eng.on_signal_event(ev, None)
+        if self.stopped:                               # experiment stopped: no new windows / signals
+            return
         m = ev["mint"]
         if ev["kind"] == "create":
             if len(self.cands) < MAX_CANDS:
@@ -237,8 +239,21 @@ class PreSniper:
             if len(c["done"]) == len(WINDOWS_MS):
                 del self.cands[m]
 
+    @property
+    def stopped(self) -> bool:
+        return bool(self.books) and all(b.paused for b in self.books.values())
+
     def tick(self) -> None:
         now = self.clock()
+        if self.stopped:                               # stop: unfilled signals are closed as STOPPED, exits go on
+            for _, _, _, rid, _ in self.pending:
+                self._invalidate(rid, "STOPPED", "experiment_stopped")
+            self.pending, self.cands = [], {}
+            self.db.execute("INSERT OR REPLACE INTO s3_meta VALUES ('heartbeat', ?)", (now,))
+            self.db.commit()
+            for b in self.books.values():
+                b.tick()
+            return
         self._evaluate(now)
         keep = []
         for due, w, m, rid, creator in self.pending:

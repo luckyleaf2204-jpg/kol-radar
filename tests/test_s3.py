@@ -296,3 +296,43 @@ def test_restart_after_downtime_invalidates_pending_and_legacy_signals(tmp_path)
     assert ps2.db.execute("SELECT COUNT(*) FROM s3_pending").fetchone()[0] == 0
     rep = ps2.report()
     assert rep[100]["signals"] == 0 and rep[100]["invalid_restart"] + rep[100]["gap_invalid"] == 2
+
+
+def test_stop_all_no_new_signals_pending_closed_open_positions_exit(tmp_path):
+    ps, books, clk = make4(tmp_path)
+    ps.on_event(create("K", T))
+    burst(ps, "K", T, n=3, sol=0.5, dt=0.02)
+    clk.t = T + 0.15
+    ps.on_event(tr("x", "K", True, 0.01, T + 0.15))               # 100 ms window signals
+    clk.t = T + 1.2
+    ps.on_event(tr("y", "K", True, 0.01, T + 1.2))
+    ps.tick()                                                     # 100 ms filled; 250 / 500 ms signals pending
+    assert "K" in books[100].eng.positions
+    for b in books.values():
+        b.paused = True
+    ps.tick()
+    st = status(ps, "K")
+    assert st[100] == "TRADED" and all(v in ("STOPPED", "TRADED") for v in st.values())
+    assert ps.stopped and ps.pending == []
+    ps.on_event(create("NEW", T + 2))                              # no new windows
+    burst(ps, "NEW", T + 2)
+    clk.t = T + 10
+    ps.tick()
+    assert rows(ps, "NEW") == []
+    ps.on_event(tr("z", "K", True, 1, T + 11, vs=60 * L, vt=5 * 10 ** 14))   # open position still exits (TP)
+    assert books[100].eng.closed[-1]["exit_kind"] == "take_profit"
+    assert ps.report()[100]["signals"] == 1
+
+
+def test_paused_book_and_stopped_kol_engine_open_nothing_but_still_exit(tmp_path):
+    from kolbot.config import Config
+    from kolbot.engine import Engine
+    b = SignalPaper(tmp_path / "s2.db", lambda: PX, clock=Clock(T), log=lambda *_: None, top_n=1, entry="topn")
+    b.on_event(tr("R1", "A", True, 0.5, T), None, {"rank": 1, "source": "sniper"})
+    b.paused = True
+    b.on_event(tr("R1", "B", True, 0.5, T + 1), None, {"rank": 1, "source": "sniper"})
+    assert set(b.eng.pending) == {"A"}
+    e = Engine(Config(), {"KOL"}, None, clock=Clock(T), log=lambda *_: None)
+    e.stopped = True
+    e.on_event(tr("KOL", "C", True, 0.5, T))
+    assert not e.pending and not e.positions

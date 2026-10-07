@@ -105,6 +105,8 @@ class Engine:
 
     def _on_kol(self, ev: dict) -> None:
         mint, kol, now = ev["mint"], ev["user"], self.clock()
+        if ev["is_buy"] and getattr(self, "stopped", False):     # stopped: no new copies, sells still exit
+            return
         if ev["is_buy"]:
             self.counts["kol_buys"] += 1
             sol = ev["sol"] / LAMPORTS
