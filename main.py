@@ -23,7 +23,7 @@ from kolbot.kolhist import KolHistory  # noqa: E402
 from kolbot.smart import SmartTracker  # noqa: E402
 from kolbot.signals import SignalEngine, refuse_auto_trade  # noqa: E402
 from kolbot.signal_paper import SignalPaper  # noqa: E402
-from kolbot.sniper import S1_CFG, LaunchSniper, SniperSources  # noqa: E402
+from kolbot.sniper import S1_CFG, LaunchSniper, SniperSources, pinned_source_of  # noqa: E402
 from kolbot.engine import Engine  # noqa: E402
 from kolbot.meta import Meta  # noqa: E402
 from kolbot.report import by_kol, summarize  # noqa: E402
@@ -150,7 +150,7 @@ def main():
         sig = signals.on_event(ev)
         src = signals.source_of(ev)
         s1_launch.on_event(ev)                     # 2026-10-07 (user): only S1 / S2 run; the other books are paused
-        ssrc = sniper_src.source_of(ev)
+        ssrc = pinned_source_of(ev)                # S2 / S2b pinned to BwWK17cb (amendment 3)
         s2.on_event(ev, None, ssrc)
         s2b.on_event(ev, None, ssrc)
         if is_kol and ev["kind"] == "trade":

@@ -57,3 +57,10 @@ wallet the 95 % CI resamples trades (a CI by source wallet needs >= 2 wallets).
 New book S2b = S2 (follow only the #1 source) with a 1 s delay for both entry and exit instead of 3 s (paper fill
 at the first trade >= 1 s after the source's buy / sell). Own file signal_paper_s2b.db; S2 keeps running unchanged
 for comparison. 1 s is optimistic for a follower that only sees confirmed transactions. Same costs and decision rule.
+
+## Amendment 3 — 2026-10-07, user decision
+
+S2 and S2b are pinned to the wallet BwWK17cbHxwWBKZkUYvzxLcNQ1YVyaFezduWbtm2de6s (until now the #1 of the source
+list) instead of "whatever wallet ranks #1". Data so far is kept: the #1 has been this wallet since both books
+started (checked locally; the production ranking cannot be read without the access code, so a change of #1 on
+production before this amendment cannot be excluded). Everything else unchanged.

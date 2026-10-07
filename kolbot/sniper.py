@@ -124,3 +124,13 @@ class SniperSources:
         if ev["kind"] != "trade" or not ev["is_buy"] or ev["sol"] < 0.05 * LAMPORTS:
             return None
         return self.sources.get(ev["user"])
+
+
+PINNED_WALLET = "BwWK17cbHxwWBKZkUYvzxLcNQ1YVyaFezduWbtm2de6s"   # S2 / S2b pinned (user, 2026-10-07, amendment 3)
+
+
+def pinned_source_of(ev: dict, wallet: str = PINNED_WALLET) -> dict | None:
+    """S2 / S2b: a buy >= 0.05 SOL by the pinned wallet, whatever the ranking says."""
+    if ev["kind"] != "trade" or not ev["is_buy"] or ev["sol"] < 0.05 * LAMPORTS or ev["user"] != wallet:
+        return None
+    return {"source": "sniper", "rank": 1, "pinned": True}

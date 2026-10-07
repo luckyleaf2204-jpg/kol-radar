@@ -140,3 +140,10 @@ def test_s2b_uses_one_second_delay(tmp_path):
     assert "A" in b.eng.positions
     b.on_event(tr("R1", "A", False, NOW + 3), None)
     assert b.eng.positions["A"].sell_due_ts == NOW + 4
+
+
+def test_pinned_source_only_bwwk():
+    assert SN.pinned_source_of(tr(SN.PINNED_WALLET, "A", True, NOW, sol=0.5))["rank"] == 1
+    assert SN.pinned_source_of(tr("OTHER", "A", True, NOW, sol=0.5)) is None
+    assert SN.pinned_source_of(tr(SN.PINNED_WALLET, "A", True, NOW, sol=0.01)) is None
+    assert SN.pinned_source_of(tr(SN.PINNED_WALLET, "A", False, NOW)) is None
