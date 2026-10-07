@@ -115,3 +115,16 @@ it runs, and S3 stays as the benchmark. The S3 sample starts when this registrat
 anything run before (local tests) is not part of it.
 
 **Storage.** One row per fingerprint that passed (plus INVALID ones) and one per paper trade; no raw events.
+
+## Amendment 4 — 2026-10-07, user decision (S3 has never run on live data; no S3 result exists)
+
+Data integrity for S3 only (S1 / S2 / S2b unchanged):
+* Stream gaps (listener reconnects) and process downtime (heartbeat older than 5 s at start) are stored. A window
+  whose span [creation receive, signal / fill] overlaps a gap is GAP_INVALID (stored, never traded, never counted);
+  a trade filled after such a gap is TRADED_GAP and excluded. There is no stream backfill, so these stay invalid; a
+  row could only be revalidated by a backfill that re-confirms every event of its window.
+* No fill while no event has been received for > 5 s; if a gap is then reported, the fill is invalidated.
+* S3 books flag any trade whose holding overlaps any gap (gap_flag_s = 0 for S3); flagged trades are excluded.
+* Pending fills are persisted. After a restart a fill is restored only if its time is still ahead and no gap
+  overlaps it; otherwise INVALID_RESTART (also for SIGNAL rows written before this amendment).
+* Reported per window: signals (valid only), gap_invalid, invalid_restart, invalid_bwwk.

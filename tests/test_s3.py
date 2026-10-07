@@ -183,3 +183,116 @@ def test_s3_does_not_touch_other_books(tmp_path):
     clk.t = T + 3.5
     ps.tick()
     assert not other.eng.pending and not other.eng.positions and other.eng.cfg.delay_s == 1.0
+
+
+# --- amendment 4: stream gaps and restarts ---------------------------------------------------------------------------
+def make4(tmp_path, t=T):
+    clk = Clock(t)
+    books = {w: SignalPaper(tmp_path / f"b{w}.db", lambda: PX, clock=clk, log=lambda *_: None, entry="pre_sniper",
+                            exit="none", cfg_overrides={**S1_CFG, "gap_flag_s": 0}) for w in S3.WINDOWS_MS}
+    return S3.PreSniper(tmp_path / "s3.db", books, lambda c: None, clock=clk), books, clk
+
+
+def status(ps, m):
+    return {w: st for w, st, *_ in rows(ps, m)}
+
+
+def test_gap_invalidates_open_windows_and_pending_fills(tmp_path):
+    ps, books, clk = make4(tmp_path)
+    ps.on_event(create("A", T))
+    burst(ps, "A", T, n=3, sol=0.5, dt=0.02)
+    clk.t = T + 0.15
+    ps.on_event(tr("x", "A", True, 0.01, T + 0.15))               # 100 ms window signals, fill due T + 1.15
+    ps.on_gap(T + 0.5, T + 20)                                    # stream lost, reported on reconnect
+    st = status(ps, "A")
+    assert st[100] == "GAP_INVALID" and all(st[w] == "GAP_INVALID" for w in (250, 500, 1000, 2000, 3000))
+    clk.t = T + 21
+    ps.tick()
+    assert not any(b.eng.positions for b in books.values())       # never traded
+    rep = ps.report()
+    assert rep[100]["signals"] == 0 and rep[100]["gap_invalid"] == 1
+
+
+def test_no_fill_while_stream_is_silent(tmp_path):
+    ps, books, clk = make4(tmp_path)
+    ps.on_event(create("B", T))
+    burst(ps, "B", T, n=3, sol=0.5, dt=0.02)
+    clk.t = T + 0.15
+    ps.on_event(tr("x", "B", True, 0.01, T + 0.15))
+    clk.t = T + 8                                                 # no event for > 5 s: the fill waits
+    ps.tick()
+    assert not books[100].eng.positions and status(ps, "B")[100] == "SIGNAL"
+    ps.on_gap(T + 3, T + 9)                                       # data lost from the last event (T + 0.15)
+    assert status(ps, "B")[100] == "GAP_INVALID"
+
+
+def test_trade_holding_through_a_gap_is_excluded(tmp_path):
+    ps, books, clk = make4(tmp_path)
+    ps.on_event(create("C", T))
+    burst(ps, "C", T, n=3, sol=0.5, dt=0.02)
+    clk.t = T + 0.15
+    ps.on_event(tr("x", "C", True, 0.01, T + 0.15))
+    clk.t = T + 1.2
+    ps.on_event(tr("y", "C", True, 0.01, T + 1.2))
+    ps.tick()
+    assert "C" in books[100].eng.positions
+    ps.on_event(tr("z", "D", True, 0.01, T + 30))                 # stream alive elsewhere
+    ps.on_gap(T + 40, T + 60)
+    clk.t = T + 1.2 + 301
+    ps.tick()
+    c = books[100].eng.closed[-1]
+    assert c["mint"] == "C" and c["gap"]
+    assert books[100].report()["summary"]["n"] == 0               # excluded from the results
+
+
+def test_gap_before_entry_flags_the_trade(tmp_path):
+    ps, books, clk = make4(tmp_path)
+    ps.on_event(create("E", T))
+    burst(ps, "E", T, n=3, sol=0.5, dt=0.02)
+    clk.t = T + 0.15
+    ps.on_event(tr("x", "E", True, 0.01, T + 0.15))
+    clk.t = T + 1.2
+    ps.on_event(tr("y", "E", True, 0.01, T + 1.2))
+    ps.tick()                                                     # filled at T + 1.2
+    ps.on_gap(T + 0.2, T + 0.3)                                   # a short outage between signal and fill
+    assert status(ps, "E")[100] == "TRADED_GAP"
+    clk.t = T + 1.2 + 301
+    ps.tick()
+    assert books[100].eng.closed[-1]["gap"]
+
+
+def test_pending_fill_survives_a_quick_restart(tmp_path):
+    ps, books, clk = make4(tmp_path)
+    ps.on_event(create("F", T))
+    burst(ps, "F", T, n=3, sol=0.5, dt=0.02)
+    clk.t = T + 0.15
+    ps.on_event(tr("x", "F", True, 0.01, T + 0.15))
+    ps.tick()                                                     # heartbeat T + 0.15, pending persisted
+    ps.db.close()
+    ps2, books2, clk2 = make4(tmp_path, t=T + 0.5)                # back within 5 s, fill still in the future
+    assert [p[2] for p in ps2.pending] == ["F"] and status(ps2, "F")[100] == "SIGNAL"
+    ps2.on_event(tr("y", "F", True, 0.01, T + 1.2))
+    clk2.t = T + 1.2
+    ps2.tick()
+    assert "F" in books2[100].eng.positions and status(ps2, "F")[100] == "TRADED"
+
+
+def test_restart_after_downtime_invalidates_pending_and_legacy_signals(tmp_path):
+    ps, books, clk = make4(tmp_path)
+    ps.on_event(create("G", T))
+    burst(ps, "G", T, n=3, sol=0.5, dt=0.02)
+    clk.t = T + 0.15
+    ps.on_event(tr("x", "G", True, 0.01, T + 0.15))
+    ps.tick()
+    ps.db.execute("INSERT INTO s3_signals (window_ms, mint, status, signal_ts, create_recv) "
+                  "VALUES (100, 'OLD', 'SIGNAL', ?, ?)", (T - 50, T - 51))   # written before amendment 4
+    ps.db.commit()
+    ps.db.close()
+    ps2, books2, clk2 = make4(tmp_path, t=T + 120)                # down for 2 min
+    assert ps2.pending == []
+    assert status(ps2, "G")[100] in ("INVALID_RESTART", "GAP_INVALID")
+    assert status(ps2, "OLD")[100] == "INVALID_RESTART"
+    assert ps2.db.execute("SELECT reason FROM s3_gaps").fetchone()[0] == "downtime"
+    assert ps2.db.execute("SELECT COUNT(*) FROM s3_pending").fetchone()[0] == 0
+    rep = ps2.report()
+    assert rep[100]["signals"] == 0 and rep[100]["invalid_restart"] + rep[100]["gap_invalid"] == 2

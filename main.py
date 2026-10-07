@@ -132,7 +132,8 @@ def main():
     sniper_src = SniperSources(db)
     # S3 PRE_SNIPER_SIGNAL (prereg section S3, 2026-10-07): one paper book per fixed window, research only
     s3_books = {w: SignalPaper(Path(a.db).with_name(f"signal_paper_s3_{w}ms.db"), lambda: meta.sol_usd,
-                               label=f"S3 · cửa sổ {w}ms", entry="pre_sniper", exit="none", cfg_overrides=S1_CFG,
+                               label=f"S3 · cửa sổ {w}ms", entry="pre_sniper", exit="none",
+                               cfg_overrides={**S1_CFG, "gap_flag_s": 0},      # any gap invalidates (amendment 4)
                                log=lambda m, w=w: print(m.replace("[kol] COPY", f"[s3 {w}ms] PAPER BUY"), flush=True))
                 for w in WINDOWS_MS}
     s3 = PreSniper(Path(a.db).with_name("s3_signals.db"), s3_books,
@@ -169,6 +170,7 @@ def main():
     def on_gap(a, b):
         eng.on_gap(a, b)
         smart.on_gap(a, b)
+        s3.on_gap(a, b)                            # S3: invalidate windows / fills / trades overlapping the gap
 
     def log(m):
         status["connected"] = "connected" in m
