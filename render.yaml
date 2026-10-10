@@ -1,5 +1,6 @@
-# Render Blueprint — KOL Radar site (name / hostname kept) now serving the DEX Arbitrage Paper Lab (PAPER ONLY).
-# One web service: DEX quote scanner + paper ledger + dashboard. Its database is dexarb.db next to KOL_DB on the disk.
+# Render Blueprint — KOL Radar site (name / hostname kept) now serving the Insiders page of the SOL Pump Insiders
+# channel (research only, PAPER only). One web service: page + 2-minute deployer watch + $500 paper book; their state
+# (insider_watch.json) lives next to KOL_DB on the disk. The DEX Arbitrage lab code is kept (dexarb_main.py), not run.
 # Secrets are NOT stored here: `sync: false` makes Render ask for them in the dashboard.
 # Persistent disk: the SQLite ledger / KOL history / dev history live on /var/data and survive deploys and restarts.
 # A disk needs a paid instance (free instances cannot attach one). Disks can grow later but never shrink.
@@ -16,11 +17,17 @@ services:
     disk:
       name: kol-data
       mountPath: /var/data
-      sizeGB: 5                      # dexarb.db with quota DEXARB_DB_MAX_MB (default 1000 MB) + the old paper.db
+      sizeGB: 5                      # insider_watch.json (small) + the old paper.db / dexarb.db (kept, not used)
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.10
-      - key: KOL_DB                  # the OLD database (only used to place dexarb.db beside it; the lab never opens it)
+      - key: KOL_DB                  # only its directory is used: the watch / paper state is written beside it
         value: /var/data/paper.db
       - key: APP_ACCESS_CODE          # required — the code you type once in the browser
+        sync: false
+      - key: HELIUS_API_KEY           # optional — server-side rescan (never sent to the browser)
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN       # optional — STRONG alerts to Telegram
+        sync: false
+      - key: TELEGRAM_CHAT_ID         # optional
         sync: false
