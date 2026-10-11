@@ -13,6 +13,7 @@ from __future__ import annotations
 import hmac
 import json
 import os
+import re
 import subprocess
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -99,6 +100,12 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                 return None
             if path == "/api/insiders":
                 return self._json(200, svc.status())
+            if path == "/api/insiders/chart":
+                from urllib.parse import parse_qs, urlsplit
+                mint = (parse_qs(urlsplit(self.path).query).get("mint") or [""])[0]
+                if not re.fullmatch(r"[1-9A-HJ-NP-Za-km-z]{32,44}", mint):
+                    return self._json(400, {"error": "mint"})
+                return self._json(200, svc.chart(mint))
             if path == "/api/insiders/watch":
                 w = getattr(svc, "watcher", None)
                 return self._json(200, {"watch": w.status() if w else None,

@@ -76,3 +76,13 @@ def test_page_has_group_badges_and_filters(server):
     base, _ = server
     st, js = call(base + "/app.js")
     assert "function insGroup" in js and "const INS_TEAM" in js and "data-insfilter" in js and "BÁN HỘ DEV" in js
+
+
+
+def test_chart_route_validates_the_mint(server, monkeypatch):
+    base, svc = server
+    monkeypatch.setattr(svc, "chart", lambda mint: {"candles": [[60, 1, 1, 1, 1, 1]], "agg": 1})
+    assert call(base + "/api/insiders/chart?mint=bad!", "code-1")[0] == 400
+    st, body = call(base + "/api/insiders/chart?mint=" + "7uqfEqdd9strJVYiju6kasjCj6AzjBF2S1GmWRhdpump", "code-1")
+    assert st == 200 and json.loads(body)["candles"][0][0] == 60
+    assert call(base + "/api/insiders/chart?mint=x", None)[0] == 401
