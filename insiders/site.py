@@ -86,11 +86,15 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                     v = getattr(w, "vip", None)
                     if v is not None:
                         h["vip"] = {"connected": v.stat.get("connected"), "subscribed": v.stat.get("subscribed"),
-                                    "pushed": v.stat.get("pushed", 0)}
+                                    "pushed": v.stat.get("pushed", 0), "handled": v.stat.get("handled", 0),
+                                    "missed": v.stat.get("missed", 0), "error": v.stat.get("error"),
+                                    "rpc_throttled": getattr(v.rpc, "throttled", None)}
                     pf = getattr(w, "portfolio", None)
                     if pf is not None:
                         h["portfolio"] = {"updated": pf.updated, "seconds": pf.seconds,
-                                          "wallets": len((pf.view or {}).get("wallets", []))}
+                                          "wallets": len((pf.view or {}).get("wallets", [])), "progress": pf.progress,
+                                          "error": pf.error, "rpc_calls": getattr(pf.rpc, "calls", None),
+                                          "rpc_throttled": getattr(pf.rpc, "throttled", None)}
                     h["mode"] = getattr(w, "mode", None)
                     sh = getattr(w, "shadow", None)
                     if sh is not None:                        # counts only (no coins, no wallets)
