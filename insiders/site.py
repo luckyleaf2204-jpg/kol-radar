@@ -77,8 +77,16 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
 
         def do_GET(self):
             path = self.path.split("?", 1)[0]
-            if path == "/healthz":
-                return self._json(200, health)
+            if path == "/healthz":                           # counts only: no address, no alert content
+                h = dict(health)
+                w = getattr(svc, "watcher", None)
+                if w is not None:
+                    h["watch_polls"] = w.state.get("polls", 0)
+                    v = getattr(w, "vip", None)
+                    if v is not None:
+                        h["vip"] = {"connected": v.stat.get("connected"), "subscribed": v.stat.get("subscribed"),
+                                    "pushed": v.stat.get("pushed", 0)}
+                return self._json(200, h)
             if path in STATIC:
                 name, ctype = STATIC[path]
                 return self._send(200, ctype, (PAGE / name).read_bytes())
