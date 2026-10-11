@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-FUNCS = ["t", "esc", "safeUrl", "usd", "short", "acct", "tks", "insTable", "renderInsiders", "moneyPath", "beep", "insGroup", "coinsHtml",
+FUNCS = ["t", "esc", "safeUrl", "usd", "short", "acct", "tks", "insTable", "renderInsiders", "moneyPath", "beep", "insGroup", "coinsHtml", "vipHtml",
          "pingNew", "refreshWatch", "watchHtml", "paperHtml", "treeNode", "treesHtml", "extraHtml", "sol", "pnlHtml",
          "deepHtml", "bindIns"]
 
