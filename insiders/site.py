@@ -92,6 +92,13 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                         h["portfolio"] = {"updated": pf.updated, "seconds": pf.seconds,
                                           "wallets": len((pf.view or {}).get("wallets", []))}
                     h["mode"] = getattr(w, "mode", None)
+                    sh = getattr(w, "shadow", None)
+                    if sh is not None:                        # counts only (no coins, no wallets)
+                        sg = sh.s.get("signals", [])
+                        h["shadow"] = {"signals": len(sg), "live": sum(x["status"] == "live" for x in sg),
+                                       "waiting": sum(x["status"] == "wait_price" for x in sg),
+                                       "paper_open": sum(1 for x in sg if (x.get("paper") or {}).get("status") == "open"),
+                                       "ticks": sh.stat.get("ticks"), "error": sh.stat.get("error")}
                 return self._json(200, h)
             if path in STATIC:
                 name, ctype = STATIC[path]
