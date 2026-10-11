@@ -373,6 +373,10 @@ details.ev div { padding: 2px 0; }
 .ins-tabs .btn { white-space: nowrap; padding: 6px 10px; font-size: 12px; display: flex; flex-direction: column; align-items: flex-start; }
 .ins-tabs .btn.strong { border-color: var(--red); }
 
+.vip-head .kv { margin: 2px 0; }
+details.ins-old { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 10px; }
+details.ins-old > summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+
 /* standalone page */
 body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 header.top { position: sticky; top: 0; z-index: 5; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--border); }

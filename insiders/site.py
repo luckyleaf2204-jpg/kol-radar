@@ -86,6 +86,11 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                     if v is not None:
                         h["vip"] = {"connected": v.stat.get("connected"), "subscribed": v.stat.get("subscribed"),
                                     "pushed": v.stat.get("pushed", 0)}
+                    pf = getattr(w, "portfolio", None)
+                    if pf is not None:
+                        h["portfolio"] = {"updated": pf.updated, "seconds": pf.seconds,
+                                          "wallets": len((pf.view or {}).get("wallets", []))}
+                    h["mode"] = getattr(w, "mode", None)
                 return self._json(200, h)
             if path in STATIC:
                 name, ctype = STATIC[path]
