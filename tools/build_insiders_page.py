@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-FUNCS = ["t", "esc", "safeUrl", "usd", "short", "acct", "tks", "insTable", "renderInsiders", "moneyPath", "beep",
+FUNCS = ["t", "esc", "safeUrl", "usd", "short", "acct", "tks", "insTable", "renderInsiders", "moneyPath", "beep", "insGroup",
          "pingNew", "refreshWatch", "watchHtml", "paperHtml", "treeNode", "treesHtml", "extraHtml", "sol", "pnlHtml",
          "deepHtml", "bindIns"]
 
@@ -99,11 +99,12 @@ def main():
     hunter = Path(sys.argv[1] if len(sys.argv) > 1 else ROOT.parent / "sol_hunter_insiders")
     src = (hunter / "src/web/static/app.js").read_text(encoding="utf-8")
     vi = json.loads((hunter / "src/i18n/vi.json").read_text(encoding="utf-8"))
-    body = "\n".join(extract(src, f) for f in FUNCS)
+    consts = re.findall(r"^(const INS_[A-Z_]+ = (?:\[[^\]]*\]|\{[^}]*\});)", src, re.M | re.S)  # Insiders tables
+    body = "\n".join(consts + [extract(src, f) for f in FUNCS])
     body = body.replace('startPoll(', '/*startPoll*/(')                     # the shell owns the refresh timer
     keys = set(re.findall(r'"((?:web|common)\.[a-z0-9_.]+)"', body)) | {
         "web.login.bad", "web.copied", "web.title.insiders", "web.loading", "web.error", "common.none", "common.unknown"}
-    keys |= {k for k in vi if k.startswith(("web.ins.lv.", "web.ins.ev.", "web.ins.paper_"))}
+    keys |= {k for k in vi if k.startswith(("web.ins.lv.", "web.ins.ev.", "web.ins.paper_", "web.ins.g.", "web.ins.f."))}
     d = {k: vi[k] for k in sorted(keys) if k in vi}
     d.update({"web.login.hint": "Nhập mã truy cập của site (APP_ACCESS_CODE) — chỉ cần một lần trên thiết bị này.",
               "web.login.placeholder": "Mã truy cập", "web.login.go": "Vào", "web.login.bad": "Sai mã truy cập",

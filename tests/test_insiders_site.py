@@ -70,3 +70,9 @@ def test_rescan_route_is_post_only_and_guarded(server, monkeypatch):
     monkeypatch.setattr(svc, "start", lambda runner=None: True)
     st, body = call(base + "/api/insiders/run", "code-1", method="POST")
     assert st == 200 and json.loads(body)["started"] is True
+
+
+def test_page_has_group_badges_and_filters(server):
+    base, _ = server
+    st, js = call(base + "/app.js")
+    assert "function insGroup" in js and "const INS_TEAM" in js and "data-insfilter" in js and "BÁN HỘ DEV" in js

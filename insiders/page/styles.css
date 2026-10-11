@@ -366,6 +366,9 @@ details.ev div { padding: 2px 0; }
 .tk { margin-left: 10px; padding-left: 8px; border-left: 1px dashed var(--border); }
 .tn .pill { font-size: 10px; padding: 1px 6px; }
 
+.ins-filters { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+.ins-filters .btn { padding: 6px 10px; font-size: 12px; }
+
 /* standalone page */
 body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 header.top { position: sticky; top: 0; z-index: 5; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--border); }
