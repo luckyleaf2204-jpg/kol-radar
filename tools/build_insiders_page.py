@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-FUNCS = ["t", "esc", "safeUrl", "usd", "short", "acct", "tks", "insTable", "renderInsiders", "moneyPath", "beep", "insGroup",
+FUNCS = ["t", "esc", "safeUrl", "usd", "short", "acct", "tks", "insTable", "renderInsiders", "moneyPath", "beep", "insGroup", "coinsHtml",
          "pingNew", "refreshWatch", "watchHtml", "paperHtml", "treeNode", "treesHtml", "extraHtml", "sol", "pnlHtml",
          "deepHtml", "bindIns"]
 
@@ -104,7 +104,7 @@ def main():
     body = body.replace('startPoll(', '/*startPoll*/(')                     # the shell owns the refresh timer
     keys = set(re.findall(r'"((?:web|common)\.[a-z0-9_.]+)"', body)) | {
         "web.login.bad", "web.copied", "web.title.insiders", "web.loading", "web.error", "common.none", "common.unknown"}
-    keys |= {k for k in vi if k.startswith(("web.ins.lv.", "web.ins.ev.", "web.ins.paper_", "web.ins.g.", "web.ins.f."))}
+    keys |= {k for k in vi if k.startswith(("web.ins.lv.", "web.ins.ev.", "web.ins.paper_", "web.ins.g.", "web.ins.f.", "web.ins.c."))}
     d = {k: vi[k] for k in sorted(keys) if k in vi}
     d.update({"web.login.hint": "Nhập mã truy cập của site (APP_ACCESS_CODE) — chỉ cần một lần trên thiết bị này.",
               "web.login.placeholder": "Mã truy cập", "web.login.go": "Vào", "web.login.bad": "Sai mã truy cập",
