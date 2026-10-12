@@ -163,3 +163,8 @@ details.detail[open] > summary::before { content: "▾"; }
 .pname { font-size: 12px; color: var(--c, var(--accent)); margin-left: 2px; }
 
 .acc-t { color: var(--accent); }
+
+.cw-t { grid-column: 1 / -1; font-size: 12px; }
+.cw-t > summary { cursor: pointer; color: var(--muted); width: max-content; }
+.cw-t .tl { display: grid; grid-template-columns: 110px 110px 1fr 1fr; gap: 8px; padding: 2px 0 2px 12px; border-left: 2px solid var(--c, var(--line2)); }
+@media (max-width: 700px) { .cw-t .tl { grid-template-columns: 1fr 1fr; } }

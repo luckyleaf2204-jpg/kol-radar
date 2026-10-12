@@ -9,7 +9,7 @@ const LS = {
   del(k) { try { localStorage.removeItem(k); } catch (_) { /* ignore */ } },
 };
 const S = {
-  code: LS.get("insAccessCode", ""), w: null, names: {}, tab: "dashboard", timer: null, prevSig: {}, charts: {}, coins: {},
+  code: LS.get("insAccessCode", ""), w: null, names: {}, tab: "dashboard", timer: null, prevSig: {}, charts: {}, coins: {}, openT: {},
   sig: { win: LS.get("kr.win", "24h"), multi: LS.get("kr.multi", false), sort: LS.get("kr.sort", "time"), open: null },
   al: { level: "all", view: LS.get("kr.alview", "trade") }, wl: { mode: "list", role: "all", sort: "wins", open: null, detail: null },
   pp: { tab: "shadow" }, seenAlert: LS.get("kr.seenAlert", 0), sound: LS.get("kr.sound", true), err: null,
@@ -319,12 +319,23 @@ function pumpBlock(c) {                   // dev, description and links of a coi
   const extra = [pi.ath_mcap_usd ? "MC đỉnh " + usdK(pi.ath_mcap_usd) : "", pi.complete === false ? "đang trên bonding curve" : pi.complete ? "đã tốt nghiệp" : ""].filter(Boolean).join(" · ");
   return `<div class="pinfo">${dev}${desc}${links || extra ? `<div class="links">${links}${extra ? `<span class="dim">${extra}</span>` : ""}</div>` : ""}</div>`;
 }
+function tradeList(w, c) {                // every recorded trade of one wallet on one coin, newest first
+  const tr = (w.trades || []).slice().sort((a, b) => b[0] - a[0]);
+  if (!tr.length) return "";
+  const rows = tr.map((t) => { const x = tradePx(t, c), buy = ["BUY", "CREATE"].includes(t[1]), sell = t[1] === "SELL";
+    return `<div class="tl"><span class="dim">${when(t[0])}</span><span class="${buy ? "good" : sell ? "warn" : "acc-t"}">${esc((KIND[t[1]] || t[1]).toUpperCase())}</span>
+      <span class="mono">${t[2] > 0 ? usdOf(t[2]) : tokAmt(x.ui) + " token"}</span><span>${x.mc ? `MC <span class="est">${usdK(x.mc)}</span>` : ""}</span></div>`; }).join("");
+  const k = c.mint + "|" + w.wallet;
+  return `<details class="cw-t" data-k="${esc(k)}" ${S.openT[k] ? "open" : ""}><summary>${tr.length} lệnh</summary>${rows}</details>`;
+}
 function coinCard(mint, items) {          // one coin, one box, one colour: every listed wallet's buys / sells on it
   const a0 = items[0], strong = items.find((a) => a.level === "vipstrong"), color = coinColor(mint);
   const c = S.coins[mint] || board().find((x) => x.mint === mint);
   loadCoin(mint);
   const name = a0.symbol ? "$" + a0.symbol : S.names[mint] || short(mint), fresh = items.some((a) => a.ts > S.seenAlert);
   const age = items.find((a) => a.age_h !== undefined && a.age_h !== null), mcap = items.find((a) => a.mcap);
+  const nW = c ? c.wallets.length : new Set(items.map((a) => a.wallet)).size;
+  const nT = c ? c.wallets.reduce((k, w) => k + (w.trades || []).length, 0) : items.filter((a) => a.kind !== "VIPSTRONG").length;
   let lines;
   if (c && c.wallets.length) {
     lines = c.wallets.slice().sort((x, y) => (y.buy_sol || 0) - (x.buy_sol || 0)).map((w) => {
@@ -334,7 +345,8 @@ function coinCard(mint, items) {          // one coin, one box, one colour: ever
           : st.recv ? `<span class="acc-t">NHẬN <b>${tokAmt(st.recv)}</b> token</span> <span class="dim small">(chuyển từ ví khác, không mua)</span>`
           : `<span class="dim small" title="Ví được theo dõi sau khi đã mua coin này">mua trước khi theo dõi</span>`}</span>
         <span class="cw-s">${st.sSol ? `BÁN <b>${usdOf(st.sSol)}</b>${st.sMc ? ` <span class="dim">@</span> <span class="est">${usdK(st.sMc)}</span>` : ""}` : ""}${st.sent ? `${st.sSol ? "<br>" : ""}CHUYỂN ĐI <b>${st.sentPct !== null ? Math.round(st.sentPct) + "%" : tokAmt(st.sent)}</b> <span class="dim small">sang ví khác</span>` : ""}${!st.sSol && !st.sent ? `<span class="dim small">chưa bán</span>` : ""}</span>
-        <span class="cw-h">${st.leftPct !== null ? `còn <b class="${st.leftPct >= 50 ? "good" : "warn"}">${Math.round(st.leftPct)}%</b>` : ""}</span></div>`;
+        <span class="cw-h">${st.leftPct !== null ? `còn <b class="${st.leftPct >= 50 ? "good" : "warn"}">${Math.round(st.leftPct)}%</b>` : ""}</span>
+        ${tradeList(w, c)}</div>`;
     }).join("");
   } else {
     lines = items.filter((a) => a.kind !== "VIPSTRONG").map((a) => `<div class="cw"><span class="cw-w">${acct(a.wallet)}</span>
@@ -343,7 +355,7 @@ function coinCard(mint, items) {          // one coin, one box, one colour: ever
   return `<article class="coin${strong ? " is-strong" : ""}" style="--c:${color}">
     <header><span class="sw"></span><b class="cn">${esc(name)}</b><span class="copy" data-copy="${esc(mint)}" title="Sao chép CA">⧉</span>
       ${strong ? pill("MẠNH · " + (strong.n_families || strong.n_wallets || 2) + " nhóm ví", "bad") : ""}${fresh ? pill("MỚI", "acc") : ""}
-      <span class="muted small">${age ? dur(age.age_h * 3600) + " tuổi" : ""}${mcap ? " · MC " + usdK(mcap.mcap) : ""} · ${ago(items[0].ts)}</span>
+      <span class="muted small"><b>${nW} ví · ${nT} lệnh</b> · ${age ? dur(age.age_h * 3600) + " tuổi · " : ""}${mcap ? "MC " + usdK(mcap.mcap) + " · " : ""}${ago(items[0].ts)}</span>
       <span class="grow"></span>${pumpBtn(mint)}</header>
     ${pumpBlock(c)}
     ${lines}</article>`;
@@ -360,15 +372,16 @@ function viewAlerts() {
   const cfg = S.w.config || {}, all = alerts(), view = S.al.view || "trade";
   const trades = all.filter((a) => TRADE_KINDS.includes(a.kind)), moves = all.filter((a) => MOVE_KINDS.includes(a.kind));
   const fresh = (xs) => xs.filter((a) => a.ts > S.seenAlert).length;
-  const tabs = `<span class="seg">${[["trade", "Mua / bán coin", trades], ["move", "Chuyển / nhận", moves]].map(([v, l, xs]) =>
-    `<button data-alview="${v}" class="${view === v ? "on" : ""}">${l} <span class="dim">${xs.length}</span>${fresh(xs) ? ` <span class="badge">${fresh(xs)}</span>` : ""}</button>`).join("")}</span>`;
+  const nCoins = new Set(trades.filter((a) => a.mint).map((a) => a.mint)).size, nTrades = trades.filter((a) => a.kind !== "VIPSTRONG").length;
+  const tabs = `<span class="seg">${[["trade", "Mua / bán coin", trades, `${nCoins} coin · ${nTrades} lệnh`], ["move", "Chuyển / nhận", moves, `${moves.length}`]].map(([v, l, xs, cnt]) =>
+    `<button data-alview="${v}" class="${view === v ? "on" : ""}">${l} <span class="dim">${cnt}</span>${fresh(xs) ? ` <span class="badge">${fresh(xs)} mới</span>` : ""}</button>`).join("")}</span>`;
   let body;
   if (view === "trade") {
     const list = trades.filter((a) => S.al.level === "all" || a.level === S.al.level);
     const byCoin = new Map();
     for (const a of list) if (a.mint) { if (!byCoin.has(a.mint)) byCoin.set(a.mint, []); byCoin.get(a.mint).push(a); }
     [...byCoin.keys()].forEach(coinColor);                 // newest coins get their colours first
-    const cards = [...byCoin.entries()].slice(0, 30).map(([m, items]) => coinCard(m, items)).join("");
+    const cards = [...byCoin.entries()].slice(0, 40).map(([m, items]) => coinCard(m, items)).join("");
     body = `<div class="ctrl"><span class="seg">${[["all", "Tất cả"], ["vipstrong", "Chỉ cảnh báo mạnh"], ["vip", "Chỉ 1 ví"]].map(([v, l]) => `<button data-allevel="${v}" class="${S.al.level === v ? "on" : ""}">${l}</button>`).join("")}</span>
       <span class="note">Số tiền quy ra USD theo giá SOL hiện tại. Mỗi coin một ô, một màu. Mỗi ví một dòng: MUA (USD @ MC lúc mua) · BÁN hoặc CHUYỂN ĐI · % token còn giữ. “Chưa bán” = đã mua, chưa có lệnh bán từ lúc theo dõi. “Mua trước khi theo dõi” = ví được thêm vào danh sách sau khi đã mua nên chỉ thấy lệnh bán. Coin mới hoạt động nằm trên. MẠNH = ≥ 2 nhóm ví độc lập cùng mua ≥ ${thr(cfg.min_sol || 4)} trong ${dur(cfg.strong_window_s || 86400)}. MC <span class="est"></span> tính từ giá lệnh của ví.</span></div>
       ${cards ? `<div class="coins">${cards}</div>` : `<div class="empty">Chưa có lệnh mua / bán nào đạt ngưỡng ${thr(cfg.min_sol || 4)}.</div>`}`;
@@ -448,7 +461,7 @@ function walletDetail() {
 async function loadCoin(mint) {          // every listed wallet on a coin (any size), refreshed at most every 30 s
   const t = Date.now();
   S.coinAt = S.coinAt || {};
-  if (S.coinAt[mint] && t - S.coinAt[mint] < 30000) return;
+  if (S.coinAt[mint] && t - S.coinAt[mint] < 15000) return;
   S.coinAt[mint] = t;
   try { S.coins[mint] = await api("/api/insiders/coin?mint=" + encodeURIComponent(mint)); if (S.tab === "alerts" || S.tab === "signals") render(); }
   catch (_) { /* keep the board's copy */ }
@@ -545,6 +558,7 @@ function bind() {
   $$("th[data-sort]").forEach((th) => th.onclick = () => { S.sig.sort = th.dataset.sort; LS.set("kr.sort", S.sig.sort); render(); });
   $$("[data-open]").forEach((el) => el.closest("tr").onclick = (e) => { if (e.target.closest("a, .copy")) return; S.sig.open = S.sig.open === el.dataset.open ? null : el.dataset.open; if (S.tab !== "signals") location.hash = "#signals"; else render(); });
   $$("[data-allevel]").forEach((b) => b.onclick = () => { S.al.level = b.dataset.allevel; render(); });
+  $$("details.cw-t").forEach((d) => d.ontoggle = () => { S.openT[d.dataset.k] = d.open; });
   $$("[data-alview]").forEach((b) => b.onclick = () => { S.al.view = b.dataset.alview; LS.set("kr.alview", S.al.view); render(); });
   $$("[data-wlmode]").forEach((b) => b.onclick = () => { S.wl.mode = b.dataset.wlmode; render(); });
   const r = $("#wlrole"); if (r) r.onchange = () => { S.wl.role = r.value; render(); };
