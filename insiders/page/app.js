@@ -29,12 +29,16 @@ const nf = (v, d = 2) => v === null || v === undefined || isNaN(v) ? null : Numb
 const usdOf = (sol) => {                 // SOL amounts shown in USD at today's SOL price (falls back to SOL without a price)
   if (sol === null || sol === undefined || isNaN(sol)) return "—";
   const r = solUsd(); if (!r) return nf(sol, 2) + " SOL";
-  const v = sol * r; return Math.abs(v) >= 1e5 ? usdK(v) : "$" + Math.round(v).toLocaleString("vi-VN");
+  return usdK(sol * r);
 };
 const thr = (sol) => { const r = solUsd(); return `${nf(sol, 2)} SOL${r ? " (~$" + Math.round(sol * r).toLocaleString("vi-VN") + ")" : ""}`; };
 const solTxt = (v, d = 2) => nf(v, d) === null ? `<span class="unk">—</span>` : `${nf(v, d)} SOL`;
-const usdK = (v) => { if (!v && v !== 0) return null; const a = Math.abs(v); return (v < 0 ? "−" : "") + "$" + (a >= 1e9 ? (a / 1e9).toFixed(2) + "B" : a >= 1e6 ? (a / 1e6).toFixed(2) + "M" : a >= 1e3 ? (a / 1e3).toFixed(1) + "K" : a.toFixed(a < 1 ? 4 : 0)); };
-const money = (v) => v === null || v === undefined ? `<span class="unk">—</span>` : `<span class="${v > 0 ? "good" : v < 0 ? "bad" : ""}">${v > 0 ? "+" : v < 0 ? "−" : ""}$${Math.abs(Math.round(v)).toLocaleString("vi-VN")}</span>`;
+const usdK = (v) => {                    // short money: $900 · $1.5K · $188K · $1.3M · $67M · $1.2B
+  if (!v && v !== 0) return null;
+  const a = Math.abs(v), f = (x, u) => (x >= 10 ? Math.round(x) : Math.round(x * 10) / 10) + u;
+  return (v < 0 ? "−" : "") + "$" + (a >= 1e9 ? f(a / 1e9, "B") : a >= 1e6 ? f(a / 1e6, "M") : a >= 1e3 ? f(a / 1e3, "K") : a < 1 ? a.toPrecision(2) : Math.round(a));
+};
+const money = (v) => v === null || v === undefined ? `<span class="unk">—</span>` : `<span class="${v > 0 ? "good" : v < 0 ? "bad" : ""}">${v > 0 ? "+" : v < 0 ? "−" : ""}${usdK(Math.abs(v))}</span>`;
 const pct = (v) => v === null || v === undefined ? `<span class="unk">—</span>` : `<span class="${v > 0 ? "good" : v < 0 ? "bad" : ""}">${v > 0 ? "+" : ""}${v.toFixed(1)}%</span>`;
 const mult = (v) => v === null || v === undefined ? `<span class="unk">—</span>` : `<span class="${v >= 2 ? "good" : v < 1 ? "bad" : ""}">×${nf(v, 2)}</span>`;
 const now = () => (S.w && S.w.now) || Date.now() / 1000;
@@ -324,7 +328,7 @@ function tradeList(w, c) {                // every recorded trade of one wallet 
   if (!tr.length) return "";
   const rows = tr.map((t) => { const x = tradePx(t, c), buy = ["BUY", "CREATE"].includes(t[1]), sell = t[1] === "SELL";
     return `<div class="tl"><span class="dim">${when(t[0])}</span><span class="${buy ? "good" : sell ? "warn" : "acc-t"}">${esc((KIND[t[1]] || t[1]).toUpperCase())}</span>
-      <span class="mono">${t[2] > 0 ? usdOf(t[2]) : tokAmt(x.ui) + " token"}</span><span>${x.mc ? `MC <span class="est">${usdK(x.mc)}</span>` : ""}</span></div>`; }).join("");
+      <span class="mono">${t[2] > 0 ? usdOf(t[2]) : tokAmt(x.ui) + " token"}</span><span>${x.mc ? `<span class="dim">MC</span> ${usdK(x.mc)}` : ""}</span></div>`; }).join("");
   const k = c.mint + "|" + w.wallet;
   return `<details class="cw-t" data-k="${esc(k)}" ${S.openT[k] ? "open" : ""}><summary>${tr.length} lệnh</summary>${rows}</details>`;
 }
@@ -341,10 +345,10 @@ function coinCard(mint, items) {          // one coin, one box, one colour: ever
     lines = c.wallets.slice().sort((x, y) => (y.buy_sol || 0) - (x.buy_sol || 0)).map((w) => {
       const st = walletStats(w, c);
       return `<div class="cw"><span class="cw-w">${acct(w.wallet)} ${pumpName(w.pump_user, w.wallet)}</span>
-        <span class="cw-b">${st.bSol ? `MUA <b>${usdOf(st.bSol)}</b>${st.bMc ? ` <span class="dim">@</span> <span class="est">${usdK(st.bMc)}</span>` : ""}`
+        <span class="cw-b">${st.bSol ? `MUA <b>${usdOf(st.bSol)}</b>${st.bMc ? ` <span class="dim">· MC</span> ${usdK(st.bMc)}` : ""}`
           : st.recv ? `<span class="acc-t">NHẬN <b>${tokAmt(st.recv)}</b> token</span> <span class="dim small">(chuyển từ ví khác, không mua)</span>`
           : `<span class="dim small" title="Ví được theo dõi sau khi đã mua coin này">mua trước khi theo dõi</span>`}</span>
-        <span class="cw-s">${st.sSol ? `BÁN <b>${usdOf(st.sSol)}</b>${st.sMc ? ` <span class="dim">@</span> <span class="est">${usdK(st.sMc)}</span>` : ""}` : ""}${st.sent ? `${st.sSol ? "<br>" : ""}CHUYỂN ĐI <b>${st.sentPct !== null ? Math.round(st.sentPct) + "%" : tokAmt(st.sent)}</b> <span class="dim small">sang ví khác</span>` : ""}${!st.sSol && !st.sent ? `<span class="dim small">chưa bán</span>` : ""}</span>
+        <span class="cw-s">${st.sSol ? `BÁN <b>${usdOf(st.sSol)}</b>${st.sMc ? ` <span class="dim">· MC</span> ${usdK(st.sMc)}` : ""}` : ""}${st.sent ? `${st.sSol ? "<br>" : ""}CHUYỂN ĐI <b>${st.sentPct !== null ? Math.round(st.sentPct) + "%" : tokAmt(st.sent)}</b> <span class="dim small">sang ví khác</span>` : ""}${!st.sSol && !st.sent ? `<span class="dim small">chưa bán</span>` : ""}</span>
         <span class="cw-h">${st.leftPct !== null ? `còn <b class="${st.leftPct >= 50 ? "good" : "warn"}">${Math.round(st.leftPct)}%</b>` : ""}</span>
         ${tradeList(w, c)}</div>`;
     }).join("");
@@ -383,7 +387,7 @@ function viewAlerts() {
     [...byCoin.keys()].forEach(coinColor);                 // newest coins get their colours first
     const cards = [...byCoin.entries()].slice(0, 40).map(([m, items]) => coinCard(m, items)).join("");
     body = `<div class="ctrl"><span class="seg">${[["all", "Tất cả"], ["vipstrong", "Chỉ cảnh báo mạnh"], ["vip", "Chỉ 1 ví"]].map(([v, l]) => `<button data-allevel="${v}" class="${S.al.level === v ? "on" : ""}">${l}</button>`).join("")}</span>
-      <span class="note">Số tiền quy ra USD theo giá SOL hiện tại. Mỗi coin một ô, một màu. Mỗi ví một dòng: MUA (USD @ MC lúc mua) · BÁN hoặc CHUYỂN ĐI · % token còn giữ. “Chưa bán” = đã mua, chưa có lệnh bán từ lúc theo dõi. “Mua trước khi theo dõi” = ví được thêm vào danh sách sau khi đã mua nên chỉ thấy lệnh bán. Coin mới hoạt động nằm trên. MẠNH = ≥ 2 nhóm ví độc lập cùng mua ≥ ${thr(cfg.min_sol || 4)} trong ${dur(cfg.strong_window_s || 86400)}. MC <span class="est"></span> tính từ giá lệnh của ví.</span></div>
+      <span class="note">Số tiền quy ra USD theo giá SOL hiện tại. Mỗi coin một ô, một màu. Mỗi ví một dòng: MUA $ (số tiền bỏ ra) · MC (vốn hoá coin lúc mua) · BÁN $ · MC lúc bán · % token còn giữ. “Chưa bán” = đã mua, chưa có lệnh bán từ lúc theo dõi. “Mua trước khi theo dõi” = ví được thêm vào danh sách sau khi đã mua nên chỉ thấy lệnh bán. Coin mới hoạt động nằm trên. MẠNH = ≥ 2 nhóm ví độc lập cùng mua ≥ ${thr(cfg.min_sol || 4)} trong ${dur(cfg.strong_window_s || 86400)}. MC <span class="est"></span> tính từ giá lệnh của ví.</span></div>
       ${cards ? `<div class="coins">${cards}</div>` : `<div class="empty">Chưa có lệnh mua / bán nào đạt ngưỡng ${thr(cfg.min_sol || 4)}.</div>`}`;
   } else {
     const label = { RECEIVE: ["NHẬN TOKEN", "acc"], SEND: ["CHUYỂN TOKEN", "warn"], SOL_IN: ["NHẬN SOL", "acc"], FUND: ["NẠP VÍ MỚI", "warn"] };
