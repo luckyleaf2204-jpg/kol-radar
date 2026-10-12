@@ -58,10 +58,47 @@ def test_api_needs_the_code_and_never_returns_the_key(server):
 def test_page_and_assets_are_served(server):
     base, _ = server
     st, html = call(base + "/")
-    assert st == 200 and "/app.js?v=" in html and "Insiders" in html
+    assert st == 200 and "INSIDERS" in html and "PAPER MODE" in html and "__V__" not in html
+    v = html.split("/app.js?v=")[1].split('"')[0]
+    assert len(v) == 10 and f"/styles.css?v={v}" in html                    # cache-busting tag from the files
     st, js = call(base + "/app.js")
-    assert st == 200 and "function renderInsiders" in js and SECRET not in js
+    assert st == 200 and "function viewSignals" in js and "function viewPaper" in js and SECRET not in js
     assert call(base + "/styles.css")[0] == 200 and call(base + "/nope")[0] == 404
+
+
+def test_new_dashboard_has_every_screen_and_never_signs():
+    js = (site.PAGE / "app.js").read_text(encoding="utf-8")
+    for tab in ("dashboard", "signals", "alerts", "wallets", "paper", "performance", "research", "settings"):
+        assert f'["{tab}",' in js
+    assert "n_families" in js and "mối liên hệ on-chain" in js and "Chưa đủ mẫu" in js
+    for bad in ("signTransaction", "sendTransaction", "Keypair", "/swap/v1/swap"):
+        assert bad not in js
+
+
+def test_legacy_research_page_is_kept(server):
+    base, _ = server
+    st, html = call(base + "/legacy/")
+    assert st == 200 and "/legacy/app.js?v=" in html
+    st, js = call(base + "/legacy/app.js")
+    assert st == 200 and "function renderInsiders" in js and SECRET not in js
+    assert call(base + "/legacy/styles.css")[0] == 200
+
+
+def test_wallet_route_validates_and_needs_the_code(server, monkeypatch):
+    base, svc = server
+
+    class W:
+        state = {}
+
+        def wallet_view(self, addr):
+            return {"wallet": addr, "role": "holder"} if addr.startswith("9Wz") else None
+    monkeypatch.setattr(svc, "watcher", W(), raising=False)
+    good = "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"
+    assert call(base + "/api/insiders/wallet?addr=" + good)[0] == 401
+    assert call(base + "/api/insiders/wallet?addr=bad!", "code-1")[0] == 400
+    st, body = call(base + "/api/insiders/wallet?addr=" + good, "code-1")
+    assert st == 200 and json.loads(body)["role"] == "holder"
+    assert call(base + "/api/insiders/wallet?addr=" + "G2YxRa6wt1qePMwfJzdXZG62ej4qaTC7YURzuh2Lwd3t", "code-1")[0] == 404
 
 
 def test_rescan_route_is_post_only_and_guarded(server, monkeypatch):
@@ -74,7 +111,7 @@ def test_rescan_route_is_post_only_and_guarded(server, monkeypatch):
 
 def test_page_has_group_badges_and_filters(server):
     base, _ = server
-    st, js = call(base + "/app.js")
+    st, js = call(base + "/legacy/app.js")
     assert "function insGroup" in js and "const INS_TEAM" in js and "data-insfilter" in js and "BÁN HỘ DEV" in js
 
 

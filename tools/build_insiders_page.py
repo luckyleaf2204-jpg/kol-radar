@@ -71,13 +71,13 @@ HTML = """<!doctype html>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0f1117">
   <title>Insiders · SOL Pump Insiders</title>
-  <link rel="stylesheet" href="/styles.css?v=__V__">
+  <link rel="stylesheet" href="/legacy/styles.css?v=__V__">
 </head>
 <body>
-  <header class="top"><b>Insiders</b> <span class="muted small">kênh SOL Pump Insiders · nghiên cứu, chỉ đọc dữ liệu on-chain</span></header>
+  <header class="top"><b>Insiders · nghiên cứu</b> <span class="muted small">giao diện cũ · <a href="/">← về dashboard</a></span></header>
   <main id="view" class="ins-page"><div class="spin">…</div></main>
   <div id="toast" class="toast" role="status"></div>
-  <script src="/app.js?v=__V__" defer></script>
+  <script src="/legacy/app.js?v=__V__" defer></script>
   <script>document.addEventListener("DOMContentLoaded", () => { if (S.code) start(); else showLogin(""); });</script>
 </body>
 </html>
@@ -111,8 +111,9 @@ def main():
               "web.copied": "Đã copy"})
     js = SHELL.replace("__DICT__", json.dumps(d, ensure_ascii=False)) + "\n" + body + "\n"
     css = (hunter / "src/web/static/styles.css").read_text(encoding="utf-8") + EXTRA_CSS
-    v = str(abs(hash(js + css)) % 10 ** 8)
-    out = ROOT / "insiders" / "page"
+    import hashlib
+    v = hashlib.sha1((js + css).encode()).hexdigest()[:8]
+    out = ROOT / "insiders" / "page" / "legacy"           # the new dashboard (insiders/page/) is hand-written
     out.mkdir(parents=True, exist_ok=True)
     (out / "app.js").write_bytes(js.encode())
     (out / "styles.css").write_bytes(css.encode())

@@ -23,7 +23,24 @@ from insiders.service import InsiderService
 PAGE = Path(__file__).with_name("page")
 STATIC = {"/": ("index.html", "text/html; charset=utf-8"), "/index.html": ("index.html", "text/html; charset=utf-8"),
           "/app.js": ("app.js", "application/javascript; charset=utf-8"),
-          "/styles.css": ("styles.css", "text/css; charset=utf-8")}
+          "/styles.css": ("styles.css", "text/css; charset=utf-8"),
+          # the earlier research page (generated from the SOL Memecoin Hunter UI by tools/build_insiders_page.py)
+          "/legacy/": ("legacy/index.html", "text/html; charset=utf-8"),
+          "/legacy/index.html": ("legacy/index.html", "text/html; charset=utf-8"),
+          "/legacy/app.js": ("legacy/app.js", "application/javascript; charset=utf-8"),
+          "/legacy/styles.css": ("legacy/styles.css", "text/css; charset=utf-8")}
+
+
+def asset_version() -> str:
+    """Cache-busting tag for the page's own assets (changes whenever app.js / styles.css change)."""
+    import hashlib
+    h = hashlib.sha1()
+    for n in ("app.js", "styles.css"):
+        try:
+            h.update((PAGE / n).read_bytes())
+        except OSError:
+            pass
+    return h.hexdigest()[:10]
 
 
 def state_dir() -> tuple[Path, bool]:
@@ -108,9 +125,18 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                                        "kinds": dict(__import__("collections").Counter(x["kind"] + "/" + x["tier"] for x in sg)),
                                        "ticks": sh.stat.get("ticks"), "error": sh.stat.get("error")}
                 return self._json(200, h)
+            if path == "/legacy":
+                self.send_response(301)
+                self.send_header("Location", "/legacy/")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return None
             if path in STATIC:
                 name, ctype = STATIC[path]
-                return self._send(200, ctype, (PAGE / name).read_bytes())
+                body = (PAGE / name).read_bytes()
+                if name == "index.html":
+                    body = body.replace(b"__V__", asset_version().encode())
+                return self._send(200, ctype, body)
             if path.startswith("/api/") and not self._authed():
                 return None
             if path == "/api/insiders":
@@ -121,6 +147,14 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                 if not re.fullmatch(r"[1-9A-HJ-NP-Za-km-z]{32,44}", mint):
                     return self._json(400, {"error": "mint"})
                 return self._json(200, svc.chart(mint))
+            if path == "/api/insiders/wallet":
+                from urllib.parse import parse_qs, urlsplit
+                addr = (parse_qs(urlsplit(self.path).query).get("addr") or [""])[0]
+                if not re.fullmatch(r"[1-9A-HJ-NP-Za-km-z]{32,44}", addr):
+                    return self._json(400, {"error": "addr"})
+                w = getattr(svc, "watcher", None)
+                d = w.wallet_view(addr) if w else None
+                return self._json(200, d) if d else self._json(404, {"error": "wallet"})
             if path == "/api/insiders/watch":
                 w = getattr(svc, "watcher", None)
                 return self._json(200, {"watch": w.status() if w else None,
