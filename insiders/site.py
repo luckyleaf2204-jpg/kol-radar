@@ -102,6 +102,10 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                         h["shadow"] = {"signals": len(sg), "live": sum(x["status"] == "live" for x in sg),
                                        "waiting": sum(x["status"] == "wait_price" for x in sg),
                                        "paper_open": sum(1 for x in sg if (x.get("paper") or {}).get("status") == "open"),
+                                       "paper_closed": sum(1 for x in sg if (x.get("paper") or {}).get("status") == "closed"),
+                                       "exits": dict(__import__("collections").Counter((x.get("paper") or {}).get("exit")
+                                                     for x in sg if (x.get("paper") or {}).get("exit"))),
+                                       "kinds": dict(__import__("collections").Counter(x["kind"] + "/" + x["tier"] for x in sg)),
                                        "ticks": sh.stat.get("ticks"), "error": sh.stat.get("error")}
                 return self._json(200, h)
             if path in STATIC:
