@@ -140,3 +140,18 @@ details.detail > summary::-webkit-details-marker { display: none; }
 details.detail > summary::before { content: "▸"; color: var(--muted); margin-right: 4px; }
 details.detail[open] > summary::before { content: "▾"; }
 .seg .badge { margin-left: 4px; font: 600 10px/16px var(--mono); padding: 0 6px; border-radius: 8px; background: var(--bad); color: #fff; }
+
+/* ---------- coin cards (alerts: one coin, one box, one colour) */
+.coins { display: grid; gap: 12px; }
+.coin { border: 1px solid var(--line2); border-left: 5px solid var(--c); border-radius: 8px; background: var(--panel2); padding: 10px 12px; display: grid; gap: 4px; min-width: 0; }
+.coin.is-strong { box-shadow: 0 0 0 1px var(--bad) inset; }
+.coin > header { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding-bottom: 6px; border-bottom: 1px solid var(--line); margin-bottom: 2px; }
+.coin .sw { width: 12px; height: 12px; border-radius: 3px; background: var(--c); flex: none; }
+.coin .cn { font: 700 16px/1.2 var(--mono); color: var(--c); }
+.coin .btn { padding: 4px 10px; font-size: 12px; }
+.coin .btn.pump { background: var(--c); color: #071016; border-color: var(--c); font-weight: 700; }
+.cw { display: grid; grid-template-columns: minmax(120px, 1.1fr) 1.3fr 1.3fr 70px; gap: 4px 12px; align-items: baseline; padding: 4px 0; font-size: 13px; }
+.cw + .cw { border-top: 1px dashed var(--line); }
+.cw-b { color: var(--good); } .cw-b b, .cw-s b { font-family: var(--mono); }
+.cw-s { color: var(--warn); } .cw-h { text-align: right; }
+@media (max-width: 700px) { .cw { grid-template-columns: 1fr 1fr; } .cw-w { grid-column: 1 / -1; } .cw-h { text-align: left; } }

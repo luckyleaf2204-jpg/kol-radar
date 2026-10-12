@@ -167,7 +167,7 @@ function viewDashboard() {
   const perfRow = (lbl, r) => r.n ? `<tr><td>${lbl}</td><td class="num">${r.paper_n || 0}</td><td class="num">${r.paper_n ? Math.round(100 * r.paper_win / r.paper_n) + "%" : "—"}</td><td class="num">${money(r.paper_n ? r.paper_usd : null)}</td><td class="num">${money(r.paper_n ? r.paper_usd_wo_best : null)}</td></tr>` : `<tr><td>${lbl}</td><td class="num" colspan="4"><span class="unk">chưa có mẫu</span></td></tr>`;
   const flows = alerts().filter((a) => a.mint).slice(0, 10).map((a) => ({
     key: a.sig + a.kind + a.wallet, sig: a.sol, cls: a.level === "vipstrong" ? "strong" : "",
-    cells: [`<span class="muted small">${ago(a.ts)}</span>`, acct(a.wallet), `${esc(KIND[a.kind] || a.kind)} <b>${esc(a.symbol ? "$" + a.symbol : S.names[a.mint] || short(a.mint))}</b>`, `<span class="mono">${nf(a.sol, 2)}</span>`] }));
+    cells: [`<span class="muted small">${ago(a.ts)}</span>`, acct(a.wallet), `${esc(KIND[a.kind] || a.kind)} <b style="color:${coinColor(a.mint)}">${esc(a.symbol ? "$" + a.symbol : S.names[a.mint] || short(a.mint))}</b> <a class="small" href="https://pump.fun/coin/${esc(a.mint)}" target="_blank" rel="noopener">pump.fun</a>`, `<span class="mono">${nf(a.sol, 2)}</span>`] }));
   return `${kpis}
     <section class="panel"><header><h2>Tín hiệu coin sớm</h2><span class="grow"></span><a href="#signals">Xem tất cả →</a></header>${signalTable(sortedBoard().slice(0, 8), true)}</section>
     <div class="grid2">
@@ -228,21 +228,17 @@ function walletStats(w, c) {           // buys / sells / remaining of one wallet
 }
 function walletTable(c) {
   const info = walletInfo();
-  const fmtPx = (px, st) => px ? `<span class="mono small">$${Number(st.usdPx(px) || 0).toPrecision(3)}</span><div class="dim small">${px.toExponential(2)} SOL</div>` : `<span class="unk">—</span>`;
   const rows = c.wallets.map((w) => {
     const st = walletStats(w, c), role = w.role || (info[w.wallet] || {}).role;
     return { key: w.wallet, sig: [w.buy_sol, w.sell_sol, w.tok_out, w.held_ui].join("|"),
-      cells: [`${acct(w.wallet)}<div>${role ? rolePill(role) : ""} ${tierPill(w.tier)}</div><div class="dim small">nhóm ${esc(short(w.family))}</div>`,
-        `<b class="mono">${nf(st.bSol, 3)}</b>${st.recv ? `<div class="small">+ nhận ${nf(st.recv, 0)} token</div>` : ""}<div class="dim small">${when(st.firstTs)}</div>`,
-        fmtPx(st.bPx, st),
-        st.bMc ? `<span class="est">${usdK(st.bMc)}</span>${st.firstMc && Math.abs(st.firstMc - st.bMc) / st.bMc > 0.05 ? `<div class="dim small">lần đầu ${usdK(st.firstMc)}</div>` : ""}` : `<span class="unk">—</span>`,
-        st.sSol ? `<b class="mono">${nf(st.sSol, 3)}</b>` : `<span class="dim">chưa bán</span>`, fmtPx(st.sPx, st),
+      cells: [`${acct(w.wallet)} ${role ? rolePill(role) : ""}`,
+        `<b class="mono">${nf(st.bSol, 2)}</b>${st.recv ? `<div class="small dim">+ nhận token</div>` : ""}`,
+        st.bMc ? `<span class="est">${usdK(st.bMc)}</span>` : `<span class="unk">—</span>`,
+        st.sSol ? `<b class="mono">${nf(st.sSol, 2)}</b>` : `<span class="dim">chưa bán</span>`,
         st.sMc ? `<span class="est">${usdK(st.sMc)}</span>` : `<span class="unk">—</span>`,
-        st.left !== null ? `<b class="mono">${nf(st.left, 0)}</b><div class="small ${st.leftPct >= 50 ? "good" : "warn"}">${Math.round(st.leftPct)}% lượng đã nhận</div>` : `<span class="unk">—</span>`,
-        st.held === null || st.held === undefined ? `<span class="unk">đang cập nhật</span>` : `<span class="mono">${nf(st.held, 0)}</span>`] };
+        st.leftPct !== null ? `<b class="${st.leftPct >= 50 ? "good" : "warn"}">${Math.round(st.leftPct)}%</b>` : `<span class="unk">—</span>`] };
   });
-  return table([["Ví", "addr"], ["Mua (SOL)", "num"], ["Giá mua TB", "num"], ["MC lúc mua", "num"], ["Bán (SOL)", "num"], ["Giá bán TB", "num"],
-    ["MC lúc bán", "num"], ["Token còn lại (theo lệnh)", "num"], ["Đang giữ (số dư ví)", "num"]], rows);
+  return table([["Ví", "addr"], ["Mua (SOL)", "num"], ["MC lúc mua", "num"], ["Bán (SOL)", "num"], ["MC lúc bán", "num"], ["Còn giữ", "num"]], rows);
 }
 function coinDetail(c) {
   const st = coinState(c), mc = coinMc(c), info = walletInfo();
@@ -294,6 +290,39 @@ async function drawChart() {
 }
 
 // ---------------------------------------------------------------- 3. live alerts
+const COIN_COLORS = ["#4cc9e0", "#f5a142", "#b48cf2", "#6fdc7c", "#f26fa0", "#f0de5a", "#5f86f5", "#d4dbe2", "#a8e04c", "#e0603c"];
+const COLOR_OF = {};                         // colours handed out in order of appearance: the first 10 coins never share one
+function coinColor(mint) {
+  if (!COLOR_OF[mint]) COLOR_OF[mint] = COIN_COLORS[Object.keys(COLOR_OF).length % COIN_COLORS.length];
+  return COLOR_OF[mint];
+}
+function pumpBtn(m) { return `<a class="btn pump" href="https://pump.fun/coin/${esc(m)}" target="_blank" rel="noopener">pump.fun</a><a class="btn" href="https://dexscreener.com/solana/${esc(m)}" target="_blank" rel="noopener">DexScreener</a>`; }
+function coinCard(mint, items) {          // one coin, one box, one colour: every listed wallet's buys / sells on it
+  const a0 = items[0], strong = items.find((a) => a.level === "vipstrong"), color = coinColor(mint);
+  const c = S.coins[mint] || board().find((x) => x.mint === mint);
+  loadCoin(mint);
+  const name = a0.symbol ? "$" + a0.symbol : S.names[mint] || short(mint), fresh = items.some((a) => a.ts > S.seenAlert);
+  const age = items.find((a) => a.age_h !== undefined && a.age_h !== null), mcap = items.find((a) => a.mcap);
+  let lines;
+  if (c && c.wallets.length) {
+    lines = c.wallets.slice().sort((x, y) => (y.buy_sol || 0) - (x.buy_sol || 0)).map((w) => {
+      const st = walletStats(w, c);
+      return `<div class="cw"><span class="cw-w">${acct(w.wallet)}</span>
+        <span class="cw-b">${st.bSol ? `MUA <b>${nf(st.bSol, 2)}</b> SOL${st.bMc ? ` <span class="dim">@</span> <span class="est">${usdK(st.bMc)}</span>` : ""}` : `<span class="dim">không mua</span>`}</span>
+        <span class="cw-s">${st.sSol ? `BÁN <b>${nf(st.sSol, 2)}</b> SOL${st.sMc ? ` <span class="dim">@</span> <span class="est">${usdK(st.sMc)}</span>` : ""}` : `<span class="dim">chưa bán</span>`}</span>
+        <span class="cw-h">${st.leftPct !== null ? `còn <b class="${st.leftPct >= 50 ? "good" : "warn"}">${Math.round(st.leftPct)}%</b>` : ""}</span></div>`;
+    }).join("");
+  } else {
+    lines = items.filter((a) => a.kind !== "VIPSTRONG").map((a) => `<div class="cw"><span class="cw-w">${acct(a.wallet)}</span>
+      <span class="cw-b">${a.kind === "SELL" ? "BÁN" : "MUA"} <b>${nf(a.sol, 2)}</b> SOL</span><span class="cw-s dim">${ago(a.ts)}</span><span class="cw-h"></span></div>`).join("");
+  }
+  return `<article class="coin${strong ? " is-strong" : ""}" style="--c:${color}">
+    <header><span class="sw"></span><b class="cn">${esc(name)}</b><span class="copy" data-copy="${esc(mint)}" title="Sao chép CA">⧉</span>
+      ${strong ? pill("MẠNH · " + (strong.n_families || strong.n_wallets || 2) + " nhóm ví", "bad") : ""}${fresh ? pill("MỚI", "acc") : ""}
+      <span class="muted small">${age ? dur(age.age_h * 3600) + " tuổi" : ""}${mcap ? " · MC " + usdK(mcap.mcap) : ""} · ${ago(items[0].ts)}</span>
+      <span class="grow"></span>${pumpBtn(mint)}</header>
+    ${lines}</article>`;
+}
 const TRADE_KINDS = ["BUY", "CREATE", "SELL", "VIPSTRONG"], MOVE_KINDS = ["RECEIVE", "SEND", "SOL_IN", "FUND"];
 function alertStatus(a) {
   const k = (x) => [x.wallet, x.mint || x.from || x.to, x.kind].join("|");
@@ -311,27 +340,13 @@ function viewAlerts() {
   let body;
   if (view === "trade") {
     const list = trades.filter((a) => S.al.level === "all" || a.level === S.al.level);
-    const strongBlocks = list.filter((a) => a.level === "vipstrong").slice(0, 10).map((a, n) => {
-      const c = S.coins[a.mint] || board().find((x) => x.mint === a.mint);
-      loadCoin(a.mint);
-      return `<details class="detail" ${n === 0 ? "open" : ""}><summary class="ctrl">${pill("MẠNH", "bad")} <b>${esc(a.symbol ? "$" + a.symbol : S.names[a.mint] || short(a.mint))}</b>
-          <span class="muted small">${a.n_families || a.n_wallets || 2} nhóm ví · ${(c ? c.wallets.length : (a.holders || []).length) || "?"} ví · ${ago(a.ts)}${a.mcap ? " · MC " + usdK(a.mcap) : ""}${a.age_h !== undefined && a.age_h !== null ? " · " + dur(a.age_h * 3600) + " tuổi" : ""}</span></summary>
-        <div class="ctrl"><span class="copy" data-copy="${esc(a.mint)}">⧉ CA</span>${tokLinks(a.mint, a.chart)}</div>
-        ${c ? walletTable(c) : `<div class="muted small">Đang tải các ví…</div>`}</details>`;
-    }).join("");
-    const rows = list.slice(0, 150).map((a) => {
-      const strong = a.level === "vipstrong", buy = a.kind !== "SELL";
-      return { key: a.sig + a.kind + a.wallet, sig: "", cls: strong ? "strong" : "",
-        cells: [`<span class="small">${when(a.ts)}</span><div class="dim small">${ago(a.ts)}</div>`,
-          strong ? pill("MẠNH · " + (a.n_families || a.n_wallets || 2) + " nhóm", "bad") : pill(buy ? (a.kind === "CREATE" ? "TẠO + MUA" : "MUA") : "BÁN", buy ? "good" : "warn"),
-          coinCell(a), `<b class="mono">${nf(a.sol, 2)}</b>`,
-          strong && (a.holders || []).length ? (a.holders || []).map((h) => `<div>${acct(h)}</div>`).join("") : acct(a.wallet),
-          alertStatus(a)] };
-    });
-    body = `<div class="ctrl"><span class="seg">${[["all", "Tất cả"], ["vipstrong", "Chỉ cảnh báo mạnh"], ["vip", "Chỉ 1 ví"]].map(([v, l]) => `<button data-allevel="${v}" class="${S.al.level === v ? "on" : ""}">${l}</button>`).join("")}</span></div>
-      <div class="note">Ví theo dõi mua hoặc bán coin ≥ ${cfg.min_sol || 4} SOL. MẠNH: ≥ 2 nhóm ví độc lập (ví cha–con, ví gốc–kế thừa tính một nhóm) cùng mua/nhận một coin, mỗi ví ≥ ${cfg.min_sol || 4} SOL, trong ${dur(cfg.strong_window_s || 86400)}. Bấm vào cảnh báo mạnh để mở chi tiết từng ví.</div>
-      ${strongBlocks}
-      ${table([["Lúc"], ["Lệnh"], ["Coin"], ["SOL", "num"], ["Ví", "addr"], ["Trạng thái"]], rows, { empty: "Chưa có lệnh mua / bán nào đạt ngưỡng." })}`;
+    const byCoin = new Map();
+    for (const a of list) if (a.mint) { if (!byCoin.has(a.mint)) byCoin.set(a.mint, []); byCoin.get(a.mint).push(a); }
+    [...byCoin.keys()].forEach(coinColor);                 // newest coins get their colours first
+    const cards = [...byCoin.entries()].slice(0, 30).map(([m, items]) => coinCard(m, items)).join("");
+    body = `<div class="ctrl"><span class="seg">${[["all", "Tất cả"], ["vipstrong", "Chỉ cảnh báo mạnh"], ["vip", "Chỉ 1 ví"]].map(([v, l]) => `<button data-allevel="${v}" class="${S.al.level === v ? "on" : ""}">${l}</button>`).join("")}</span>
+      <span class="note">Mỗi coin một ô, một màu. Coin mới hoạt động nằm trên. MẠNH = ≥ 2 nhóm ví độc lập cùng mua ≥ ${cfg.min_sol || 4} SOL trong ${dur(cfg.strong_window_s || 86400)}. MC <span class="est"></span> tính từ giá lệnh của ví.</span></div>
+      ${cards ? `<div class="coins">${cards}</div>` : `<div class="empty">Chưa có lệnh mua / bán nào đạt ngưỡng ${cfg.min_sol || 4} SOL.</div>`}`;
   } else {
     const label = { RECEIVE: ["NHẬN TOKEN", "acc"], SEND: ["CHUYỂN TOKEN", "warn"], SOL_IN: ["NHẬN SOL", "acc"], FUND: ["NẠP VÍ MỚI", "warn"] };
     const rows = moves.slice(0, 150).map((a) => {
