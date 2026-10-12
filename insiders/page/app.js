@@ -26,6 +26,12 @@ const EXIT = { tp2x: "chốt ×2", stop: "cắt lỗ −35%", trail: "trailing",
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const short = (a) => a ? a.slice(0, 4) + "…" + a.slice(-4) : "";
 const nf = (v, d = 2) => v === null || v === undefined || isNaN(v) ? null : Number(v).toLocaleString("vi-VN", { maximumFractionDigits: d });
+const usdOf = (sol) => {                 // SOL amounts shown in USD at today's SOL price (falls back to SOL without a price)
+  if (sol === null || sol === undefined || isNaN(sol)) return "—";
+  const r = solUsd(); if (!r) return nf(sol, 2) + " SOL";
+  const v = sol * r; return Math.abs(v) >= 1e5 ? usdK(v) : "$" + Math.round(v).toLocaleString("vi-VN");
+};
+const thr = (sol) => { const r = solUsd(); return `${nf(sol, 2)} SOL${r ? " (~$" + Math.round(sol * r).toLocaleString("vi-VN") + ")" : ""}`; };
 const solTxt = (v, d = 2) => nf(v, d) === null ? `<span class="unk">—</span>` : `${nf(v, d)} SOL`;
 const usdK = (v) => { if (!v && v !== 0) return null; const a = Math.abs(v); return (v < 0 ? "−" : "") + "$" + (a >= 1e9 ? (a / 1e9).toFixed(2) + "B" : a >= 1e6 ? (a / 1e6).toFixed(2) + "M" : a >= 1e3 ? (a / 1e3).toFixed(1) + "K" : a.toFixed(a < 1 ? 4 : 0)); };
 const money = (v) => v === null || v === undefined ? `<span class="unk">—</span>` : `<span class="${v > 0 ? "good" : v < 0 ? "bad" : ""}">${v > 0 ? "+" : v < 0 ? "−" : ""}$${Math.abs(Math.round(v)).toLocaleString("vi-VN")}</span>`;
@@ -167,12 +173,12 @@ function viewDashboard() {
   const perfRow = (lbl, r) => r.n ? `<tr><td>${lbl}</td><td class="num">${r.paper_n || 0}</td><td class="num">${r.paper_n ? Math.round(100 * r.paper_win / r.paper_n) + "%" : "—"}</td><td class="num">${money(r.paper_n ? r.paper_usd : null)}</td><td class="num">${money(r.paper_n ? r.paper_usd_wo_best : null)}</td></tr>` : `<tr><td>${lbl}</td><td class="num" colspan="4"><span class="unk">chưa có mẫu</span></td></tr>`;
   const flows = alerts().filter((a) => a.mint).slice(0, 10).map((a) => ({
     key: a.sig + a.kind + a.wallet, sig: a.sol, cls: a.level === "vipstrong" ? "strong" : "",
-    cells: [`<span class="muted small">${ago(a.ts)}</span>`, acct(a.wallet), `${esc(KIND[a.kind] || a.kind)} <b style="color:${coinColor(a.mint)}">${esc(a.symbol ? "$" + a.symbol : S.names[a.mint] || short(a.mint))}</b> <a class="small" href="https://pump.fun/coin/${esc(a.mint)}" target="_blank" rel="noopener">pump.fun</a>`, `<span class="mono">${nf(a.sol, 2)}</span>`] }));
+    cells: [`<span class="muted small">${ago(a.ts)}</span>`, acct(a.wallet), `${esc(KIND[a.kind] || a.kind)} <b style="color:${coinColor(a.mint)}">${esc(a.symbol ? "$" + a.symbol : S.names[a.mint] || short(a.mint))}</b> <a class="small" href="https://pump.fun/coin/${esc(a.mint)}" target="_blank" rel="noopener">pump.fun</a>`, `<span class="mono">${usdOf(a.sol)}</span>`] }));
   return `${kpis}
     <section class="panel"><header><h2>Tín hiệu coin sớm</h2><span class="grow"></span><a href="#signals">Xem tất cả →</a></header>${signalTable(sortedBoard().slice(0, 8), true)}</section>
     <div class="grid2">
-      <section class="panel"><header><h2>Dòng tiền gần nhất</h2><span class="note">giao dịch ≥ ${(S.w.config || {}).min_sol || 4} SOL của ví theo dõi</span></header>
-        ${table([["Lúc"], ["Ví", "addr"], ["Coin"], ["SOL", "num"]], flows, { empty: "Chưa có giao dịch nào đạt ngưỡng." })}</section>
+      <section class="panel"><header><h2>Dòng tiền gần nhất</h2><span class="note">giao dịch ≥ ${thr((S.w.config || {}).min_sol || 4)} của ví theo dõi</span></header>
+        ${table([["Lúc"], ["Ví", "addr"], ["Coin"], ["Giá trị", "num"]], flows, { empty: "Chưa có giao dịch nào đạt ngưỡng." })}</section>
       <section class="panel"><header><h2>Hiệu suất PAPER</h2><span class="grow"></span><a href="#performance">Chi tiết →</a></header>
         <div class="tbl"><table class="cards"><thead><tr><th>Loại</th><th class="num">Lệnh đã đóng</th><th class="num">Tỷ lệ thắng</th><th class="num">P&amp;L sau phí</th><th class="num">Bỏ lệnh tốt nhất</th></tr></thead>
         <tbody>${perfRow("Tín hiệu 1 ví", all)}${perfRow("Nhiều nhóm ví", strong)}</tbody></table></div>
@@ -188,17 +194,17 @@ function sortedBoard() {
   return b.slice().sort((a, b2) => key(a) - key(b2));
 }
 function signalTable(rows, compact) {
-  return table([["Token"], ["Market cap", "num"], ["SOL mua", "num", compact ? null : "sol"], ["Số nhóm ví", "num", compact ? null : "groups"], ["Tuổi coin", "num"], ["Trạng thái"], ["Lần đầu", "num", compact ? null : "time"]],
+  return table([["Token"], ["Market cap", "num"], ["Đã mua", "num", compact ? null : "sol"], ["Số nhóm ví", "num", compact ? null : "groups"], ["Tuổi coin", "num"], ["Trạng thái"], ["Lần đầu", "num", compact ? null : "time"]],
     rows.map((c) => {
       const st = coinState(c), mc = coinMc(c);
       return { key: c.mint, sig: [c.buy_sol, c.n_families, c.wallets.length].join("|"), cls: "click" + (c.n_families >= 2 ? " strong" : "") + (S.sig.open === c.mint ? " sel" : ""),
         cells: [`<span class="tok" data-open="${esc(c.mint)}"><b>${esc(tokName(c))}</b> <span class="muted small">${esc(c.name || "")}</span></span>`,
           mc.v ? `<span class="est">${usdK(mc.v)}</span>` : `<span class="unk">—</span>`,
-          `<b class="mono">${nf(c.buy_sol, 2)}</b>${c.sell_sol ? `<div class="small muted">bán ${nf(c.sell_sol, 2)}</div>` : ""}`,
+          `<b class="mono">${usdOf(c.buy_sol)}</b>${c.sell_sol ? `<div class="small muted">bán ${usdOf(c.sell_sol)}</div>` : ""}`,
           `<b class="mono">${c.n_families}</b><span class="dim small"> / ${c.wallets.length} ví</span>`,
           c.created_ts ? dur(now() - c.created_ts) : `<span class="unk">chưa rõ</span>`, pill(st[0], st[1]),
           `<span class="small">${ago(c.first_ts)}</span>`] };
-    }), { empty: "Chưa có coin nào trong khung thời gian này. Coin hiện ra khi ví theo dõi mua tổng ≥ " + ((S.w.config || {}).board_min_sol || 4) + " SOL.", sort: S.sig.sort });
+    }), { empty: "Chưa có coin nào trong khung thời gian này. Coin hiện ra khi ví theo dõi mua tổng ≥ " + thr((S.w.config || {}).board_min_sol || 4) + ".", sort: S.sig.sort });
 }
 function viewSignals() {
   const seg = (k, opts, cur) => `<span class="seg">${opts.map(([v, l]) => `<button data-${k}="${v}" class="${cur === v ? "on" : ""}">${esc(l)}</button>`).join("")}</span>`;
@@ -206,7 +212,7 @@ function viewSignals() {
   return `<section class="panel"><header><h2>Tín hiệu coin sớm</h2><span class="grow"></span>
       <span class="ctrl">${seg("win", [["5m", "5 phút"], ["15m", "15 phút"], ["1h", "1 giờ"], ["24h", "24 giờ"], ["all", "Tất cả"]], S.sig.win)}
       <label class="chk"><input type="checkbox" id="multi" ${S.sig.multi ? "checked" : ""}> Chỉ token có ≥ 2 nhóm ví</label>
-      <select id="sigsort"><option value="time"${S.sig.sort === "time" ? " selected" : ""}>Mới xuất hiện trước</option><option value="groups"${S.sig.sort === "groups" ? " selected" : ""}>Nhiều nhóm ví trước</option><option value="sol"${S.sig.sort === "sol" ? " selected" : ""}>Dòng SOL lớn trước</option></select></span></header>
+      <select id="sigsort"><option value="time"${S.sig.sort === "time" ? " selected" : ""}>Mới xuất hiện trước</option><option value="groups"${S.sig.sort === "groups" ? " selected" : ""}>Nhiều nhóm ví trước</option><option value="sol"${S.sig.sort === "sol" ? " selected" : ""}>Dòng tiền lớn trước</option></select></span></header>
     <div class="note">Mỗi token một dòng. “Số nhóm ví” đếm nhóm độc lập: ví cha và ví con, hoặc ví gốc và ví kế thừa của nó, chỉ tính một nhóm. Nhiều lệnh nhỏ từ cùng một nhóm không tương đương nhiều nhóm cùng mua. <span class="est"></span> = ước tính.</div>
     ${signalTable(rows, false)}
     ${open ? coinDetail(open) : `<div class="note">Bấm một token để xem biểu đồ và từng ví tham gia.</div>`}</section>`;
@@ -234,13 +240,13 @@ function walletTable(c) {
     const st = walletStats(w, c), role = w.role || (info[w.wallet] || {}).role;
     return { key: w.wallet, sig: [w.buy_sol, w.sell_sol, w.tok_out, w.held_ui].join("|"),
       cells: [`${acct(w.wallet)} ${role ? rolePill(role) : ""}`,
-        `<b class="mono">${nf(st.bSol, 2)}</b>${st.recv ? `<div class="small dim">+ nhận token</div>` : ""}`,
+        `<b class="mono">${usdOf(st.bSol)}</b>${st.recv ? `<div class="small dim">+ nhận token</div>` : ""}`,
         st.bMc ? `<span class="est">${usdK(st.bMc)}</span>` : `<span class="unk">—</span>`,
-        st.sSol ? `<b class="mono">${nf(st.sSol, 2)}</b>` : `<span class="dim">chưa bán</span>`,
+        st.sSol ? `<b class="mono">${usdOf(st.sSol)}</b>` : `<span class="dim">chưa bán</span>`,
         st.sMc ? `<span class="est">${usdK(st.sMc)}</span>` : `<span class="unk">—</span>`,
         st.leftPct !== null ? `<b class="${st.leftPct >= 50 ? "good" : "warn"}">${Math.round(st.leftPct)}%</b>` : `<span class="unk">—</span>`] };
   });
-  return table([["Ví", "addr"], ["Mua (SOL)", "num"], ["MC lúc mua", "num"], ["Bán (SOL)", "num"], ["MC lúc bán", "num"], ["Còn giữ", "num"]], rows);
+  return table([["Ví", "addr"], ["Mua", "num"], ["MC lúc mua", "num"], ["Bán", "num"], ["MC lúc bán", "num"], ["Còn giữ", "num"]], rows);
 }
 function coinDetail(c0) {
   loadCoin(c0.mint);
@@ -248,14 +254,14 @@ function coinDetail(c0) {
   const st = coinState(c), mc = coinMc(c), info = walletInfo();
   const rows = c.wallets.flatMap((w) => w.trades.map((tr) => ({ w, t: tradePx(tr, c) }))).sort((a, b) => a.t.ts - b.t.ts).map(({ w, t: x }) => ({
     key: x.ts + w.wallet + x.kind, sig: "", cells: [`<span class="small">${when(x.ts)}</span>`, acct(w.wallet), `<span class="mono small">${esc(short(w.family))}</span> ${tierPill(w.tier)}`,
-      `<span class="${["BUY", "CREATE", "RECEIVE"].includes(x.kind) ? "good" : "warn"}">${esc(KIND[x.kind] || x.kind)}</span>`, `<span class="mono">${x.sol ? nf(x.sol, 3) : "—"}</span>`,
-      x.px ? `<span class="mono small">${x.px.toExponential(2)}</span>` : `<span class="unk">—</span>`, x.mc ? `<span class="est">${usdK(x.mc)}</span>` : `<span class="unk">—</span>`,
+      `<span class="${["BUY", "CREATE", "RECEIVE"].includes(x.kind) ? "good" : "warn"}">${esc(KIND[x.kind] || x.kind)}</span>`, `<span class="mono">${x.sol ? usdOf(x.sol) : "—"}</span>`,
+      x.px ? `<span class="mono small">$${solUsd() ? Number(x.px * solUsd()).toPrecision(3) : "—"}</span>` : `<span class="unk">—</span>`, x.mc ? `<span class="est">${usdK(x.mc)}</span>` : `<span class="unk">—</span>`,
       c.created_ts ? dur(x.ts - c.created_ts) : `<span class="unk">—</span>`] }));
   const held = walletTable(c);
   return `<div class="detail"><header class="ctrl"><h3>${esc(tokName(c))} <span class="muted small">${esc(c.name || "")}</span></h3><span class="copy" data-copy="${esc(c.mint)}">⧉ CA</span>${pill(st[0], st[1])}<span class="grow"></span><button class="btn" data-close="sig">Đóng</button></header>
     <div class="facts"><div class="fact"><span class="k">Market cap</span><span class="v">${mc.v ? `<span class="est">${usdK(mc.v)}</span>` : "—"}</span></div>
       <div class="fact"><span class="k">Tuổi coin</span><span class="v">${c.created_ts ? dur(now() - c.created_ts) : "chưa rõ"}</span></div>
-      <div class="fact"><span class="k">Tổng SOL mua / bán</span><span class="v">${nf(c.buy_sol, 2)} / ${nf(c.sell_sol, 2)}</span></div>
+      <div class="fact"><span class="k">Tổng mua / bán</span><span class="v">${usdOf(c.buy_sol)} / ${usdOf(c.sell_sol)}</span></div>
       <div class="fact"><span class="k">Nhóm ví độc lập</span><span class="v">${c.n_families} (${c.wallets.length} ví)</span></div>
       <div class="fact"><span class="k">Liên kết</span><span class="v">${tokLinks(c.mint, c.chart)}</span></div></div>
     ${pumpBlock(c)}
@@ -263,7 +269,7 @@ function coinDetail(c0) {
     <div class="legend"><span><span style="color:var(--accent)">▲</span> ví mua / nhận</span><span><span style="color:var(--warn)">▼</span> ví bán / chuyển đi</span><span>trục dọc: market cap (USD, thang log)</span></div>
     <h2>Từng ví</h2>${held}
     <h2>Từng lệnh</h2>
-    ${table([["Lúc"], ["Ví", "addr"], ["Nhóm / hạng"], ["Lệnh"], ["SOL", "num"], ["Giá (SOL)", "num"], ["MC lúc đó", "num"], ["Sau mở bán", "num"]], rows)}</div>`;
+    ${table([["Lúc"], ["Ví", "addr"], ["Nhóm / hạng"], ["Lệnh"], ["Giá trị", "num"], ["Giá", "num"], ["MC lúc đó", "num"], ["Sau mở bán", "num"]], rows)}</div>`;
 }
 async function drawChart() {
   const el = $("#chart"); if (!el) return;
@@ -290,7 +296,7 @@ async function drawChart() {
     s += `<line x1="${x}" x2="${x}" y1="${Y(k[2] * sup)}" y2="${Y(k[3] * sup)}" class="${up ? "c-up" : "c-dn"}"/><rect x="${x - cw / 2}" y="${y1}" width="${cw}" height="${Math.max(1, y2 - y1)}" class="${up ? "c-upf" : "c-dnf"}"/>`; }
   for (const x of trades) { const px = X(x.ts), py = Y(x.mc), buy = ["BUY", "CREATE", "RECEIVE"].includes(x.kind);
     const pts = buy ? `${px},${py - 9} ${px - 6},${py + 3} ${px + 6},${py + 3}` : `${px},${py + 9} ${px - 6},${py - 3} ${px + 6},${py - 3}`;
-    s += `<polygon points="${pts}" class="${buy ? "c-buy" : "c-sell"}"><title>${esc(short(x.wallet))} · ${esc(KIND[x.kind] || x.kind)} ${x.sol ? x.sol.toFixed(2) + " SOL" : ""} · MC ${usdK(x.mc)} · ${clock(x.ts)}</title></polygon>`; }
+    s += `<polygon points="${pts}" class="${buy ? "c-buy" : "c-sell"}"><title>${esc(short(x.wallet))} · ${esc(KIND[x.kind] || x.kind)} ${x.sol ? usdOf(x.sol) : ""} · MC ${usdK(x.mc)} · ${clock(x.ts)}</title></polygon>`; }
   el.innerHTML = s + `</svg><div class="small muted">MC hiện tại ≈ <b>${usdK(cs[cs.length - 1][4] * sup)}</b> · ${cs.length} nến ${hit.d.agg || 1} phút (GeckoTerminal)</div>`;
 }
 
@@ -324,15 +330,15 @@ function coinCard(mint, items) {          // one coin, one box, one colour: ever
     lines = c.wallets.slice().sort((x, y) => (y.buy_sol || 0) - (x.buy_sol || 0)).map((w) => {
       const st = walletStats(w, c);
       return `<div class="cw"><span class="cw-w">${acct(w.wallet)} ${pumpName(w.pump_user, w.wallet)}</span>
-        <span class="cw-b">${st.bSol ? `MUA <b>${nf(st.bSol, 2)}</b> SOL${st.bMc ? ` <span class="dim">@</span> <span class="est">${usdK(st.bMc)}</span>` : ""}`
+        <span class="cw-b">${st.bSol ? `MUA <b>${usdOf(st.bSol)}</b>${st.bMc ? ` <span class="dim">@</span> <span class="est">${usdK(st.bMc)}</span>` : ""}`
           : st.recv ? `<span class="acc-t">NHẬN <b>${tokAmt(st.recv)}</b> token</span> <span class="dim small">(chuyển từ ví khác, không mua)</span>`
           : `<span class="dim small" title="Ví được theo dõi sau khi đã mua coin này">mua trước khi theo dõi</span>`}</span>
-        <span class="cw-s">${st.sSol ? `BÁN <b>${nf(st.sSol, 2)}</b> SOL${st.sMc ? ` <span class="dim">@</span> <span class="est">${usdK(st.sMc)}</span>` : ""}` : ""}${st.sent ? `${st.sSol ? "<br>" : ""}CHUYỂN ĐI <b>${st.sentPct !== null ? Math.round(st.sentPct) + "%" : tokAmt(st.sent)}</b> <span class="dim small">sang ví khác</span>` : ""}${!st.sSol && !st.sent ? `<span class="dim small">chưa bán</span>` : ""}</span>
+        <span class="cw-s">${st.sSol ? `BÁN <b>${usdOf(st.sSol)}</b>${st.sMc ? ` <span class="dim">@</span> <span class="est">${usdK(st.sMc)}</span>` : ""}` : ""}${st.sent ? `${st.sSol ? "<br>" : ""}CHUYỂN ĐI <b>${st.sentPct !== null ? Math.round(st.sentPct) + "%" : tokAmt(st.sent)}</b> <span class="dim small">sang ví khác</span>` : ""}${!st.sSol && !st.sent ? `<span class="dim small">chưa bán</span>` : ""}</span>
         <span class="cw-h">${st.leftPct !== null ? `còn <b class="${st.leftPct >= 50 ? "good" : "warn"}">${Math.round(st.leftPct)}%</b>` : ""}</span></div>`;
     }).join("");
   } else {
     lines = items.filter((a) => a.kind !== "VIPSTRONG").map((a) => `<div class="cw"><span class="cw-w">${acct(a.wallet)}</span>
-      <span class="cw-b">${a.kind === "SELL" ? "BÁN" : "MUA"} <b>${nf(a.sol, 2)}</b> SOL</span><span class="cw-s dim">${ago(a.ts)}</span><span class="cw-h"></span></div>`).join("");
+      <span class="cw-b">${a.kind === "SELL" ? "BÁN" : "MUA"} <b>${usdOf(a.sol)}</b></span><span class="cw-s dim">${ago(a.ts)}</span><span class="cw-h"></span></div>`).join("");
   }
   return `<article class="coin${strong ? " is-strong" : ""}" style="--c:${color}">
     <header><span class="sw"></span><b class="cn">${esc(name)}</b><span class="copy" data-copy="${esc(mint)}" title="Sao chép CA">⧉</span>
@@ -364,8 +370,8 @@ function viewAlerts() {
     [...byCoin.keys()].forEach(coinColor);                 // newest coins get their colours first
     const cards = [...byCoin.entries()].slice(0, 30).map(([m, items]) => coinCard(m, items)).join("");
     body = `<div class="ctrl"><span class="seg">${[["all", "Tất cả"], ["vipstrong", "Chỉ cảnh báo mạnh"], ["vip", "Chỉ 1 ví"]].map(([v, l]) => `<button data-allevel="${v}" class="${S.al.level === v ? "on" : ""}">${l}</button>`).join("")}</span>
-      <span class="note">Mỗi coin một ô, một màu. Mỗi ví một dòng: MUA (SOL @ MC lúc mua) · BÁN hoặc CHUYỂN ĐI · % token còn giữ. “Chưa bán” = đã mua, chưa có lệnh bán từ lúc theo dõi. “Mua trước khi theo dõi” = ví được thêm vào danh sách sau khi đã mua nên chỉ thấy lệnh bán. Coin mới hoạt động nằm trên. MẠNH = ≥ 2 nhóm ví độc lập cùng mua ≥ ${cfg.min_sol || 4} SOL trong ${dur(cfg.strong_window_s || 86400)}. MC <span class="est"></span> tính từ giá lệnh của ví.</span></div>
-      ${cards ? `<div class="coins">${cards}</div>` : `<div class="empty">Chưa có lệnh mua / bán nào đạt ngưỡng ${cfg.min_sol || 4} SOL.</div>`}`;
+      <span class="note">Số tiền quy ra USD theo giá SOL hiện tại. Mỗi coin một ô, một màu. Mỗi ví một dòng: MUA (USD @ MC lúc mua) · BÁN hoặc CHUYỂN ĐI · % token còn giữ. “Chưa bán” = đã mua, chưa có lệnh bán từ lúc theo dõi. “Mua trước khi theo dõi” = ví được thêm vào danh sách sau khi đã mua nên chỉ thấy lệnh bán. Coin mới hoạt động nằm trên. MẠNH = ≥ 2 nhóm ví độc lập cùng mua ≥ ${thr(cfg.min_sol || 4)} trong ${dur(cfg.strong_window_s || 86400)}. MC <span class="est"></span> tính từ giá lệnh của ví.</span></div>
+      ${cards ? `<div class="coins">${cards}</div>` : `<div class="empty">Chưa có lệnh mua / bán nào đạt ngưỡng ${thr(cfg.min_sol || 4)}.</div>`}`;
   } else {
     const label = { RECEIVE: ["NHẬN TOKEN", "acc"], SEND: ["CHUYỂN TOKEN", "warn"], SOL_IN: ["NHẬN SOL", "acc"], FUND: ["NẠP VÍ MỚI", "warn"] };
     const rows = moves.slice(0, 150).map((a) => {
@@ -374,10 +380,10 @@ function viewAlerts() {
         : `${other ? acct(other) : `<span class="unk">không rõ</span>`} <span class="dim">→</span> ${acct(a.wallet)}`;
       return { key: a.sig + a.kind + a.wallet, sig: "",
         cells: [`<span class="small">${when(a.ts)}</span><div class="dim small">${ago(a.ts)}</div>`, pill(...(label[a.kind] || [a.kind, ""])), flow,
-          a.mint ? coinCell(a) : `<span class="mono">SOL</span>`, `<b class="mono">${nf(a.sol, 2)}</b>`, alertStatus(a)] };
+          a.mint ? coinCell(a) : `<span class="mono">SOL</span>`, `<b class="mono">${usdOf(a.sol)}</b>`, alertStatus(a)] };
     });
-    body = `<div class="note">Tiền và token chuyển qua lại: ví theo dõi nhận / chuyển token (giá trị quy ra SOL theo báo giá), nhận SOL từ ví ngoài danh sách, hoặc nạp SOL cho ví mới (ví mới nhận ≥ ${cfg.adopt_min_sol || 0.5} SOL tự được theo dõi thành ví con). SOL nhận từ một ví khác trong danh sách, hoặc tiền bán coin, không bị báo lại ở đây.</div>
-      ${table([["Lúc"], ["Loại"], ["Từ → đến", "addr"], ["Token"], ["Giá trị (SOL)", "num"], ["Trạng thái"]], rows, { empty: "Chưa có lần chuyển / nhận nào đạt ngưỡng." })}`;
+    body = `<div class="note">Tiền và token chuyển qua lại: ví theo dõi nhận / chuyển token (giá trị quy ra USD theo báo giá), nhận SOL từ ví ngoài danh sách, hoặc nạp SOL cho ví mới (ví mới nhận ≥ ${thr(cfg.adopt_min_sol || 0.5)} tự được theo dõi thành ví con). SOL nhận từ một ví khác trong danh sách, hoặc tiền bán coin, không bị báo lại ở đây.</div>
+      ${table([["Lúc"], ["Loại"], ["Từ → đến", "addr"], ["Token"], ["Giá trị", "num"], ["Trạng thái"]], rows, { empty: "Chưa có lần chuyển / nhận nào đạt ngưỡng." })}`;
   }
   return `<section class="panel"><header><h2>Cảnh báo trực tiếp</h2><span class="grow"></span>${tabs}<button class="btn" id="notif">Bật thông báo</button></header>${body}</section>`;
 }
@@ -392,23 +398,23 @@ function viewWallets() {
   const rows = list.map((x) => { const h = hold[x.wallet];
     return { key: x.wallet, sig: [h && h.sol, seen[x.wallet]].join("|"), cls: "click" + (S.wl.open === x.wallet ? " sel" : ""),
       cells: [`<span data-wallet="${esc(x.wallet)}">${acct(x.wallet)}</span>`, rolePill(x.role), `<b class="mono">${x.wins || 0}</b>`, tierPill(x.tier),
-        h ? `<span class="mono">${nf(h.sol, 2)}</span>` : `<span class="unk">đang cập nhật</span>`,
-        h ? ((h.tokens || []).slice(0, 3).map((t) => pill(`${t.symbol ? "$" + t.symbol : short(t.mint)} ${nf(t.sol, 1)}`)).join(" ") || `<span class="dim small">không giữ coin &gt; ${pf().min_sol || 1} SOL</span>`) + (h.tokens_usd && su ? `<div class="small muted">≈ ${nf(h.tokens_usd / su, 1)} SOL</div>` : "") : `<span class="unk">—</span>`,
+        h ? `<span class="mono">${usdOf(h.sol)}</span>` : `<span class="unk">đang cập nhật</span>`,
+        h ? ((h.tokens || []).slice(0, 3).map((t) => pill(`${t.symbol ? "$" + t.symbol : short(t.mint)} ${usdK(t.usd)}`)).join(" ") || `<span class="dim small">không giữ coin &gt; ${thr(pf().min_sol || 1)}</span>`) + (h.tokens_usd ? `<div class="small muted">tổng ≈ ${usdK(h.tokens_usd)}</div>` : "") : `<span class="unk">—</span>`,
         `<span class="small">${ago(seen[x.wallet])}</span>`] }; });
   const tree = relationTree(list.length ? vip().list : []);
   return `<section class="panel"><header><h2>Nhóm ví</h2><span class="grow"></span>
       <span class="seg">${[["list", "Danh sách"], ["tree", "Sơ đồ quan hệ"]].map(([v, l]) => `<button data-wlmode="${v}" class="${S.wl.mode === v ? "on" : ""}">${l}</button>`).join("")}</span>
       <select id="wlrole">${[["all", "Mọi vai trò"], ["holder", "Ví gốc"], ["successor", "Ví kế thừa"], ["child", "Ví con"]].map(([v, l]) => `<option value="${v}"${S.wl.role === v ? " selected" : ""}>${l}</option>`).join("")}</select>
-      <select id="wlsort">${[["wins", "Nhiều coin thắng"], ["sol", "Số dư SOL lớn"], ["last", "Hoạt động gần nhất"]].map(([v, l]) => `<option value="${v}"${S.wl.sort === v ? " selected" : ""}>${l}</option>`).join("")}</select></header>
-    <div class="note">Hạng: <b>main</b> ≥ 2 coin thắng, <b>watch</b> 1 coin thắng (thắng = giữ ≥ ${Math.round(((S.w.config || {}).win_hold_s || 600) / 60)} phút trước khi bán nửa, lãi ≥ ${(S.w.config || {}).win_min_sol || 0.5} SOL và ≥ +${Math.round((((S.w.config || {}).win_min_mult || 1.2) - 1) * 100)}%). Quan hệ giữa các ví là <b>mối liên hệ on-chain</b> (chuyển tiền / token), không khẳng định cùng một người.</div>
-    ${S.wl.mode === "list" ? table([["Ví", "addr"], ["Vai trò"], ["Coin thắng", "num"], ["Hạng"], ["Số dư SOL", "num"], ["Coin đang giữ"], ["Hoạt động"]], rows, { empty: "Chưa có danh sách ví." }) : tree}
+      <select id="wlsort">${[["wins", "Nhiều coin thắng"], ["sol", "Số dư lớn"], ["last", "Hoạt động gần nhất"]].map(([v, l]) => `<option value="${v}"${S.wl.sort === v ? " selected" : ""}>${l}</option>`).join("")}</select></header>
+    <div class="note">Hạng: <b>main</b> ≥ 2 coin thắng, <b>watch</b> 1 coin thắng (thắng = giữ ≥ ${Math.round(((S.w.config || {}).win_hold_s || 600) / 60)} phút trước khi bán nửa, lãi ≥ ${thr((S.w.config || {}).win_min_sol || 0.5)} và ≥ +${Math.round((((S.w.config || {}).win_min_mult || 1.2) - 1) * 100)}%). Quan hệ giữa các ví là <b>mối liên hệ on-chain</b> (chuyển tiền / token), không khẳng định cùng một người.</div>
+    ${S.wl.mode === "list" ? table([["Ví", "addr"], ["Vai trò"], ["Coin thắng", "num"], ["Hạng"], ["Số dư", "num"], ["Coin đang giữ"], ["Hoạt động"]], rows, { empty: "Chưa có danh sách ví." }) : tree}
     ${S.wl.open ? walletDetail() : ""}</section>`;
 }
 function relationTree(list) {
   const kids = {}; list.forEach((x) => { if (x.parent && x.role !== "holder") (kids[x.parent] = kids[x.parent] || []).push(x); });
   const node = (x, depth) => {
     const ch = kids[x.wallet] || [];
-    const label = `${acct(x.wallet)} ${rolePill(x.role)} ${tierPill(x.tier)}${x.funded_sol ? ` <span class="dim">nhận ${nf(x.funded_sol, 2)} SOL</span>` : ""} <a href="#wallets" data-wallet="${esc(x.wallet)}">chi tiết</a>`;
+    const label = `${acct(x.wallet)} ${rolePill(x.role)} ${tierPill(x.tier)}${x.funded_sol ? ` <span class="dim">nhận ${usdOf(x.funded_sol)}</span>` : ""} <a href="#wallets" data-wallet="${esc(x.wallet)}">chi tiết</a>`;
     if (!ch.length || depth > 6) return `<div class="leaf">${label}</div>`;
     return `<details ${depth < 1 ? "open" : ""}><summary>${label} <span class="dim">· ${ch.length} ví liên hệ</span></summary>${ch.map((c) => node(c, depth + 1)).join("")}</details>`;
   };
@@ -422,22 +428,22 @@ function walletDetail() {
   if (d.error) return `<div class="detail"><div class="bad">${esc(d.error)}</div></div>`;
   const h = d.holding;
   const live = (d.coins || []).map((c) => ({ key: c.mint, sig: "", cells: [`<b>${esc(c.symbol ? "$" + c.symbol : S.names[c.mint] || short(c.mint))}</b> ${tokLinks(c.mint)}`,
-    `<span class="mono">${nf(c.buy_sol, 2)}</span>`, `<span class="mono">${nf(c.sell_sol, 2)}</span>`, c.half_s !== undefined && c.half_s !== null ? dur(c.half_s) : `<span class="unk">chưa bán nửa</span>`, `<span class="small">${when(c.first_ts)}</span>`] }));
+    `<span class="mono">${usdOf(c.buy_sol)}</span>`, `<span class="mono">${usdOf(c.sell_sol)}</span>`, c.half_s !== undefined && c.half_s !== null ? dur(c.half_s) : `<span class="unk">chưa bán nửa</span>`, `<span class="small">${when(c.first_ts)}</span>`] }));
   const hist = (d.history || []).map((x) => { const tr = (x.trades || []).slice().sort((a, b) => a[0] - b[0]);
     let inn = 0, out = 0, t0 = null, half = null; for (const [ts, side, , tk] of tr) { if (side === "buy" || side === "in") { inn += tk; t0 = t0 ?? ts; } else if (t0 !== null) { out += tk; if (half === null && inn && out >= inn / 2) half = ts - t0; } }
-    return { key: x.mint, sig: "", cells: [`<b>${esc(x.ticker || short(x.mint))}</b>`, x.status === "ok" ? `<span class="mono">${nf(x.spent_sol, 2)} → ${nf(x.received_sol, 2)}</span>` : `<span class="unk">${esc(x.status)}</span>`,
-      x.net_sol === null || x.net_sol === undefined ? `<span class="unk">—</span>` : `<b class="${x.net_sol > 0 ? "good" : "bad"}">${x.net_sol > 0 ? "+" : ""}${nf(x.net_sol, 2)} SOL</b>`,
+    return { key: x.mint, sig: "", cells: [`<b>${esc(x.ticker || short(x.mint))}</b>`, x.status === "ok" ? `<span class="mono">${usdOf(x.spent_sol)} → ${usdOf(x.received_sol)}</span>` : `<span class="unk">${esc(x.status)}</span>`,
+      x.net_sol === null || x.net_sol === undefined ? `<span class="unk">—</span>` : `<b class="${x.net_sol > 0 ? "good" : "bad"}">${x.net_sol > 0 ? "+" : ""}${usdOf(x.net_sol)}</b>`,
       half !== null ? dur(half) : `<span class="unk">${t0 ? "chưa bán nửa" : "—"}</span>`, `<span class="small">${when(x.first_ts)}</span>`] }; });
   return `<div class="detail"><header class="ctrl"><h3>${acct(d.wallet, d.wallet)}</h3>${rolePill(d.role)}${tierPill(d.tier)}<span class="grow"></span><button class="btn" data-close="wl">Đóng</button></header>
     <div class="facts"><div class="fact"><span class="k">Vì sao theo dõi</span><span class="v small">${esc(d.why || "—")}</span></div>
       <div class="fact"><span class="k">Ví nguồn (liên hệ on-chain)</span><span class="v">${d.parent ? acct(d.parent) : "—"}</span></div>
       <div class="fact"><span class="k">Nhóm</span><span class="v">${esc(short(d.family))}</span></div>
-      <div class="fact"><span class="k">Số dư</span><span class="v">${h ? nf(h.sol, 2) + " SOL" : "đang cập nhật"}</span></div>
+      <div class="fact"><span class="k">Số dư</span><span class="v">${h ? usdOf(h.sol) : "đang cập nhật"}</span></div>
       <div class="fact"><span class="k">Hoạt động gần nhất</span><span class="v">${ago(d.last_seen)}</span></div></div>
-    ${(d.children || []).length || (d.successors || []).length ? `<div class="small">Ví nhận tiền từ ví này: ${(d.successors || []).map((a) => acct(a)).concat((d.children || []).map((c) => acct(c.wallet) + ` <span class="dim">${nf(c.sol, 2)} SOL</span>`)).join(" · ")}</div>` : ""}
-    ${h && (h.tokens || []).length ? `<div class="small">Đang giữ: ${(h.tokens || []).map((t) => `${pill((t.symbol ? "$" + t.symbol : short(t.mint)) + " " + nf(t.sol, 2) + " SOL")}`).join(" ")}</div>` : ""}
-    <h2>Giao dịch ghi nhận khi theo dõi trực tiếp</h2>${table([["Coin"], ["Mua (SOL)", "num"], ["Bán (SOL)", "num"], ["Giữ tới khi bán nửa", "num"], ["Lần đầu", "num"]], live, { empty: "Chưa có giao dịch nào từ khi theo dõi." })}
-    <h2>Lịch sử trên các coin của kênh (nghiên cứu)</h2>${table([["Coin"], ["Chi → thu (SOL)", "num"], ["P&L", "num"], ["Giữ tới khi bán nửa", "num"], ["Mua lần đầu", "num"]], hist, { empty: "Không có trong dữ liệu nghiên cứu (ví con hoặc ví kế thừa)." })}</div>`;
+    ${(d.children || []).length || (d.successors || []).length ? `<div class="small">Ví nhận tiền từ ví này: ${(d.successors || []).map((a) => acct(a)).concat((d.children || []).map((c) => acct(c.wallet) + ` <span class="dim">${usdOf(c.sol)}</span>`)).join(" · ")}</div>` : ""}
+    ${h && (h.tokens || []).length ? `<div class="small">Đang giữ: ${(h.tokens || []).map((t) => `${pill((t.symbol ? "$" + t.symbol : short(t.mint)) + " " + usdK(t.usd))}`).join(" ")}</div>` : ""}
+    <h2>Giao dịch ghi nhận khi theo dõi trực tiếp</h2>${table([["Coin"], ["Mua", "num"], ["Bán", "num"], ["Giữ tới khi bán nửa", "num"], ["Lần đầu", "num"]], live, { empty: "Chưa có giao dịch nào từ khi theo dõi." })}
+    <h2>Lịch sử trên các coin của kênh (nghiên cứu)</h2>${table([["Coin"], ["Chi → thu", "num"], ["P&L", "num"], ["Giữ tới khi bán nửa", "num"], ["Mua lần đầu", "num"]], hist, { empty: "Không có trong dữ liệu nghiên cứu (ví con hoặc ví kế thừa)." })}</div>`;
 }
 async function loadCoin(mint) {          // every listed wallet on a coin (any size), refreshed at most every 30 s
   const t = Date.now();
@@ -464,7 +470,7 @@ function viewPaper() {
       `<span class="mono small">$${x.last ? Number(x.last).toPrecision(3) : "—"}</span>`, `${pct(m ? (m - 1) * 100 : null)}<div class="small"><span class="est">${money(est)}</span></div>`,
       `${pct(x.dip !== null && x.dip !== undefined ? (x.dip - 1) * 100 : null)}`, `<span class="small">${x.paper.half ? "đã chốt nửa, stop hoà vốn" : "chờ ×2 / −35% / 30 phút"}</span>`] }; });
   const closed = (sh.rows || []).filter((x) => x.paper && x.paper.status === "closed").map((x) => ({ key: "c" + x.id, sig: "",
-    cells: [`<b>${esc(x.symbol ? "$" + x.symbol : short(x.mint))}</b>`, `${x.kind === "strong" ? pill("nhiều nhóm", "bad") : pill("1 ví")} ${tierPill(x.tier)}<div class="small dim">${(x.wallets || []).slice(0, 2).map((w) => short(w.wallet) + " " + nf(w.sol, 1) + " SOL").join(", ")}</div>`,
+    cells: [`<b>${esc(x.symbol ? "$" + x.symbol : short(x.mint))}</b>`, `${x.kind === "strong" ? pill("nhiều nhóm", "bad") : pill("1 ví")} ${tierPill(x.tier)}<div class="small dim">${(x.wallets || []).slice(0, 2).map((w) => short(w.wallet) + " " + usdOf(w.sol)).join(", ")}</div>`,
       `<span class="small">${when(x.ts)}</span>`, `<span>${esc(EXIT[x.paper.exit] || x.paper.exit || "—")}</span>`, dur(x.paper.hold_s), money(x.paper.pnl_usd),
       `${mult(x.max && x.max["1h"])} / ${mult(x.max && x.max["24h"])}`] }));
   const op = (S.w.paper || {}), osum = op.summary || {};
@@ -569,7 +575,7 @@ function notifyNew() {          // a sound + system notification for strong aler
   if (S.sound) { try { const ctx = new AudioContext(), o = ctx.createOscillator(); o.frequency.value = 880; o.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.25); } catch (_) { /* no audio */ } }
   if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
   if ("Notification" in window && Notification.permission === "granted") {
-    const a = fresh[0]; try { new Notification("Cảnh báo mạnh: " + (a.symbol ? "$" + a.symbol : short(a.mint)), { body: `${a.n_families || a.n_wallets || 2} nhóm ví cùng vào · ${nf(a.sol, 2)} SOL` }); } catch (_) { /* blocked */ }
+    const a = fresh[0]; try { new Notification("Cảnh báo mạnh: " + (a.symbol ? "$" + a.symbol : short(a.mint)), { body: `${a.n_families || a.n_wallets || 2} nhóm ví cùng vào · ${usdOf(a.sol)}` }); } catch (_) { /* blocked */ }
   }
 }
 document.addEventListener("DOMContentLoaded", () => { if (S.code) start(); else showLogin(""); });
