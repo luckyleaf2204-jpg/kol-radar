@@ -113,6 +113,9 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                                           "error": pf.error, "rpc_calls": getattr(pf.rpc, "calls", None),
                                           "rpc_throttled": getattr(pf.rpc, "throttled", None)}
                     h["mode"] = getattr(w, "mode", None)
+                    pu = getattr(w, "pump", None)
+                    if pu is not None:
+                        h["pump"] = dict(pu.stat)                 # pump.fun lookups: counts only
                     sh = getattr(w, "shadow", None)
                     if sh is not None:                        # counts only (no coins, no wallets)
                         sg = sh.s.get("signals", [])

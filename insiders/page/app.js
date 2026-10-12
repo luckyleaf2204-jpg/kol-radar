@@ -240,7 +240,9 @@ function walletTable(c) {
   });
   return table([["Ví", "addr"], ["Mua (SOL)", "num"], ["MC lúc mua", "num"], ["Bán (SOL)", "num"], ["MC lúc bán", "num"], ["Còn giữ", "num"]], rows);
 }
-function coinDetail(c) {
+function coinDetail(c0) {
+  loadCoin(c0.mint);
+  const full = S.coins[c0.mint], c = full ? { ...c0, pump: full.pump, dev: full.dev } : c0;
   const st = coinState(c), mc = coinMc(c), info = walletInfo();
   const rows = c.wallets.flatMap((w) => w.trades.map((tr) => ({ w, t: tradePx(tr, c) }))).sort((a, b) => a.t.ts - b.t.ts).map(({ w, t: x }) => ({
     key: x.ts + w.wallet + x.kind, sig: "", cells: [`<span class="small">${when(x.ts)}</span>`, acct(w.wallet), `<span class="mono small">${esc(short(w.family))}</span> ${tierPill(w.tier)}`,
@@ -254,6 +256,7 @@ function coinDetail(c) {
       <div class="fact"><span class="k">Tổng SOL mua / bán</span><span class="v">${nf(c.buy_sol, 2)} / ${nf(c.sell_sol, 2)}</span></div>
       <div class="fact"><span class="k">Nhóm ví độc lập</span><span class="v">${c.n_families} (${c.wallets.length} ví)</span></div>
       <div class="fact"><span class="k">Liên kết</span><span class="v">${tokLinks(c.mint, c.chart)}</span></div></div>
+    ${pumpBlock(c)}
     <div class="chart" id="chart" data-mint="${esc(c.mint)}"><div class="muted small">Đang tải biểu đồ…</div></div>
     <div class="legend"><span><span style="color:var(--accent)">▲</span> ví mua / nhận</span><span><span style="color:var(--warn)">▼</span> ví bán / chuyển đi</span><span>trục dọc: market cap (USD, thang log)</span></div>
     <h2>Từng ví</h2>${held}
@@ -297,6 +300,17 @@ function coinColor(mint) {
   return COLOR_OF[mint];
 }
 function pumpBtn(m) { return `<a class="btn pump" href="https://pump.fun/coin/${esc(m)}" target="_blank" rel="noopener">pump.fun</a><a class="btn" href="https://dexscreener.com/solana/${esc(m)}" target="_blank" rel="noopener">DexScreener</a>`; }
+const pumpName = (u, addr) => u && u.username ? `<a class="pname" href="https://pump.fun/profile/${esc(addr)}" target="_blank" rel="noopener" title="Tên trên pump.fun${u.followers ? " · " + u.followers + " người theo dõi" : ""}">@${esc(u.username)}</a>` : "";
+function pumpBlock(c) {                   // dev, description and links of a coin (from pump.fun; untrusted text, escaped)
+  if (!c || (!c.pump && !c.dev)) return "";
+  const pi = c.pump || {}, d = c.dev;
+  const links = [["X", pi.twitter], ["Telegram", pi.telegram], ["Website", pi.website]].filter(([, u]) => safeUrl(u))
+    .map(([l, u]) => `<a href="${esc(safeUrl(u))}" target="_blank" rel="noopener nofollow">${l}</a>`).join("");
+  const desc = pi.description ? `<details class="desc"><summary>Giới thiệu: ${esc(pi.description.slice(0, 110))}${pi.description.length > 110 ? "…" : ""}</summary>${esc(pi.description)}</details>` : `<div class="dim small">Không có giới thiệu.</div>`;
+  const dev = d && d.wallet ? `<div class="dev"><span class="k">Dev</span> ${acct(d.wallet)} ${pumpName(d.user, d.wallet)}${d.user && d.user.followers ? ` <span class="dim small">${nf(d.user.followers, 0)} người theo dõi</span>` : ""}${d.user && d.user.x ? ` <a class="small" href="https://x.com/${esc(d.user.x)}" target="_blank" rel="noopener nofollow">X @${esc(d.user.x)}</a>` : ""}${d.listed ? " " + pill("DEV LÀ VÍ ĐANG THEO DÕI", "bad") : ""}</div>` : "";
+  const extra = [pi.ath_mcap_usd ? "MC đỉnh " + usdK(pi.ath_mcap_usd) : "", pi.complete === false ? "đang trên bonding curve" : pi.complete ? "đã tốt nghiệp" : ""].filter(Boolean).join(" · ");
+  return `<div class="pinfo">${dev}${desc}${links || extra ? `<div class="links">${links}${extra ? `<span class="dim">${extra}</span>` : ""}</div>` : ""}</div>`;
+}
 function coinCard(mint, items) {          // one coin, one box, one colour: every listed wallet's buys / sells on it
   const a0 = items[0], strong = items.find((a) => a.level === "vipstrong"), color = coinColor(mint);
   const c = S.coins[mint] || board().find((x) => x.mint === mint);
@@ -307,7 +321,7 @@ function coinCard(mint, items) {          // one coin, one box, one colour: ever
   if (c && c.wallets.length) {
     lines = c.wallets.slice().sort((x, y) => (y.buy_sol || 0) - (x.buy_sol || 0)).map((w) => {
       const st = walletStats(w, c);
-      return `<div class="cw"><span class="cw-w">${acct(w.wallet)}</span>
+      return `<div class="cw"><span class="cw-w">${acct(w.wallet)} ${pumpName(w.pump_user, w.wallet)}</span>
         <span class="cw-b">${st.bSol ? `MUA <b>${nf(st.bSol, 2)}</b> SOL${st.bMc ? ` <span class="dim">@</span> <span class="est">${usdK(st.bMc)}</span>` : ""}` : `<span class="dim">không mua</span>`}</span>
         <span class="cw-s">${st.sSol ? `BÁN <b>${nf(st.sSol, 2)}</b> SOL${st.sMc ? ` <span class="dim">@</span> <span class="est">${usdK(st.sMc)}</span>` : ""}` : `<span class="dim">chưa bán</span>`}</span>
         <span class="cw-h">${st.leftPct !== null ? `còn <b class="${st.leftPct >= 50 ? "good" : "warn"}">${Math.round(st.leftPct)}%</b>` : ""}</span></div>`;
@@ -321,6 +335,7 @@ function coinCard(mint, items) {          // one coin, one box, one colour: ever
       ${strong ? pill("MẠNH · " + (strong.n_families || strong.n_wallets || 2) + " nhóm ví", "bad") : ""}${fresh ? pill("MỚI", "acc") : ""}
       <span class="muted small">${age ? dur(age.age_h * 3600) + " tuổi" : ""}${mcap ? " · MC " + usdK(mcap.mcap) : ""} · ${ago(items[0].ts)}</span>
       <span class="grow"></span>${pumpBtn(mint)}</header>
+    ${pumpBlock(c)}
     ${lines}</article>`;
 }
 const TRADE_KINDS = ["BUY", "CREATE", "SELL", "VIPSTRONG"], MOVE_KINDS = ["RECEIVE", "SEND", "SOL_IN", "FUND"];
@@ -425,7 +440,7 @@ async function loadCoin(mint) {          // every listed wallet on a coin (any s
   S.coinAt = S.coinAt || {};
   if (S.coinAt[mint] && t - S.coinAt[mint] < 30000) return;
   S.coinAt[mint] = t;
-  try { S.coins[mint] = await api("/api/insiders/coin?mint=" + encodeURIComponent(mint)); if (S.tab === "alerts") render(); }
+  try { S.coins[mint] = await api("/api/insiders/coin?mint=" + encodeURIComponent(mint)); if (S.tab === "alerts" || S.tab === "signals") render(); }
   catch (_) { /* keep the board's copy */ }
 }
 async function loadWallet(addr) {
