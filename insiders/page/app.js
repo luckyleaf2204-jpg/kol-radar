@@ -35,6 +35,7 @@ const thr = (sol) => { const r = solUsd(); return `${nf(sol, 2)} SOL${r ? " (~$"
 const solTxt = (v, d = 2) => nf(v, d) === null ? `<span class="unk">—</span>` : `${nf(v, d)} SOL`;
 const usdK = (v) => {                    // short money: $900 · $1.5K · $188K · $1.3M · $67M · $1.2B
   if (!v && v !== 0) return null;
+  if (!isFinite(v) || Math.abs(v) >= 1e12) return "—";   // nothing real is worth a trillion: a broken price
   const a = Math.abs(v), f = (x, u) => (x >= 10 ? Math.round(x) : Math.round(x * 10) / 10) + u;
   return (v < 0 ? "−" : "") + "$" + (a >= 1e9 ? f(a / 1e9, "B") : a >= 1e6 ? f(a / 1e6, "M") : a >= 1e3 ? f(a / 1e3, "K") : a < 1 ? a.toPrecision(2) : Math.round(a));
 };
@@ -108,9 +109,21 @@ const shadow = () => (S.w && S.w.shadow) || { summary: [], rows: [] };
 const alerts = () => ((S.w && S.w.alerts) || []).filter((a) => ["vip", "vipstrong"].includes(a.level));
 const walletInfo = () => { const m = {}; (vip().list || []).forEach((x) => { m[x.wallet] = x; }); return m; };
 const famOf = (w) => (walletInfo()[w] || {}).family || w;
+const PX_ODD = 20;                       // a trade priced 20x away from the coin's median trade price is not a clean swap
+function coinRefPx(coin) {               // median SOL-per-token over the coin's priced trades
+  const raw = (tr) => tr[2] > 0 && tr[3] > 0 ? tr[2] / tr[3] : null;
+  const xs = coin.wallets.flatMap((w) => (w.trades || []).filter((t) => ["BUY", "CREATE", "SELL"].includes(t[1])).map(raw)).filter((v) => v).sort((a, b) => a - b);
+  return xs.length ? xs[Math.floor(xs.length / 2)] : null;
+}
+function oddTrade(tr, coin) {            // e.g. a routed / bundled swap where almost no token reached this wallet
+  const ref = coin._ref === undefined ? (coin._ref = coinRefPx(coin)) : coin._ref;
+  if (!ref || !(tr[2] > 0) || !(tr[3] > 0)) return false;
+  const r = tr[2] / tr[3] / ref;
+  return r > PX_ODD || r < 1 / PX_ODD;
+}
 function tradePx(tr, coin) {          // [ts, kind, sol, tokens_raw, sig] -> SOL per token, MC (USD) at the trade
-  const sup = coin.supply || {}, ui = tr[3] / Math.pow(10, sup.decimals ?? 6), px = tr[2] > 0 && ui > 0 ? tr[2] / ui : null;
-  return { ts: tr[0], kind: tr[1], sol: tr[2], ui, px, mc: px && sup.ui && solUsd() ? px * sup.ui * solUsd() : null };
+  const sup = coin.supply || {}, ui = tr[3] / Math.pow(10, sup.decimals ?? 6), px = tr[2] > 0 && ui > 0 ? tr[2] / ui : null, odd = oddTrade(tr, coin);
+  return { ts: tr[0], kind: tr[1], sol: tr[2], ui, px: odd ? null : px, odd, mc: !odd && px && sup.ui && solUsd() ? px * sup.ui * solUsd() : null };
 }
 function coinState(c) {
   if (c.n_families >= 2) return ["Nhiều nhóm cùng vào", "bad"];
@@ -224,8 +237,10 @@ function viewSignals() {
 const tokAmt = (x) => x >= 1e9 ? nf(x / 1e9, 2) + " tỷ" : x >= 1e6 ? nf(x / 1e6, 2) + " tr" : nf(x, 0);
 function walletStats(w, c) {           // buys / sells / remaining of one wallet on one coin, from its recorded trades
   const dec = (c.supply || {}).decimals ?? 6, u = (raw) => raw / Math.pow(10, dec), su = solUsd(), sup = (c.supply || {}).ui;
-  let bSol = 0, bTok = 0, sSol = 0, sTok = 0, first = null, recv = 0, sent = 0;
-  for (const tr of w.trades || []) {
+  // an odd trade (routed / bundled swap: the SOL moved was mostly not for this coin) counts in neither money nor price
+  let bSol = 0, bTok = 0, sSol = 0, sTok = 0, first = null, recv = 0, sent = 0, odd = 0;
+  for (const tr of (w.trades || []).slice().sort((a, b) => a[0] - b[0])) {
+    if (oddTrade(tr, c)) { odd += 1; continue; }
     if ((tr[1] === "BUY" || tr[1] === "CREATE") && tr[2] > 0) { bSol += tr[2]; bTok += tr[3]; first = first || tr; }
     else if (tr[1] === "RECEIVE") recv += tr[3];
     else if (tr[1] === "SELL" && tr[2] > 0) { sSol += tr[2]; sTok += tr[3]; }
@@ -234,7 +249,7 @@ function walletStats(w, c) {           // buys / sells / remaining of one wallet
   const bPx = bTok ? bSol / u(bTok) : null, sPx = sTok ? sSol / u(sTok) : null;
   const mc = (px) => px && sup && su ? px * sup * su : null;
   const left = w.tok_in || w.tok_out ? u(Math.max(0, (w.tok_in || 0) - (w.tok_out || 0))) : null;
-  return { bSol, sSol, bPx, sPx, bMc: mc(bPx), sMc: mc(sPx), firstMc: first ? mc(first[2] / u(first[3])) : null, firstTs: first ? first[0] : null,
+  return { odd, bSol, sSol, bPx, sPx, bMc: mc(bPx), sMc: mc(sPx), firstMc: first ? mc(first[2] / u(first[3])) : null, firstTs: first ? first[0] : null,
     recv: recv ? u(recv) : 0, sent: sent ? u(sent) : 0, sentPct: sent && w.tok_in ? Math.min(100, 100 * sent / w.tok_in) : null, left, leftPct: w.tok_in ? Math.min(100, 100 * Math.max(0, w.tok_in - (w.tok_out || 0)) / w.tok_in) : null,
     held: w.held_ui, usdPx: (px) => px && su ? px * su : null };
 }
@@ -328,7 +343,7 @@ function tradeList(w, c) {                // every recorded trade of one wallet 
   if (!tr.length) return "";
   const rows = tr.map((t) => { const x = tradePx(t, c), buy = ["BUY", "CREATE"].includes(t[1]), sell = t[1] === "SELL";
     return `<div class="tl"><span class="dim">${when(t[0])}</span><span class="${buy ? "good" : sell ? "warn" : "acc-t"}">${esc((KIND[t[1]] || t[1]).toUpperCase())}</span>
-      <span class="mono">${t[2] > 0 ? usdOf(t[2]) : tokAmt(x.ui) + " token"}</span><span>${x.mc ? `<span class="dim">MC</span> ${usdK(x.mc)}` : ""}</span></div>`; }).join("");
+      <span class="mono">${t[2] > 0 ? usdOf(t[2]) : tokAmt(x.ui) + " token"}</span><span>${x.mc ? `<span class="dim">MC</span> ${usdK(x.mc)}` : x.odd ? `<span class="dim" title="Giá lệnh lệch quá ${PX_ODD} lần so với các lệnh khác của coin (lệnh đi qua route / gộp, token nhận về rất ít): không tính MC">MC — · lệnh lạ</span>` : ""}</span></div>`; }).join("");
   const k = c.mint + "|" + w.wallet;
   return `<details class="cw-t" data-k="${esc(k)}" ${S.openT[k] ? "open" : ""}><summary>${tr.length} lệnh</summary>${rows}</details>`;
 }
@@ -349,7 +364,7 @@ function coinCard(mint, items) {          // one coin, one box, one colour: ever
           : st.recv ? `<span class="acc-t">NHẬN <b>${tokAmt(st.recv)}</b> token</span> <span class="dim small">(chuyển từ ví khác, không mua)</span>`
           : `<span class="dim small" title="Ví được theo dõi sau khi đã mua coin này">mua trước khi theo dõi</span>`}</span>
         <span class="cw-s">${st.sSol ? `BÁN <b>${usdOf(st.sSol)}</b>${st.sMc ? ` <span class="dim">· MC</span> ${usdK(st.sMc)}` : ""}` : ""}${st.sent ? `${st.sSol ? "<br>" : ""}CHUYỂN ĐI <b>${st.sentPct !== null ? Math.round(st.sentPct) + "%" : tokAmt(st.sent)}</b> <span class="dim small">sang ví khác</span>` : ""}${!st.sSol && !st.sent ? `<span class="dim small">chưa bán</span>` : ""}</span>
-        <span class="cw-h">${st.leftPct !== null ? `còn <b class="${st.leftPct >= 50 ? "good" : "warn"}">${Math.round(st.leftPct)}%</b>` : ""}</span>
+        <span class="cw-h">${st.leftPct !== null ? `còn <b class="${st.leftPct >= 50 ? "good" : "warn"}">${Math.round(st.leftPct)}%</b>` : ""}${st.odd ? ` <span class="dim small" title="Lệnh đi qua route / gộp: số SOL không phản ánh đúng tiền mua coin này">· ${st.odd} lệnh lạ không tính</span>` : ""}</span>
         ${tradeList(w, c)}</div>`;
     }).join("");
   } else {
