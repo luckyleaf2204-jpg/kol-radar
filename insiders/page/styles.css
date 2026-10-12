@@ -134,3 +134,9 @@ tr.flash { animation: flash 2.2s ease-out; }
   background: var(--panel2); border: 1px solid var(--line2); padding: 8px 14px; border-radius: 8px; transition: transform .2s; z-index: 50; }
 .toast.on { transform: translateX(-50%) translateY(0); }
 @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
+
+details.detail > summary { cursor: pointer; list-style: none; }
+details.detail > summary::-webkit-details-marker { display: none; }
+details.detail > summary::before { content: "▸"; color: var(--muted); margin-right: 4px; }
+details.detail[open] > summary::before { content: "▾"; }
+.seg .badge { margin-left: 4px; font: 600 10px/16px var(--mono); padding: 0 6px; border-radius: 8px; background: var(--bad); color: #fff; }
