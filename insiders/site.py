@@ -147,6 +147,14 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                 if not re.fullmatch(r"[1-9A-HJ-NP-Za-km-z]{32,44}", mint):
                     return self._json(400, {"error": "mint"})
                 return self._json(200, svc.chart(mint))
+            if path == "/api/insiders/coin":
+                from urllib.parse import parse_qs, urlsplit
+                mint = (parse_qs(urlsplit(self.path).query).get("mint") or [""])[0]
+                if not re.fullmatch(r"[1-9A-HJ-NP-Za-km-z]{32,44}", mint):
+                    return self._json(400, {"error": "mint"})
+                w = getattr(svc, "watcher", None)
+                d = w.coin_view(mint) if w else None
+                return self._json(200, d) if d else self._json(404, {"error": "coin"})
             if path == "/api/insiders/wallet":
                 from urllib.parse import parse_qs, urlsplit
                 addr = (parse_qs(urlsplit(self.path).query).get("addr") or [""])[0]

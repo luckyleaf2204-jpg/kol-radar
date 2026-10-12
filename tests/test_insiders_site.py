@@ -123,3 +123,20 @@ def test_chart_route_validates_the_mint(server, monkeypatch):
     st, body = call(base + "/api/insiders/chart?mint=" + "7uqfEqdd9strJVYiju6kasjCj6AzjBF2S1GmWRhdpump", "code-1")
     assert st == 200 and json.loads(body)["candles"][0][0] == 60
     assert call(base + "/api/insiders/chart?mint=x", None)[0] == 401
+
+
+def test_coin_route_validates_and_needs_the_code(server, monkeypatch):
+    base, svc = server
+
+    class W:
+        state = {}
+
+        def coin_view(self, mint):
+            return {"mint": mint, "wallets": [{"wallet": "a"}, {"wallet": "b"}]} if mint.endswith("pump") else None
+    monkeypatch.setattr(svc, "watcher", W(), raising=False)
+    m = "7uqfEqdd9strJVYiju6kasjCj6AzjBF2S1GmWRhdpump"
+    assert call(base + "/api/insiders/coin?mint=" + m)[0] == 401
+    assert call(base + "/api/insiders/coin?mint=bad!", "code-1")[0] == 400
+    st, body = call(base + "/api/insiders/coin?mint=" + m, "code-1")
+    assert st == 200 and len(json.loads(body)["wallets"]) == 2
+    assert call(base + "/api/insiders/coin?mint=" + "G2YxRa6wt1qePMwfJzdXZG62ej4qaTC7YURzuh2Lwd3t", "code-1")[0] == 404
