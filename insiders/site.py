@@ -105,7 +105,9 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                         h["vip"] = {"connected": v.stat.get("connected"), "subscribed": v.stat.get("subscribed"),
                                     "pushed": v.stat.get("pushed", 0), "handled": v.stat.get("handled", 0),
                                     "missed": v.stat.get("missed", 0), "error": v.stat.get("error"),
-                                    "rpc_throttled": getattr(v.rpc, "throttled", None)}
+                                    "rpc_throttled": getattr(v.rpc, "throttled", None),
+                                    "wallets": len(v.wallets()), "poll": dict(getattr(v, "pstat", {}) or {}),
+                                    "flows": len(w.state.get("flows", []))}
                     pf = getattr(w, "portfolio", None)
                     if pf is not None:
                         h["portfolio"] = {"updated": pf.updated, "seconds": pf.seconds,
