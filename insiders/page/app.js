@@ -105,7 +105,7 @@ function start() {
 // ---------------------------------------------------------------- derived data
 const vip = () => (S.w && S.w.vip) || {};
 const pf = () => (S.w && S.w.portfolio) || {};
-const solUsd = () => pf().sol_usd || 0;
+const solUsd = () => vip().sol_usd || pf().sol_usd || 0;     // the server's Jupiter SOL price (balances are off)
 const board = () => (S.w && S.w.board) || [];
 const shadow = () => (S.w && S.w.shadow) || { summary: [], rows: [] };
 const alerts = () => ((S.w && S.w.alerts) || []).filter((a) => ["vip", "vipstrong"].includes(a.level));
