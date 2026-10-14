@@ -107,7 +107,8 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                                     "missed": v.stat.get("missed", 0), "error": v.stat.get("error"),
                                     "rpc_throttled": getattr(v.rpc, "throttled", None),
                                     "wallets": len(v.wallets()), "poll": dict(getattr(v, "pstat", {}) or {}),
-                                    "flows": len(w.state.get("flows", []))}
+                                    "flows": len(w.state.get("flows", [])),
+                                    "provider": __import__("insiders.vip", fromlist=["PROVIDER"]).PROVIDER}
                     pf = getattr(w, "portfolio", None)
                     if pf is not None:
                         h["portfolio"] = {"updated": pf.updated, "seconds": pf.seconds,
