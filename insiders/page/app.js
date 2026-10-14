@@ -10,14 +10,16 @@ const LS = {
 };
 const S = {
   code: LS.get("insAccessCode", ""), w: null, names: {}, tab: "dashboard", timer: null, prevSig: {}, charts: {}, coins: {}, openT: {},
+  act: { win: LS.get("kr.awin", "24h"), group: "all", bots: false }, fl: { dir: "all", group: "all", min: 0.5 },
   sig: { win: LS.get("kr.win", "24h"), multi: LS.get("kr.multi", false), sort: LS.get("kr.sort", "time"), open: null },
   al: { level: "all", view: LS.get("kr.alview", "trade") }, wl: { mode: "list", role: "all", sort: "wins", open: null, detail: null },
   pp: { tab: "shadow" }, seenAlert: LS.get("kr.seenAlert", 0), sound: LS.get("kr.sound", true), err: null,
 };
-const TABS = [["dashboard", "Dashboard"], ["signals", "Tín hiệu sớm"], ["alerts", "Cảnh báo"], ["wallets", "Nhóm ví"],
-  ["paper", "PAPER Trading"], ["performance", "Hiệu suất"], ["research", "Nghiên cứu"], ["settings", "Cài đặt"]];
+const TABS = [["activity", "Hoạt động"], ["flows", "Dòng tiền"], ["wallets", "Danh sách ví"], ["settings", "Cài đặt"]];
 const WIN = { "5m": 300, "15m": 900, "1h": 3600, "24h": 86400, all: 1e12 };
-const ROLE = { holder: ["VÍ GỐC", "bad"], successor: ["VÍ KẾ THỪA", "warn"], child: ["VÍ CON", "acc"], other: ["KHÁC", ""] };
+const ROLE = { holder: ["VÍ GỐC", "bad"], successor: ["VÍ KẾ THỪA", "warn"], child: ["VÍ LIÊN KẾT", "acc"], external: ["DỰ ÁN", "bad"], other: ["KHÁC", ""] };
+const GROUP_CLS = { INSIDERS: "acc", DEPTH: "warn", VALENTINO: "bad" };
+const groupPill = (g) => g ? pill(g, GROUP_CLS[g] || GROUP_CLS[(g.match(/(INSIDERS|DEPTH|VALENTINO)/) || [])[1]] || "") : "";
 const TIER = { main: ["main", "good", "≥ 2 coin thắng"], watch: ["watch", "warn", "1 coin thắng"], none: ["chưa thắng", "", "chưa có coin thắng"] };
 const KIND = { BUY: "mua", CREATE: "tạo + mua", RECEIVE: "nhận token", SELL: "bán", SEND: "chuyển token", SOL_IN: "nhận SOL", FUND: "nạp ví mới", VIPSTRONG: "nhiều nhóm cùng vào" };
 const EXIT = { tp2x: "chốt ×2", stop: "cắt lỗ −35%", trail: "trailing", time30: "hết 30 phút", time60: "hết 60 phút", wallet_exit: "ví tín hiệu bán", crash: "sập giá", end: "hết 24 giờ" };
@@ -93,11 +95,11 @@ async function refresh() {
   renderTop(); render(); notifyNew();
 }
 function start() {
-  S.tab = (location.hash || "#dashboard").slice(1);
-  if (!TABS.some(([k]) => k === S.tab)) S.tab = "dashboard";
+  S.tab = (location.hash || "#activity").slice(1);
+  if (!TABS.some(([k]) => k === S.tab)) S.tab = "activity";
   refresh();
   S.timer = setInterval(() => { if (!document.hidden) refresh(); }, 20000);
-  window.addEventListener("hashchange", () => { S.tab = (location.hash || "#dashboard").slice(1); renderTop(); render(true); });
+  window.addEventListener("hashchange", () => { S.tab = (location.hash || "#activity").slice(1); if (!TABS.some(([k]) => k === S.tab)) S.tab = "activity"; renderTop(); render(true); });
 }
 
 // ---------------------------------------------------------------- derived data
@@ -140,12 +142,13 @@ function coinMc(c) {                  // estimate: live price x supply, else the
 // ---------------------------------------------------------------- header
 function renderTop() {
   const v = vip(), src = (S.w && S.w.sources) || {};
-  $("#status").innerHTML = v.connected ? `<span class="pill good"><span class="dot"></span>ĐANG NGHE ${v.subscribed || 0} VÍ</span>`
+  const pl = (v.poll || {}).wallets || 0;
+  $("#status").innerHTML = v.connected ? `<span class="pill good"><span class="dot"></span>THEO DÕI ${v.wallets || 0} VÍ · ${v.subscribed || 0} TRỰC TIẾP${pl ? " + " + pl + " QUÉT VÒNG" : ""}</span>`
     : `<span class="pill bad"><span class="dot"></span>MẤT KẾT NỐI${v.error ? " · đang nối lại" : ""}</span>`;
   $("#updated").textContent = S.w ? "Cập nhật " + clock(S.w.now) : "Đang tải…";
   const newAlerts = alerts().filter((a) => a.ts > S.seenAlert).length;
   $("#tabs").innerHTML = TABS.map(([k, l]) => `<a href="#${k}" class="${S.tab === k ? "on" : ""}">${esc(l)}${k === "alerts" && newAlerts ? `<span class="badge">${newAlerts}</span>` : ""}</a>`).join("");
-  const name = { stream: "Luồng giao dịch", balances: "Số dư ví", prices: "Nguồn giá" };
+  const name = { stream: "Luồng giao dịch", poll: "Quét vòng", balances: "Số dư ví", prices: "Nguồn giá" };
   const chips = Object.entries(src).map(([k, s]) => {
     if (!s.ok) return pill(`${name[k]}: ${s.error ? "lỗi" : "chưa có dữ liệu"}`, s.error ? "bad" : "", s.error || "");
     if (s.error) return pill(`${name[k]}: lỗi tạm thời`, "warn", s.error);
@@ -159,8 +162,7 @@ function render(fromNav) {
   const main = $("#main");
   if (!S.w) { main.innerHTML = `<div class="empty">${esc(S.err || "Đang tải…")}</div>`; return; }
   const y = window.scrollY;
-  const fn = { dashboard: viewDashboard, signals: viewSignals, alerts: viewAlerts, wallets: viewWallets, paper: viewPaper,
-    performance: viewPerformance, research: viewResearch, settings: viewSettings }[S.tab] || viewDashboard;
+  const fn = { activity: viewActivity, flows: viewFlows, wallets: viewWalletList, settings: viewSettings }[S.tab] || viewActivity;
   main.innerHTML = fn();
   if (!fromNav) window.scrollTo(0, y); else window.scrollTo(0, 0);
   const seen = S.prevSig[S.tab] || {}, next = {};
@@ -317,6 +319,93 @@ async function drawChart() {
     const pts = buy ? `${px},${py - 9} ${px - 6},${py + 3} ${px + 6},${py + 3}` : `${px},${py + 9} ${px - 6},${py - 3} ${px + 6},${py - 3}`;
     s += `<polygon points="${pts}" class="${buy ? "c-buy" : "c-sell"}"><title>${esc(short(x.wallet))} · ${esc(KIND[x.kind] || x.kind)} ${x.sol ? usdOf(x.sol) : ""} · MC ${usdK(x.mc)} · ${clock(x.ts)}</title></polygon>`; }
   el.innerHTML = s + `</svg><div class="small muted">MC hiện tại ≈ <b>${usdK(cs[cs.length - 1][4] * sup)}</b> · ${cs.length} nến ${hit.d.agg || 1} phút (GeckoTerminal)</div>`;
+}
+
+
+// ---------------------------------------------------------------- tracing views (2026-10-14: the only job left)
+function walletLine(w, c) {               // one listed wallet on one coin: group, buys / sells (USD @ MC), share kept, its trades
+  const st = walletStats(w, c), i = walletInfo()[w.wallet] || {}, bot = (S.w.bots || []).includes(w.wallet);
+  return `<div class="cw"><span class="cw-w">${acct(w.wallet)} ${pumpName(w.pump_user, w.wallet)} ${groupPill(i.group)}${bot ? " " + pill("BOT", "", "giao dịch rất nhiều coin mỗi ngày") : ""}</span>
+    <span class="cw-b">${st.bSol ? `MUA <b>${usdOf(st.bSol)}</b>${st.bMc ? ` <span class="dim">· MC</span> ${usdK(st.bMc)}` : ""}`
+      : st.recv ? `<span class="acc-t">NHẬN <b>${tokAmt(st.recv)}</b> token</span> <span class="dim small">(từ ví khác)</span>`
+      : `<span class="dim small">mua trước khi theo dõi</span>`}</span>
+    <span class="cw-s">${st.sSol ? `BÁN <b>${usdOf(st.sSol)}</b>${st.sMc ? ` <span class="dim">· MC</span> ${usdK(st.sMc)}` : ""}` : ""}${st.sent ? `${st.sSol ? "<br>" : ""}CHUYỂN ĐI <b>${st.sentPct !== null ? Math.round(st.sentPct) + "%" : tokAmt(st.sent)}</b>` : ""}${!st.sSol && !st.sent ? `<span class="dim small">chưa bán</span>` : ""}</span>
+    <span class="cw-h">${st.leftPct !== null ? `còn <b class="${st.leftPct >= 50 ? "good" : "warn"}">${Math.round(st.leftPct)}%</b>` : ""}${st.odd ? ` <span class="dim small">· ${st.odd} lệnh lạ</span>` : ""}</span>
+    ${tradeList(w, c)}</div>`;
+}
+function coinBox(c0, load) {
+  if (load) loadCoin(c0.mint);
+  const full = S.coins[c0.mint], c = full ? { ...c0, ...full, bot_only: c0.bot_only } : c0;
+  const info = walletInfo(), groups = [...new Set(c.wallets.map((w) => (info[w.wallet] || {}).group).filter(Boolean))];
+  const nT = c.wallets.reduce((k, w) => k + (w.trades || []).length, 0), mc = coinMc(c), multi = c.n_families >= 2;
+  return `<article class="coin${multi ? " is-strong" : ""}" style="--c:${coinColor(c.mint)}">
+    <header><span class="sw"></span><b class="cn">${esc(tokName(c))}</b><span class="copy" data-copy="${esc(c.mint)}" title="Sao chép CA">⧉</span>
+      ${multi ? pill(c.n_families + " NHÓM VÍ CÙNG VÀO", "bad") : ""}${groups.map(groupPill).join("")}
+      <span class="muted small"><b>${c.wallets.length} ví · ${nT} lệnh</b> · ${c.created_ts ? dur(now() - c.created_ts) + " tuổi · " : ""}${mc.v ? "MC " + usdK(mc.v) + " · " : ""}lần đầu ${ago(c.first_ts)}</span>
+      <span class="grow"></span>${pumpBtn(c.mint)}</header>
+    ${pumpBlock(c)}
+    ${c.wallets.slice().sort((x, y) => (y.buy_sol || 0) - (x.buy_sol || 0)).map((w) => walletLine(w, c)).join("")}</article>`;
+}
+function viewActivity() {
+  const t = now(), lim = WIN[S.act.win] || WIN["24h"], g = S.act.group, info = walletInfo();
+  const inGroup = (c) => g === "all" || c.wallets.some((w) => ((info[w.wallet] || {}).group || "").includes(g));
+  const coins = board().filter((c) => t - (c.last_ts || 0) <= lim && inGroup(c));
+  coins.forEach((c) => coinColor(c.mint));
+  const main = coins.filter((c) => !c.bot_only), bots = coins.filter((c) => c.bot_only);
+  const seg = (k, opts, cur) => `<span class="seg">${opts.map(([v, l]) => `<button data-${k}="${v}" class="${cur === v ? "on" : ""}">${esc(l)}</button>`).join("")}</span>`;
+  return `<section class="panel"><header><h2>Hoạt động mua bán của ví trong danh sách</h2><span class="grow"></span>
+      ${seg("awin", [["1h", "1 giờ"], ["6h", "6 giờ"], ["24h", "24 giờ"], ["all", "Tất cả"]], S.act.win)}
+      ${seg("agroup", [["all", "Mọi nhóm"], ["INSIDERS", "INSIDERS"], ["DEPTH", "DEPTH"], ["VALENTINO", "VALENTINO"], ["LIÊN KẾT", "Ví liên kết"]], g)}</header>
+    <div class="note">Mỗi coin một ô, một màu: coin mà ví trong danh sách mua ≥ ${thr((S.w.config || {}).board_min_sol || 1)}. Ô có nhiều nhóm ví cùng vào lên đầu. Số tiền quy ra USD theo giá SOL hiện tại; MC là vốn hoá coin lúc mua/bán. Ví BOT (giao dịch rất nhiều coin mỗi ngày) được gấp xuống cuối.</div>
+    ${main.length ? `<div class="coins">${main.slice(0, 40).map((c, i) => coinBox(c, i < 15)).join("")}</div>` : `<div class="empty">Chưa có coin nào trong khung thời gian này.</div>`}
+    ${bots.length ? `<details class="bots" ${S.act.bots ? "open" : ""} id="botfold"><summary>${bots.length} coin chỉ có ví BOT giao dịch</summary><div class="coins">${S.act.bots ? bots.slice(0, 40).map((c) => coinBox(c, false)).join("") : ""}</div></details>` : ""}</section>`;
+}
+function viewFlows() {
+  const info = walletInfo(), kids = vip().kids || {}, f = S.fl;
+  const rows0 = ((S.w && S.w.flows) || []).filter((x) => (f.dir === "all" || x.dir === f.dir)
+    && (f.group === "all" || ((info[x.wallet] || {}).group || "").includes(f.group))
+    && (x.mint ? true : (x.sol || 0) >= f.min));
+  const rows = rows0.slice(0, 250).map((x) => {
+    const me = `${acct(x.wallet)} ${groupPill((info[x.wallet] || {}).group)}`;
+    const other = x.other ? `${acct(x.other)}${x.label ? " " + pill(x.label, "") : ""}${x.listed_other ? " " + pill("trong danh sách", "acc") : kids[x.other] ? " " + pill("đã thêm theo dõi", "acc") : ""}` : `<span class="unk">không rõ</span>`;
+    const amt = x.mint ? `<b class="mono">${tokAmt(x.tokens / 1e6)}</b> <span class="small">${esc(S.names[x.mint] || short(x.mint))}</span>` : `<b class="mono">${usdOf(x.sol)}</b>`;
+    return { key: x.sig + x.wallet + x.dir + (x.mint || ""), sig: "", cls: x.listed_other ? "strong" : "",
+      cells: [`<span class="small">${when(x.ts)}</span><div class="dim small">${ago(x.ts)}</div>`,
+        x.dir === "out" ? `${me}<div class="warn small">chuyển cho ↓</div>${other}` : `${other}<div class="good small">chuyển cho ↓</div>${me}`,
+        amt, `<a class="small" href="https://solscan.io/tx/${esc(x.sig)}" target="_blank" rel="noopener">giao dịch</a>`] };
+  });
+  const agg = {};
+  for (const x of (S.w.flows || [])) {
+    if (!x.other || x.listed_other) continue;
+    const a = agg[x.other] = agg[x.other] || { n: new Set(), inn: 0, out: 0, label: x.label, last: 0 };
+    a.n.add(x.wallet); a.last = Math.max(a.last, x.ts || 0);
+    if (!x.mint) { if (x.dir === "out") a.inn += x.sol || 0; else a.out += x.sol || 0; }
+  }
+  const top = Object.entries(agg).filter(([, a]) => a.n.size >= 2 || a.inn + a.out >= 10).sort((p, q) => q[1].n.size - p[1].n.size || (q[1].inn + q[1].out) - (p[1].inn + p[1].out)).slice(0, 15)
+    .map(([w, a]) => ({ key: w, sig: "", cells: [`${acct(w)}${a.label ? " " + pill(a.label) : ""}${kids[w] ? " " + pill("đã thêm theo dõi", "acc") : ""}`, `<b class="mono">${a.n.size}</b>`,
+      a.inn ? `<span class="mono">${usdOf(a.inn)}</span>` : "—", a.out ? `<span class="mono">${usdOf(a.out)}</span>` : "—", `<span class="small">${ago(a.last)}</span>`] }));
+  const seg = (k, opts, cur) => `<span class="seg">${opts.map(([v, l]) => `<button data-${k}="${v}" class="${String(cur) === String(v) ? "on" : ""}">${esc(l)}</button>`).join("")}</span>`;
+  return `<section class="panel"><header><h2>Dòng tiền ra vào</h2><span class="grow"></span>
+      ${seg("fldir", [["all", "Cả hai chiều"], ["in", "Tiền vào"], ["out", "Tiền ra"]], f.dir)}
+      ${seg("flgroup", [["all", "Mọi nhóm"], ["INSIDERS", "INSIDERS"], ["DEPTH", "DEPTH"], ["VALENTINO", "VALENTINO"], ["LIÊN KẾT", "Ví liên kết"]], f.group)}
+      ${seg("flmin", [[0.5, "≥ 0,5 SOL"], [5, "≥ 5 SOL"], [50, "≥ 50 SOL"]], f.min)}</header>
+    <div class="note">Mọi lần ví trong danh sách nhận SOL / token từ ví khác hoặc chuyển cho ví khác (từ ${thr(0.5)}). Ví đối tác nhận ≥ ${thr((S.w.config || {}).adopt_min_sol || 0.5)} hoặc gửi ≥ 1 SOL cho ví trong danh sách được tự thêm vào theo dõi 7 ngày. Dòng viền đỏ: hai ví đều trong danh sách.</div>
+    ${top.length ? `<h2>Ví đối tác nổi bật</h2>${table([["Ví đối tác", "addr"], ["Số ví trong danh sách đã giao dịch", "num"], ["Đã nhận từ danh sách", "num"], ["Đã gửi cho danh sách", "num"], ["Gần nhất", "num"]], top)}` : ""}
+    <h2>Từng lần chuyển</h2>${table([["Lúc"], ["Từ → đến", "addr"], ["Số lượng", "num"], [""]], rows, { empty: "Chưa ghi nhận lần chuyển nào từ khi bật truy vết." })}</section>`;
+}
+function viewWalletList() {
+  const seen = vip().last_seen || {}, g = S.wl.group || "all";
+  let list = (vip().list || []).filter((x) => g === "all" || (x.group || "").includes(g));
+  list = list.slice().sort((a, b) => (seen[b.wallet] || 0) - (seen[a.wallet] || 0));
+  const rows = list.map((x) => ({ key: x.wallet, sig: String(seen[x.wallet] || ""), cls: "click" + (S.wl.open === x.wallet ? " sel" : ""),
+    cells: [`<span data-wallet="${esc(x.wallet)}">${acct(x.wallet)}</span>`, groupPill(x.group), `${rolePill(x.role)}${x.role_note ? `<div class="small muted">${esc(x.role_note)}</div>` : ""}`,
+      x.parent ? `${x.dir === "in" ? "gửi tiền cho" : "nhận tiền từ"} ${acct(x.parent)}${x.funded_sol ? ` <span class="dim small">${usdOf(x.funded_sol)}</span>` : ""}` : `<span class="dim small">${esc((x.why || "").slice(0, 80))}</span>`,
+      `<span class="small">${ago(seen[x.wallet])}</span>`] }));
+  const seg = `<span class="seg">${[["all", "Mọi nhóm"], ["INSIDERS", "INSIDERS"], ["DEPTH", "DEPTH"], ["VALENTINO", "VALENTINO"], ["LIÊN KẾT", "Ví liên kết"]].map(([v, l]) => `<button data-wlgroup="${v}" class="${g === v ? "on" : ""}">${l}</button>`).join("")}</span>`;
+  return `<section class="panel"><header><h2>Danh sách ví đang theo dõi (${list.length})</h2><span class="grow"></span>${seg}</header>
+    <div class="note">INSIDERS: 76 ví từ các kèo của SOL Pump Insiders. DEPTH, VALENTINO: ví của hai dự án gần nhất. Ví liên kết: ví nhận tiền từ / gửi tiền cho ví trong danh sách, tự thêm và theo dõi 7 ngày. Ví hoạt động gần nhất ở trên.</div>
+    ${table([["Ví", "addr"], ["Nhóm"], ["Vai trò"], ["Vì sao theo dõi"], ["Hoạt động gần nhất", "num"]], rows, { empty: "Chưa có danh sách ví." })}
+    ${S.wl.open ? walletDetail() : ""}</section>`;
 }
 
 // ---------------------------------------------------------------- 3. live alerts
@@ -556,11 +645,12 @@ function viewSettings() {
   const c = S.w.config || {};
   const row = (k, v, env) => ({ key: k, sig: "", cells: [esc(k), `<b class="mono">${v}</b>`, env ? `<code class="mono small">${esc(env)}</code>` : "—"] });
   const rows = [row("Cảnh báo một ví (SOL tối thiểu)", c.min_sol, "INSIDER_MIN_SOL"), row("Ví hiện trên bảng tín hiệu (tổng mua)", c.board_min_sol, "INSIDER_BOARD_MIN_SOL"),
-    row("Cửa sổ cảnh báo mạnh", dur(c.strong_window_s), "INSIDER_STRONG_WINDOW_S"), row("Nạp tiền để thành ví con", c.adopt_min_sol + " SOL", "INSIDER_ADOPT_MIN_SOL"),
-    row("Thời gian theo dõi ví con", (c.child_days || 7) + " ngày", null), row("Tối đa ví nghe trực tiếp", c.max_wallets, "INSIDER_MAX_WALLETS"),
+    row("Cửa sổ cảnh báo mạnh", dur(c.strong_window_s), "INSIDER_STRONG_WINDOW_S"), row("Ví nhận tiền từ danh sách được thêm từ", c.adopt_min_sol + " SOL", "INSIDER_ADOPT_MIN_SOL"),
+    row("Thời gian theo dõi ví con", (c.child_days || 7) + " ngày", null), row("Tối đa ví theo dõi (gốc + liên kết)", c.max_wallets, "INSIDER_MAX_WALLETS"), row("Ví nghe trực tiếp (còn lại quét vòng)", c.ws_max, "INSIDER_WS_MAX"),
+    row("Ví gửi tiền cho danh sách được thêm từ", (c.adopt_in_min_sol || 1) + " SOL", "INSIDER_ADOPT_IN_MIN_SOL"), row("Ghi dòng tiền từ", (c.flow_min_sol || 0.5) + " SOL", "INSIDER_FLOW_MIN_SOL"),
     row("Coin thắng: giữ tối thiểu", dur(c.win_hold_s), "INSIDER_WIN_HOLD_S"), row("Coin thắng: lãi tối thiểu", c.win_min_sol + " SOL, ×" + c.win_min_mult, "INSIDER_WIN_MIN_SOL / _MULT")];
   return `<section class="panel"><header><h2>Cài đặt</h2>${pill("CHỈ ĐỌC", "")}</header>
-    <div class="note">Các ngưỡng chỉ đổi được qua biến môi trường của server (Render). Trang này không thay đổi logic, ngưỡng hay chế độ read-only + PAPER.</div>
+    <div class="note">Các ngưỡng chỉ đổi được qua biến môi trường của server (Render). Chế độ hiện tại: chỉ truy vết giao dịch (số dư ví, shadow, paper đã tắt). Chỉ đọc dữ liệu, không ký hay gửi giao dịch nào.</div>
     ${table([["Ngưỡng"], ["Giá trị", "num"], ["Biến môi trường"]], rows)}
     <h2>Trên thiết bị này</h2>
     <div class="ctrl"><button class="btn" id="notif">Bật thông báo trình duyệt</button>
@@ -577,6 +667,13 @@ function bind() {
   $$("th[data-sort]").forEach((th) => th.onclick = () => { S.sig.sort = th.dataset.sort; LS.set("kr.sort", S.sig.sort); render(); });
   $$("[data-open]").forEach((el) => el.closest("tr").onclick = (e) => { if (e.target.closest("a, .copy")) return; S.sig.open = S.sig.open === el.dataset.open ? null : el.dataset.open; if (S.tab !== "signals") location.hash = "#signals"; else render(); });
   $$("[data-allevel]").forEach((b) => b.onclick = () => { S.al.level = b.dataset.allevel; render(); });
+  $$("[data-awin]").forEach((b) => b.onclick = () => { S.act.win = b.dataset.awin; LS.set("kr.awin", S.act.win); render(); });
+  $$("[data-agroup]").forEach((b) => b.onclick = () => { S.act.group = b.dataset.agroup; render(); });
+  $$("[data-fldir]").forEach((b) => b.onclick = () => { S.fl.dir = b.dataset.fldir; render(); });
+  $$("[data-flgroup]").forEach((b) => b.onclick = () => { S.fl.group = b.dataset.flgroup; render(); });
+  $$("[data-flmin]").forEach((b) => b.onclick = () => { S.fl.min = parseFloat(b.dataset.flmin); render(); });
+  $$("[data-wlgroup]").forEach((b) => b.onclick = () => { S.wl.group = b.dataset.wlgroup; render(); });
+  const bf = $("#botfold"); if (bf) bf.ontoggle = () => { if (S.act.bots !== bf.open) { S.act.bots = bf.open; render(); } };
   $$("details.cw-t").forEach((d) => d.ontoggle = () => { S.openT[d.dataset.k] = d.open; });
   $$("[data-alview]").forEach((b) => b.onclick = () => { S.al.view = b.dataset.alview; LS.set("kr.alview", S.al.view); render(); });
   $$("[data-wlmode]").forEach((b) => b.onclick = () => { S.wl.mode = b.dataset.wlmode; render(); });

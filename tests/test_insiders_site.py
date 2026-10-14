@@ -68,9 +68,9 @@ def test_page_and_assets_are_served(server):
 
 def test_new_dashboard_has_every_screen_and_never_signs():
     js = (site.PAGE / "app.js").read_text(encoding="utf-8")
-    for tab in ("dashboard", "signals", "alerts", "wallets", "paper", "performance", "research", "settings"):
+    for tab in ("activity", "flows", "wallets", "settings"):                     # tracing only (2026-10-14)
         assert f'["{tab}",' in js
-    assert "n_families" in js and "mối liên hệ on-chain" in js and "Chưa đủ mẫu" in js
+    assert "n_families" in js and "function viewFlows" in js and "QUÉT VÒNG" in js
     for bad in ("signTransaction", "sendTransaction", "Keypair", "/swap/v1/swap"):
         assert bad not in js
 
