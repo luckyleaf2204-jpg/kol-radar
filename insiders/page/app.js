@@ -398,14 +398,18 @@ function viewWalletList() {
   let list = (vip().list || []).filter((x) => g === "all" || (x.group || "").includes(g));
   list = list.slice().sort((a, b) => (seen[b.wallet] || 0) - (seen[a.wallet] || 0));
   const rows = list.map((x) => ({ key: x.wallet, sig: String(seen[x.wallet] || ""), cls: "click" + (S.wl.open === x.wallet ? " sel" : ""),
-    cells: [`<span data-wallet="${esc(x.wallet)}">${acct(x.wallet)}</span>`, groupPill(x.group), `${rolePill(x.role)}${x.role_note ? `<div class="small muted">${esc(x.role_note)}</div>` : ""}`,
-      x.parent ? `${x.dir === "in" ? "gửi tiền cho" : "nhận tiền từ"} ${acct(x.parent)}${x.funded_sol ? ` <span class="dim small">${usdOf(x.funded_sol)}</span>` : ""}` : `<span class="dim small">${esc((x.why || "").slice(0, 80))}</span>`,
+    cells: [`<span data-wallet="${esc(x.wallet)}">${acct(x.wallet)}</span>`, groupPill(x.group),
+      `${x.role === "child" ? pill(x.dir === "in" ? "VÍ CHA" : "VÍ CON", x.dir === "in" ? "warn" : "acc") : rolePill(x.role)}${x.role_note ? `<div class="small muted">${esc(x.role_note)}</div>` : ""}`,
+      x.role === "child" && x.parent ? `${x.dir === "in" ? "gửi tiền cho" : "nhận tiền từ"} ${acct(x.parent)}${x.funded_sol ? ` <span class="dim small">${usdOf(x.funded_sol)}</span>` : ""}` : `<span class="dim small">${esc((x.why || "").slice(0, 80))}</span>`,
       `<span class="small">${ago(seen[x.wallet])}</span>`] }));
   const seg = `<span class="seg">${[["all", "Mọi nhóm"], ["INSIDERS", "INSIDERS"], ["DEPTH", "DEPTH"], ["VALENTINO", "VALENTINO"], ["LIÊN KẾT", "Ví liên kết"]].map(([v, l]) => `<button data-wlgroup="${v}" class="${g === v ? "on" : ""}">${l}</button>`).join("")}</span>`;
   return `<section class="panel"><header><h2>Danh sách ví đang theo dõi (${list.length})</h2><span class="grow"></span>${seg}</header>
-    <div class="note">INSIDERS: 76 ví từ các kèo của SOL Pump Insiders. DEPTH, VALENTINO: ví của hai dự án gần nhất. Ví liên kết: ví nhận tiền từ / gửi tiền cho ví trong danh sách, tự thêm và theo dõi 7 ngày. Ví hoạt động gần nhất ở trên.</div>
+    <div class="note">INSIDERS: 76 ví từ các kèo của SOL Pump Insiders. DEPTH, VALENTINO: ví của hai dự án gần nhất. <b>VÍ CHA</b>: ví đã gửi ≥ 1 SOL cho một ví trong danh sách; <b>VÍ CON</b>: ví đã nhận ≥ 0,5 SOL từ một ví trong danh sách. Ví cha/con được tự thêm (từ lịch sử và khi có giao dịch mới), theo dõi tới khi 7 ngày không hoạt động; ví nào là bot thì bị loại và không thêm lại. Ví hoạt động gần nhất ở trên.</div>
     ${table([["Ví", "addr"], ["Nhóm"], ["Vai trò"], ["Vì sao theo dõi"], ["Hoạt động gần nhất", "num"]], rows, { empty: "Chưa có danh sách ví." })}
-    ${S.wl.open ? walletDetail() : ""}</section>`;
+    ${S.wl.open ? walletDetail() : ""}
+    ${(vip().removed || []).length ? `<details class="bots"><summary>Đã loại khỏi danh sách: ${vip().removed.length} ví (bot, ví nguồn là bot, hết hạn)</summary>
+      ${table([["Ví", "addr"], ["Lý do"], ["Liên quan tới", "addr"], ["Lúc loại", "num"]], vip().removed.map((x) => ({ key: "rm" + x.wallet, sig: "",
+        cells: [acct(x.wallet), `<span class="${(x.reason || "").startsWith("bot") ? "warn" : "dim"}">${esc(x.reason)}</span>`, x.parent ? acct(x.parent) : "—", `<span class="small">${ago(x.ts)}</span>`] })))}</details>` : ""}</section>`;
 }
 
 // ---------------------------------------------------------------- 3. live alerts
