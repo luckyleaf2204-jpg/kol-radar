@@ -429,7 +429,18 @@ function pumpBlock(c) {                   // dev, description and links of a coi
   const desc = pi.description ? `<details class="desc"><summary>Giới thiệu: ${esc(pi.description.slice(0, 110))}${pi.description.length > 110 ? "…" : ""}</summary>${esc(pi.description)}</details>` : `<div class="dim small">Không có giới thiệu.</div>`;
   const dev = d && d.wallet ? `<div class="dev"><span class="k">Dev</span> ${acct(d.wallet)} ${pumpName(d.user, d.wallet)}${d.user && d.user.followers ? ` <span class="dim small">${nf(d.user.followers, 0)} người theo dõi</span>` : ""}${d.user && d.user.x ? ` <a class="small" href="https://x.com/${esc(d.user.x)}" target="_blank" rel="noopener nofollow">X @${esc(d.user.x)}</a>` : ""}${d.listed ? " " + pill("DEV LÀ VÍ ĐANG THEO DÕI", "bad") : ""}</div>` : "";
   const extra = [pi.ath_mcap_usd ? "MC đỉnh " + usdK(pi.ath_mcap_usd) : "", pi.complete === false ? "đang trên bonding curve" : pi.complete ? "đã tốt nghiệp" : ""].filter(Boolean).join(" · ");
-  return `<div class="pinfo">${dev}${desc}${links || extra ? `<div class="links">${links}${extra ? `<span class="dim">${extra}</span>` : ""}</div>` : ""}</div>`;
+  const st = d && d.stats, pctTxt = (k, n) => n ? `${k}/${n} (${Math.round(100 * k / n)}%)` : "—";
+  const devStats = !st ? "" : st.pending ? `<div class="dev-st dim small">Đang tính lịch sử dev (số dư, số coin đã tạo, tỷ lệ rug, tăng sau 1h)…</div>`
+    : st.error ? `<div class="dev-st dim small">Chưa lấy được lịch sử dev, sẽ thử lại.</div>`
+    : `<div class="dev-st small">
+        <span><span class="k">Số dư</span> <b>${st.balance_sol !== null && st.balance_sol !== undefined ? usdOf(st.balance_sol) : "—"}</b></span>
+        <span><span class="k">Đã tạo</span> <b>${st.created}${st.created_more ? "+" : ""} coin</b>${st.last_created ? ` <span class="dim">(gần nhất ${ago(st.last_created)})</span>` : ""}</span>
+        <span><span class="k">Rug / chết</span> <b class="${st.judged && st.dead / st.judged >= 0.7 ? "bad" : st.judged && st.dead / st.judged >= 0.4 ? "warn" : "good"}">${pctTxt(st.dead, st.judged)}</b></span>
+        <span><span class="k">Tốt nghiệp</span> <b>${pctTxt(st.graduated, st.judged)}</b></span>
+        <span><span class="k">Sau 1h ≥ ×2</span> <b class="${st.hour_n && st.up2x_1h / st.hour_n >= 0.3 ? "good" : ""}">${pctTxt(st.up2x_1h, st.hour_n)}</b>${st.median_1h ? ` <span class="dim">trung vị ×${nf(st.median_1h, 2)}</span>` : ""}</span>
+        ${st.best_ath ? `<span><span class="k">MC đỉnh tốt nhất</span> <b>${usdK(st.best_ath)}</b></span>` : ""}
+        <span class="dim">tính trên ${st.judged || st.sample} coin gần nhất</span></div>`;
+  return `<div class="pinfo">${dev}${devStats}${desc}${links || extra ? `<div class="links">${links}${extra ? `<span class="dim">${extra}</span>` : ""}</div>` : ""}</div>`;
 }
 function tradeList(w, c) {                // every recorded trade of one wallet on one coin, newest first
   const tr = (w.trades || []).slice().sort((a, b) => b[0] - a[0]);

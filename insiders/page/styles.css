@@ -170,3 +170,6 @@ details.detail[open] > summary::before { content: "▾"; }
 @media (max-width: 700px) { .cw-t .tl { grid-template-columns: 1fr 1fr; } }
 
 details.bots > summary { cursor: pointer; color: var(--muted); padding: 6px 0; }
+
+.dev-st { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 4px 0 2px 10px; border-left: 2px solid var(--line2); }
+.dev-st .k { font: 600 10px/1.4 var(--mono); text-transform: uppercase; color: var(--muted); margin-right: 3px; }
