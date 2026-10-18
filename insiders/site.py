@@ -15,6 +15,7 @@ import json
 import os
 import re
 import subprocess
+import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -90,10 +91,32 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                 return False
             return True
 
+        def _fail(self, e: Exception) -> None:
+            """An exception here used to close the socket with no status line (Render reports that as 502)."""
+            try:
+                from insiders.vip import redact
+                msg = redact(str(e)[:240])
+            except Exception:
+                msg = type(e).__name__
+            path = (self.path or "").split("?", 1)[0]
+            frames = " | ".join(f"{f.filename.rsplit('/', 1)[-1]}:{f.lineno} {f.name}"
+                                for f in traceback.extract_tb(e.__traceback__, limit=8))
+            print(f"[insiders] {self.command} {path} {type(e).__name__}: {msg} [{frames}]", flush=True)
+            try:
+                self._json(500, {"error": "internal"})
+            except Exception:
+                pass
+
         def do_HEAD(self):
             self.do_GET()
 
         def do_GET(self):
+            try:
+                self._do_GET()
+            except Exception as e:
+                self._fail(e)
+
+        def _do_GET(self):
             path = self.path.split("?", 1)[0]
             if path == "/healthz":                           # counts only: no address, no alert content
                 h = dict(health)
@@ -179,6 +202,12 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
             return self._json(404, {"error": "route"})
 
         def do_POST(self):
+            try:
+                self._do_POST()
+            except Exception as e:
+                self._fail(e)
+
+        def _do_POST(self):
             path = self.path.split("?", 1)[0]
             n = int(self.headers.get("content-length") or 0)
             if n:
