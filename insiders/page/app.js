@@ -346,6 +346,7 @@ function coinBox(c0, load) {
     ${pumpBlock(c)}
     ${c.wallets.slice().sort((x, y) => (y.buy_sol || 0) - (x.buy_sol || 0)).map((w) => walletLine(w, c)).join("")}</article>`;
 }
+const focusNote = () => { const f = vip().focus || ["ALL"]; return f.includes("ALL") ? "" : `<div>${pill("ĐANG TẬP TRUNG: " + f.join(", ") + (f.includes("DEPTH") ? " (gồm SNACKS)" : ""), "warn")} <span class="note">Chỉ theo dõi nhóm này và ví cha/con của nó. Đổi bằng biến INSIDER_FOCUS trên Render (ALL = mọi nhóm).</span></div>`; };
 function viewActivity() {
   const t = now(), lim = WIN[S.act.win] || WIN["24h"], g = S.act.group, info = walletInfo();
   const inGroup = (c) => g === "all" || c.wallets.some((w) => ((info[w.wallet] || {}).group || "").includes(g));
@@ -356,6 +357,7 @@ function viewActivity() {
   return `<section class="panel"><header><h2>Hoạt động mua bán của ví trong danh sách</h2><span class="grow"></span>
       ${seg("awin", [["1h", "1 giờ"], ["6h", "6 giờ"], ["24h", "24 giờ"], ["all", "Tất cả"]], S.act.win)}
       ${seg("agroup", [["all", "Mọi nhóm"], ["INSIDERS", "INSIDERS"], ["DEPTH", "DEPTH"], ["VALENTINO", "VALENTINO"], ["LIÊN KẾT", "Ví liên kết"]], g)}</header>
+    ${focusNote()}
     <div class="note">Mỗi coin một ô, một màu: coin mà ví trong danh sách mua ≥ ${thr((S.w.config || {}).board_min_sol || 1)}. Ô có nhiều nhóm ví cùng vào lên đầu. Số tiền quy ra USD theo giá SOL hiện tại; MC là vốn hoá coin lúc mua/bán. Ví BOT (giao dịch rất nhiều coin mỗi ngày) được gấp xuống cuối.</div>
     ${main.length ? `<div class="coins">${main.slice(0, 40).map((c, i) => coinBox(c, i < 15)).join("")}</div>` : `<div class="empty">Chưa có coin nào trong khung thời gian này.</div>`}
     ${bots.length ? `<details class="bots" ${S.act.bots ? "open" : ""} id="botfold"><summary>${bots.length} coin chỉ có ví BOT giao dịch</summary><div class="coins">${S.act.bots ? bots.slice(0, 40).map((c) => coinBox(c, false)).join("") : ""}</div></details>` : ""}</section>`;
@@ -404,7 +406,8 @@ function viewWalletList() {
       `<span class="small">${ago(seen[x.wallet])}</span>`] }));
   const seg = `<span class="seg">${[["all", "Mọi nhóm"], ["INSIDERS", "INSIDERS"], ["DEPTH", "DEPTH"], ["VALENTINO", "VALENTINO"], ["LIÊN KẾT", "Ví liên kết"]].map(([v, l]) => `<button data-wlgroup="${v}" class="${g === v ? "on" : ""}">${l}</button>`).join("")}</span>`;
   return `<section class="panel"><header><h2>Danh sách ví đang theo dõi (${list.length})</h2><span class="grow"></span>${seg}</header>
-    <div class="note">INSIDERS: 76 ví từ các kèo của SOL Pump Insiders. DEPTH, VALENTINO: ví của hai dự án gần nhất. <b>VÍ CHA</b>: ví đã gửi ≥ 1 SOL cho một ví trong danh sách; <b>VÍ CON</b>: ví đã nhận ≥ 0,5 SOL từ một ví trong danh sách. Ví cha/con được tự thêm (từ lịch sử và khi có giao dịch mới), theo dõi tới khi 7 ngày không hoạt động; ví nào là bot thì bị loại và không thêm lại. Ví hoạt động gần nhất ở trên.</div>
+    ${focusNote()}
+    <div class="note">DEPTH: ví của dự án DEPTH và SNACKS (cùng một nhóm, đã xác nhận bằng dòng tiền). INSIDERS: 76 ví từ các kèo của SOL Pump Insiders. DEPTH, VALENTINO: ví của hai dự án gần nhất. <b>VÍ CHA</b>: ví đã gửi ≥ 1 SOL cho một ví trong danh sách; <b>VÍ CON</b>: ví đã nhận ≥ 0,5 SOL từ một ví trong danh sách. Ví cha/con được tự thêm (từ lịch sử và khi có giao dịch mới), theo dõi tới khi 7 ngày không hoạt động; ví nào là bot thì bị loại và không thêm lại. Ví hoạt động gần nhất ở trên.</div>
     ${table([["Ví", "addr"], ["Nhóm"], ["Vai trò"], ["Vì sao theo dõi"], ["Hoạt động gần nhất", "num"]], rows, { empty: "Chưa có danh sách ví." })}
     ${S.wl.open ? walletDetail() : ""}
     ${(vip().removed || []).length ? `<details class="bots"><summary>Đã loại khỏi danh sách: ${vip().removed.length} ví (bot, ví nguồn là bot, hết hạn)</summary>
