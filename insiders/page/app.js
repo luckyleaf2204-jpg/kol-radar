@@ -71,8 +71,8 @@ function table(cols, rows, opts = {}) {
 }
 
 // ---------------------------------------------------------------- API + boot
-async function api(path) {
-  const r = await fetch(path, { headers: { "X-Access-Code": S.code }, cache: "no-store" });
+async function api(path, method) {
+  const r = await fetch(path, { method: method || "GET", headers: { "X-Access-Code": S.code }, cache: "no-store" });
   if (r.status === 401) { showLogin("Sai mã truy cập"); throw new Error("auth"); }
   if (!r.ok) throw new Error("http " + r.status);
   return r.json();
@@ -347,6 +347,13 @@ function coinBox(c0, load) {
     ${c.wallets.slice().sort((x, y) => (y.buy_sol || 0) - (x.buy_sol || 0)).map((w) => walletLine(w, c)).join("")}</article>`;
 }
 const focusNote = () => { const f = vip().focus || ["ALL"]; return f.includes("ALL") ? "" : `<div>${pill("ĐANG TẬP TRUNG: " + f.join(", ") + (f.includes("DEPTH") ? " (gồm SNACKS)" : ""), "warn")} <span class="note">Chỉ theo dõi nhóm này và ví cha/con của nó. Đổi bằng biến INSIDER_FOCUS trên Render (ALL = mọi nhóm).</span></div>`; };
+const turboBar = () => {               // "Quét liên tục": poll every wallet back to back while on (server switches it off after a while)
+  const v = vip(), on = !!v.turbo, left = Math.max(0, (v.turbo_until || 0) - now()), p = v.poll || {};
+  const mins = Math.round((v.turbo_max_s || 10800) / 60);
+  return `<div class="turbo ${on ? "on" : ""}"><button class="btn ${on ? "primary" : ""}" id="turbo" data-on="${on ? 0 : 1}">${on ? "■ Tắt quét liên tục" : "▶ Bật quét liên tục"}</button>
+    <span class="small">${on ? `${pill("ĐANG QUÉT LIÊN TỤC", "good")} tự tắt sau ${Math.ceil(left / 60)} phút · vòng quét ${p.wallets || 0} ví trong ${p.round_s ?? "?"} giây`
+      : `<span class="dim">Bình thường: ví nhận giao dịch tức thì qua kết nối trực tiếp, quét lại định kỳ. Bật khi sắp có kèo để quét lại toàn bộ ví liên tục (tốn thêm lượt gọi Helius, tự tắt sau ${mins} phút).</span>`}</span></div>`;
+};
 function viewActivity() {
   const t = now(), lim = WIN[S.act.win] || WIN["24h"], g = S.act.group, info = walletInfo();
   const inGroup = (c) => g === "all" || c.wallets.some((w) => ((info[w.wallet] || {}).group || "").includes(g));
@@ -358,6 +365,7 @@ function viewActivity() {
       ${seg("awin", [["1h", "1 giờ"], ["6h", "6 giờ"], ["24h", "24 giờ"], ["all", "Tất cả"]], S.act.win)}
       ${seg("agroup", [["all", "Mọi nhóm"], ["INSIDERS", "INSIDERS"], ["DEPTH", "DEPTH"], ["VALENTINO", "VALENTINO"], ["LIÊN KẾT", "Ví liên kết"]], g)}</header>
     ${focusNote()}
+    ${turboBar()}
     <div class="note">Mỗi coin một ô, một màu: coin mà ví trong danh sách mua ≥ ${thr((S.w.config || {}).board_min_sol || 1)}. Ô có nhiều nhóm ví cùng vào lên đầu. Số tiền quy ra USD theo giá SOL hiện tại; MC là vốn hoá coin lúc mua/bán. Ví BOT (giao dịch rất nhiều coin mỗi ngày) được gấp xuống cuối.</div>
     ${main.length ? `<div class="coins">${main.slice(0, 40).map((c, i) => coinBox(c, i < 15)).join("")}</div>` : `<div class="empty">Chưa có coin nào trong khung thời gian này.</div>`}
     ${bots.length ? `<details class="bots" ${S.act.bots ? "open" : ""} id="botfold"><summary>${bots.length} coin chỉ có ví BOT giao dịch</summary><div class="coins">${S.act.bots ? bots.slice(0, 40).map((c) => coinBox(c, false)).join("") : ""}</div></details>` : ""}</section>`;
@@ -706,6 +714,12 @@ function bind() {
   const lo = $("#logout"); if (lo) lo.onclick = () => { LS.del("insAccessCode"); location.reload(); };
   if ($("#chart")) drawChart();
 }
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("#turbo"); if (!b) return;
+  b.disabled = true;
+  try { await api("/api/insiders/turbo?on=" + b.dataset.on, "POST"); toast(b.dataset.on === "1" ? "Đã bật quét liên tục" : "Đã tắt quét liên tục"); await refresh(); }
+  catch (err) { if (err.message !== "auth") toast("Không đổi được (" + err.message + ")"); b.disabled = false; }
+});
 document.addEventListener("click", async (e) => {
   const c = e.target.closest("[data-copy]"); if (!c) return;
   e.preventDefault(); e.stopPropagation();

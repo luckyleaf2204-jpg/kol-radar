@@ -212,3 +212,24 @@ def test_handler_returns_json_500_instead_of_dropping_the_socket(server, monkeyp
     monkeypatch.setattr(svc, "watcher", Bad(), raising=False)
     st, body = call(base + "/api/insiders/watch", "code-1")
     assert st == 500 and json.loads(body) == {"error": "internal"}
+
+
+def test_continuous_scan_switch_is_post_only_and_guarded(server):
+    base, svc = server
+    assert call(base + "/api/insiders/turbo?on=1", "code-1", method="POST")[0] == 503   # no stream running
+    box = {"on": False}
+
+    class V:
+        def set_turbo(self, on):
+            box["on"] = on
+            return 123.0 if on else 0
+
+        def turbo(self):
+            return box["on"]
+    svc.watcher = type("W", (), {"vip": V()})()
+    assert call(base + "/api/insiders/turbo?on=1", None, method="POST")[0] == 401
+    assert call(base + "/api/insiders/turbo?on=1", "code-1")[0] == 404                  # GET: no such route
+    st, body = call(base + "/api/insiders/turbo?on=1", "code-1", method="POST")
+    assert st == 200 and json.loads(body) == {"turbo": True, "turbo_until": 123.0}
+    st, body = call(base + "/api/insiders/turbo?on=0", "code-1", method="POST")
+    assert st == 200 and json.loads(body)["turbo"] is False

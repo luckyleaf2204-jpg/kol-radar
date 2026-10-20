@@ -129,6 +129,7 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                                     "pushed": v.stat.get("pushed", 0), "handled": v.stat.get("handled", 0),
                                     "missed": v.stat.get("missed", 0), "error": v.stat.get("error"),
                                     "rpc_throttled": getattr(v.rpc, "throttled", None),
+                                    "turbo": v.turbo() if hasattr(v, "turbo") else None,
                                     "wallets": len(v.wallets()), "poll": dict(getattr(v, "pstat", {}) or {}),
                                     "flows": len(w.state.get("flows", [])),
                                     "provider": __import__("insiders.vip", fromlist=["PROVIDER"]).PROVIDER}
@@ -214,6 +215,14 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                 self.rfile.read(min(n, 65536))
             if not path.startswith("/api/") or not self._authed():
                 return None if path.startswith("/api/") else self._json(404, {"error": "route"})
+            if path == "/api/insiders/turbo":                 # "Quét liên tục" on / off (?on=1 | ?on=0)
+                from urllib.parse import parse_qs, urlsplit
+                v = getattr(getattr(svc, "watcher", None), "vip", None)
+                if v is None:
+                    return self._json(503, {"error": "no_stream"})
+                on = (parse_qs(urlsplit(self.path).query).get("on") or ["0"])[0] == "1"
+                until = v.set_turbo(on)
+                return self._json(200, {"turbo": v.turbo(), "turbo_until": until})
             if path == "/api/insiders/run":
                 if not svc.key:
                     return self._json(503, {"error": "helius_key_missing"})
