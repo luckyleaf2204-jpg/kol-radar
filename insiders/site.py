@@ -129,6 +129,7 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                                     "pushed": v.stat.get("pushed", 0), "handled": v.stat.get("handled", 0),
                                     "missed": v.stat.get("missed", 0), "error": v.stat.get("error"),
                                     "rpc_throttled": getattr(v.rpc, "throttled", None),
+                                    "rpc_gap_s": getattr(v.rpc, "gap_s", None),
                                     "turbo": v.turbo() if hasattr(v, "turbo") else None,
                                     "wallets": len(v.wallets()), "poll": dict(getattr(v, "pstat", {}) or {}),
                                     "flows": len(w.state.get("flows", [])),
