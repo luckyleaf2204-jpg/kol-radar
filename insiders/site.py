@@ -15,6 +15,7 @@ import json
 import os
 import re
 import subprocess
+import time
 import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -130,6 +131,9 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                                     "missed": v.stat.get("missed", 0), "error": v.stat.get("error"),
                                     "rpc_throttled": getattr(v.rpc, "throttled", None),
                                     "rpc_gap_s": getattr(v.rpc, "gap_s", None),
+                                    "children": len(v.state.get("children") or {}),
+                                    "children_seed": sum(1 for x in (v.state.get("children") or {}).values() if x.get("seed")),
+                                    "removed_by_day": removed_counts(v.state.get("removed") or {}),
                                     "turbo": v.turbo() if hasattr(v, "turbo") else None,
                                     "wallets": len(v.wallets()), "poll": dict(getattr(v, "pstat", {}) or {}),
                                     "flows": len(w.state.get("flows", [])),
@@ -230,6 +234,17 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                 return self._json(200, {"started": svc.start(), "running": svc.running})
             return self._json(404, {"error": "route"})
     return H
+
+
+def removed_counts(removed: dict) -> dict:
+    """Why followed wallets left, per UTC day: counts only, no address."""
+    out: dict = {}
+    for x in removed.values():
+        day = time.strftime("%Y-%m-%d", time.gmtime(x.get("ts") or 0))
+        why = str(x.get("reason") or "?").split(" (")[0]
+        out.setdefault(day, {})
+        out[day][why] = out[day].get(why, 0) + 1
+    return dict(sorted(out.items()))
 
 
 def serve(host: str = "127.0.0.1", port: int = 8780, watch: bool = True, svc: InsiderService | None = None):
