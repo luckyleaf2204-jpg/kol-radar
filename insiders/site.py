@@ -132,6 +132,7 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                                     "rpc_throttled": getattr(v.rpc, "throttled", None),
                                     "rpc_gap_s": getattr(v.rpc, "gap_s", None),
                                     "children": len(v.state.get("children") or {}),
+                                    "focus": getattr(v, "focus", None) or ["ALL"], "base": len(getattr(v, "base", {}) or {}),
                                     "children_seed": sum(1 for x in (v.state.get("children") or {}).values() if x.get("seed")),
                                     "removed_by_day": removed_counts(v.state.get("removed") or {}),
                                     "turbo": v.turbo() if hasattr(v, "turbo") else None,
