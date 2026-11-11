@@ -363,7 +363,7 @@ function viewActivity() {
   const seg = (k, opts, cur) => `<span class="seg">${opts.map(([v, l]) => `<button data-${k}="${v}" class="${cur === v ? "on" : ""}">${esc(l)}</button>`).join("")}</span>`;
   return `<section class="panel"><header><h2>Hoạt động mua bán của ví trong danh sách</h2><span class="grow"></span>
       ${seg("awin", [["1h", "1 giờ"], ["6h", "6 giờ"], ["24h", "24 giờ"], ["all", "Tất cả"]], S.act.win)}
-      ${seg("agroup", [["all", "Mọi nhóm"], ["INSIDERS", "INSIDERS"], ["DEPTH", "DEPTH"], ["STANK", "STANK"], ["VALENTINO", "VALENTINO"], ["LIÊN KẾT", "Ví liên kết"]], g)}</header>
+      ${seg("agroup", [["all", "Mọi nhóm"], ["INSIDERS", "INSIDERS"], ["DEPTH", "DEPTH"], ["STANK", "STANK"], ["LIÊN KẾT", "Ví liên kết"]], g)}</header>
     ${focusNote()}
     ${turboBar()}
     <div class="note">Mỗi coin một ô, một màu: coin mà ví trong danh sách mua ≥ ${thr((S.w.config || {}).board_min_sol || 1)}. Ô có nhiều nhóm ví cùng vào lên đầu. Số tiền quy ra USD theo giá SOL hiện tại; MC là vốn hoá coin lúc mua/bán. Ví BOT (giao dịch rất nhiều coin mỗi ngày) được gấp xuống cuối.</div>
@@ -397,7 +397,7 @@ function viewFlows() {
   const seg = (k, opts, cur) => `<span class="seg">${opts.map(([v, l]) => `<button data-${k}="${v}" class="${String(cur) === String(v) ? "on" : ""}">${esc(l)}</button>`).join("")}</span>`;
   return `<section class="panel"><header><h2>Dòng tiền ra vào</h2><span class="grow"></span>
       ${seg("fldir", [["all", "Cả hai chiều"], ["in", "Tiền vào"], ["out", "Tiền ra"]], f.dir)}
-      ${seg("flgroup", [["all", "Mọi nhóm"], ["INSIDERS", "INSIDERS"], ["DEPTH", "DEPTH"], ["STANK", "STANK"], ["VALENTINO", "VALENTINO"], ["LIÊN KẾT", "Ví liên kết"]], f.group)}
+      ${seg("flgroup", [["all", "Mọi nhóm"], ["INSIDERS", "INSIDERS"], ["DEPTH", "DEPTH"], ["STANK", "STANK"], ["LIÊN KẾT", "Ví liên kết"]], f.group)}
       ${seg("flmin", [[0.5, "≥ 0,5 SOL"], [5, "≥ 5 SOL"], [50, "≥ 50 SOL"]], f.min)}</header>
     <div class="note">Mọi lần ví trong danh sách nhận SOL / token từ ví khác hoặc chuyển cho ví khác (từ ${thr(0.5)}). Ví đối tác nhận ≥ ${thr((S.w.config || {}).adopt_min_sol || 0.5)} hoặc gửi ≥ 1 SOL cho ví trong danh sách được tự thêm vào theo dõi 7 ngày. Dòng viền đỏ: hai ví đều trong danh sách.</div>
     ${top.length ? `<h2>Ví đối tác nổi bật</h2>${table([["Ví đối tác", "addr"], ["Số ví trong danh sách đã giao dịch", "num"], ["Đã nhận từ danh sách", "num"], ["Đã gửi cho danh sách", "num"], ["Gần nhất", "num"]], top)}` : ""}
@@ -412,10 +412,10 @@ function viewWalletList() {
       `${x.role === "child" ? pill(x.dir === "in" ? "VÍ CHA" : "VÍ CON", x.dir === "in" ? "warn" : "acc") : rolePill(x.role)}${x.role_note ? `<div class="small muted">${esc(x.role_note)}</div>` : ""}`,
       x.role === "child" && x.parent ? `${x.dir === "in" ? "gửi tiền cho" : "nhận tiền từ"} ${acct(x.parent)}${x.funded_sol ? ` <span class="dim small">${usdOf(x.funded_sol)}</span>` : ""}` : `<span class="dim small">${esc((x.why || "").slice(0, 80))}</span>`,
       `<span class="small">${ago(seen[x.wallet])}</span>`] }));
-  const seg = `<span class="seg">${[["all", "Mọi nhóm"], ["INSIDERS", "INSIDERS"], ["DEPTH", "DEPTH"], ["STANK", "STANK"], ["VALENTINO", "VALENTINO"], ["LIÊN KẾT", "Ví liên kết"]].map(([v, l]) => `<button data-wlgroup="${v}" class="${g === v ? "on" : ""}">${l}</button>`).join("")}</span>`;
+  const seg = `<span class="seg">${[["all", "Mọi nhóm"], ["INSIDERS", "INSIDERS"], ["DEPTH", "DEPTH"], ["STANK", "STANK"], ["LIÊN KẾT", "Ví liên kết"]].map(([v, l]) => `<button data-wlgroup="${v}" class="${g === v ? "on" : ""}">${l}</button>`).join("")}</span>`;
   return `<section class="panel"><header><h2>Danh sách ví đang theo dõi (${list.length})</h2><span class="grow"></span>${seg}</header>
     ${focusNote()}
-    <div class="note">DEPTH: ví của dự án DEPTH và SNACKS (cùng một nhóm, đã xác nhận bằng dòng tiền). STANK: ví của nhóm STANK (danh sách ngày 11/11, chưa xác minh dòng tiền nội nhóm). INSIDERS: 76 ví từ các kèo của SOL Pump Insiders. DEPTH, VALENTINO: ví của hai dự án gần nhất. <b>VÍ CHA</b>: ví đã gửi ≥ 1 SOL cho một ví trong danh sách; <b>VÍ CON</b>: ví đã nhận ≥ 0,5 SOL từ một ví trong danh sách. Ví cha/con được tự thêm (từ lịch sử và khi có giao dịch mới), theo dõi tới khi 7 ngày không hoạt động; ví nào là bot thì bị loại và không thêm lại. Ví hoạt động gần nhất ở trên.</div>
+    <div class="note">DEPTH: ví của dự án DEPTH và SNACKS (cùng một nhóm, đã xác nhận bằng dòng tiền). STANK: ví của nhóm STANK (danh sách ngày 11/11, chưa xác minh dòng tiền nội nhóm). INSIDERS: 76 ví từ các kèo của SOL Pump Insiders.  <b>VÍ CHA</b>: ví đã gửi ≥ 1 SOL cho một ví trong danh sách; <b>VÍ CON</b>: ví đã nhận ≥ 0,5 SOL từ một ví trong danh sách. Ví cha/con được tự thêm (từ lịch sử và khi có giao dịch mới), theo dõi tới khi 7 ngày không hoạt động; ví nào là bot thì bị loại và không thêm lại. Ví hoạt động gần nhất ở trên.</div>
     ${table([["Ví", "addr"], ["Nhóm"], ["Vai trò"], ["Vì sao theo dõi"], ["Hoạt động gần nhất", "num"]], rows, { empty: "Chưa có danh sách ví." })}
     ${S.wl.open ? walletDetail() : ""}
     ${(vip().removed || []).length ? `<details class="bots"><summary>Đã loại khỏi danh sách: ${vip().removed.length} ví (bot, ví nguồn là bot, hết hạn)</summary>
