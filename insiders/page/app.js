@@ -374,11 +374,11 @@ function viewFlows() {
   const info = walletInfo(), kids = vip().kids || {}, f = S.fl;
   const rows0 = ((S.w && S.w.flows) || []).filter((x) => (f.dir === "all" || x.dir === f.dir)
     && (f.group === "all" || ((info[x.wallet] || {}).group || "").includes(f.group))
-    && (x.mint ? true : (x.sol || 0) >= f.min));
+    && (x.mint ? (x.usd || 0) >= ((S.w.config || {}).token_flow_min_usd || 50) : (x.sol || 0) >= f.min));
   const rows = rows0.slice(0, 250).map((x) => {
     const me = `${acct(x.wallet)} ${groupPill((info[x.wallet] || {}).group)}`;
     const other = x.other ? `${acct(x.other)}${x.label ? " " + pill(x.label, "") : ""}${x.listed_other ? " " + pill("trong danh sách", "acc") : kids[x.other] ? " " + pill("đã thêm theo dõi", "acc") : ""}` : `<span class="unk">không rõ</span>`;
-    const amt = x.mint ? `<b class="mono">${tokAmt(x.tokens / 1e6)}</b> <span class="small">${esc(S.names[x.mint] || short(x.mint))}</span>` : `<b class="mono">${usdOf(x.sol)}</b>`;
+    const amt = x.mint ? `<b class="mono">${usdK(x.usd)}</b> <span class="small">${tokAmt(x.ui)} <b>${esc(x.symbol ? "$" + x.symbol : S.names[x.mint] || short(x.mint))}</b></span>${x.name ? `<div class="dim small">${esc(x.name)}</div>` : ""} <span class="copy" data-copy="${esc(x.mint)}" title="Sao chép CA">⧉</span>` : `<b class="mono">${usdOf(x.sol)}</b>`;
     return { key: x.sig + x.wallet + x.dir + (x.mint || ""), sig: "", cls: x.listed_other ? "strong" : "",
       cells: [`<span class="small">${when(x.ts)}</span><div class="dim small">${ago(x.ts)}</div>`,
         x.dir === "out" ? `${me}<div class="warn small">chuyển cho ↓</div>${other}` : `${other}<div class="good small">chuyển cho ↓</div>${me}`,
