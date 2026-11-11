@@ -21,7 +21,7 @@ const ROLE = { holder: ["VÍ GỐC", "bad"], successor: ["VÍ KẾ THỪA", "war
 const GROUP_CLS = { INSIDERS: "acc", DEPTH: "warn", VALENTINO: "bad", STANK: "good" };
 const groupPill = (g) => g ? pill(g, GROUP_CLS[g] || GROUP_CLS[(g.match(/(INSIDERS|DEPTH|VALENTINO|STANK)/) || [])[1]] || "") : "";
 const TIER = { main: ["main", "good", "≥ 2 coin thắng"], watch: ["watch", "warn", "1 coin thắng"], none: ["chưa thắng", "", "chưa có coin thắng"] };
-const KIND = { BUY: "mua", CREATE: "tạo + mua", RECEIVE: "nhận token", SELL: "bán", SEND: "chuyển token", SOL_IN: "nhận SOL", FUND: "nạp ví mới", VIPSTRONG: "nhiều nhóm cùng vào" };
+const KIND = { GROUPBUY: "cả nhóm cùng mua", BUYSEND: "mua rồi chuyển đi", BUY: "mua", CREATE: "tạo coin", RECEIVE: "nhận token", SELL: "bán", SEND: "chuyển token", SOL_IN: "nhận SOL", FUND: "nạp ví mới", VIPSTRONG: "nhiều nhóm cùng vào" };
 const EXIT = { tp2x: "chốt ×2", stop: "cắt lỗ −35%", trail: "trailing", time30: "hết 30 phút", time60: "hết 60 phút", wallet_exit: "ví tín hiệu bán", crash: "sập giá", end: "hết 24 giờ" };
 
 // ---------------------------------------------------------------- formatting
@@ -469,7 +469,7 @@ function coinCard(mint, items) {          // one coin, one box, one colour: ever
   const name = a0.symbol ? "$" + a0.symbol : S.names[mint] || short(mint), fresh = items.some((a) => a.ts > S.seenAlert);
   const age = items.find((a) => a.age_h !== undefined && a.age_h !== null), mcap = items.find((a) => a.mcap);
   const nW = c ? c.wallets.length : new Set(items.map((a) => a.wallet)).size;
-  const nT = c ? c.wallets.reduce((k, w) => k + (w.trades || []).length, 0) : items.filter((a) => a.kind !== "VIPSTRONG").length;
+  const nT = c ? c.wallets.reduce((k, w) => k + (w.trades || []).length, 0) : items.filter((a) => !["VIPSTRONG", "GROUPBUY"].includes(a.kind)).length;
   let lines;
   if (c && c.wallets.length) {
     lines = c.wallets.slice().sort((x, y) => (y.buy_sol || 0) - (x.buy_sol || 0)).map((w) => {
@@ -483,18 +483,18 @@ function coinCard(mint, items) {          // one coin, one box, one colour: ever
         ${tradeList(w, c)}</div>`;
     }).join("");
   } else {
-    lines = items.filter((a) => a.kind !== "VIPSTRONG").map((a) => `<div class="cw"><span class="cw-w">${acct(a.wallet)}</span>
+    lines = items.filter((a) => !["VIPSTRONG", "GROUPBUY"].includes(a.kind)).map((a) => `<div class="cw"><span class="cw-w">${acct(a.wallet)}</span>
       <span class="cw-b">${a.kind === "SELL" ? "BÁN" : "MUA"} <b>${usdOf(a.sol)}</b></span><span class="cw-s dim">${ago(a.ts)}</span><span class="cw-h"></span></div>`).join("");
   }
   return `<article class="coin${strong ? " is-strong" : ""}" style="--c:${color}">
     <header><span class="sw"></span><b class="cn">${esc(name)}</b><span class="copy" data-copy="${esc(mint)}" title="Sao chép CA">⧉</span>
-      ${strong ? pill("MẠNH · " + (strong.n_families || strong.n_wallets || 2) + " nhóm ví", "bad") : ""}${fresh ? pill("MỚI", "acc") : ""}
+      ${strong ? pill(strong.kind === "GROUPBUY" ? `CẢ NHÓM ${strong.group} · ${strong.n_wallets} ví` : "MẠNH · " + (strong.n_families || strong.n_wallets || 2) + " nhóm ví", "bad") : ""}${fresh ? pill("MỚI", "acc") : ""}
       <span class="muted small"><b>${nW} ví · ${nT} lệnh</b> · ${age ? dur(age.age_h * 3600) + " tuổi · " : ""}${mcap ? "MC " + usdK(mcap.mcap) + " · " : ""}${ago(items[0].ts)}</span>
       <span class="grow"></span>${pumpBtn(mint)}</header>
     ${pumpBlock(c)}
     ${lines}</article>`;
 }
-const TRADE_KINDS = ["BUY", "CREATE", "SELL", "VIPSTRONG"], MOVE_KINDS = ["RECEIVE", "SEND", "SOL_IN", "FUND"];
+const TRADE_KINDS = ["BUY", "CREATE", "SELL", "VIPSTRONG", "GROUPBUY"], MOVE_KINDS = ["BUYSEND", "RECEIVE", "SEND", "SOL_IN", "FUND"];
 function alertStatus(a) {
   const k = (x) => [x.wallet, x.mint || x.from || x.to, x.kind].join("|");
   const older = alerts().find((b) => b !== a && k(b) === k(a) && b.ts <= a.ts && a.ts - b.ts <= 120 && b.sig !== a.sig);
@@ -506,7 +506,7 @@ function viewAlerts() {
   const cfg = S.w.config || {}, all = alerts(), view = S.al.view || "trade";
   const trades = all.filter((a) => TRADE_KINDS.includes(a.kind)), moves = all.filter((a) => MOVE_KINDS.includes(a.kind));
   const fresh = (xs) => xs.filter((a) => a.ts > S.seenAlert).length;
-  const nCoins = new Set(trades.filter((a) => a.mint).map((a) => a.mint)).size, nTrades = trades.filter((a) => a.kind !== "VIPSTRONG").length;
+  const nCoins = new Set(trades.filter((a) => a.mint).map((a) => a.mint)).size, nTrades = trades.filter((a) => !["VIPSTRONG", "GROUPBUY"].includes(a.kind)).length;
   const tabs = `<span class="seg">${[["trade", "Mua / bán coin", trades, `${nCoins} coin · ${nTrades} lệnh`], ["move", "Chuyển / nhận", moves, `${moves.length}`]].map(([v, l, xs, cnt]) =>
     `<button data-alview="${v}" class="${view === v ? "on" : ""}">${l} <span class="dim">${cnt}</span>${fresh(xs) ? ` <span class="badge">${fresh(xs)} mới</span>` : ""}</button>`).join("")}</span>`;
   let body;
@@ -520,14 +520,14 @@ function viewAlerts() {
       <span class="note">Số tiền quy ra USD theo giá SOL hiện tại. Mỗi coin một ô, một màu. Mỗi ví một dòng: MUA $ (số tiền bỏ ra) · MC (vốn hoá coin lúc mua) · BÁN $ · MC lúc bán · % token còn giữ. “Chưa bán” = đã mua, chưa có lệnh bán từ lúc theo dõi. “Mua trước khi theo dõi” = ví được thêm vào danh sách sau khi đã mua nên chỉ thấy lệnh bán. Coin mới hoạt động nằm trên. MẠNH = ≥ 2 nhóm ví độc lập cùng mua ≥ ${thr(cfg.min_sol || 4)} trong ${dur(cfg.strong_window_s || 86400)}. MC <span class="est"></span> tính từ giá lệnh của ví.</span></div>
       ${cards ? `<div class="coins">${cards}</div>` : `<div class="empty">Chưa có lệnh mua / bán nào đạt ngưỡng ${thr(cfg.min_sol || 4)}.</div>`}`;
   } else {
-    const label = { RECEIVE: ["NHẬN TOKEN", "acc"], SEND: ["CHUYỂN TOKEN", "warn"], SOL_IN: ["NHẬN SOL", "acc"], FUND: ["NẠP VÍ MỚI", "warn"] };
+    const label = { BUYSEND: ["MUA RỒI CHUYỂN", "bad"], RECEIVE: ["NHẬN TOKEN", "acc"], SEND: ["CHUYỂN TOKEN", "warn"], SOL_IN: ["NHẬN SOL", "acc"], FUND: ["NẠP VÍ MỚI", "warn"] };
     const rows = moves.slice(0, 150).map((a) => {
-      const out = a.kind === "SEND" || a.kind === "FUND", other = out ? a.to : a.from;
+      const out = a.kind === "SEND" || a.kind === "FUND" || a.kind === "BUYSEND", other = out ? a.to : a.from;
       const flow = out ? `${acct(a.wallet)} <span class="dim">→</span> ${other ? acct(other) : `<span class="unk">không rõ</span>`}`
         : `${other ? acct(other) : `<span class="unk">không rõ</span>`} <span class="dim">→</span> ${acct(a.wallet)}`;
       return { key: a.sig + a.kind + a.wallet, sig: "",
         cells: [`<span class="small">${when(a.ts)}</span><div class="dim small">${ago(a.ts)}</div>`, pill(...(label[a.kind] || [a.kind, ""])), flow,
-          a.mint ? coinCell(a) : `<span class="mono">SOL</span>`, `<b class="mono">${usdOf(a.sol)}</b>`, alertStatus(a)] };
+          a.mint ? coinCell(a) : `<span class="mono">SOL</span>`, `<b class="mono">${a.usd ? usdK(a.usd) : usdOf(a.sol)}</b>`, alertStatus(a)] };
     });
     body = `<div class="note">Tiền và token chuyển qua lại: ví theo dõi nhận / chuyển token (giá trị quy ra USD theo báo giá), nhận SOL từ ví ngoài danh sách, hoặc nạp SOL cho ví mới (ví mới nhận ≥ ${thr(cfg.adopt_min_sol || 0.5)} tự được theo dõi thành ví con). SOL nhận từ một ví khác trong danh sách, hoặc tiền bán coin, không bị báo lại ở đây.</div>
       ${table([["Lúc"], ["Loại"], ["Từ → đến", "addr"], ["Token"], ["Giá trị", "num"], ["Trạng thái"]], rows, { empty: "Chưa có lần chuyển / nhận nào đạt ngưỡng." })}`;
@@ -737,7 +737,7 @@ function notifyNew() {          // a sound + system notification for strong aler
   if (S.sound) { try { const ctx = new AudioContext(), o = ctx.createOscillator(); o.frequency.value = 880; o.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.25); } catch (_) { /* no audio */ } }
   if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
   if ("Notification" in window && Notification.permission === "granted") {
-    const a = fresh[0]; try { new Notification("Cảnh báo mạnh: " + (a.symbol ? "$" + a.symbol : short(a.mint)), { body: `${a.n_families || a.n_wallets || 2} nhóm ví cùng vào · ${usdOf(a.sol)}` }); } catch (_) { /* blocked */ }
+    const a = fresh[0]; try { new Notification("Cảnh báo mạnh: " + (a.symbol ? "$" + a.symbol : short(a.mint)), { body: a.kind === "GROUPBUY" ? `${a.n_wallets} ví nhóm ${a.group} cùng mua · ${usdOf(a.sol)}` : `${a.n_families || a.n_wallets || 2} nhóm ví cùng vào · ${usdOf(a.sol)}` }); } catch (_) { /* blocked */ }
   }
 }
 document.addEventListener("DOMContentLoaded", () => { if (S.code) start(); else showLogin(""); });
