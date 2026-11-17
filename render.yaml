@@ -31,3 +31,7 @@ services:
         sync: false
       - key: TELEGRAM_CHAT_ID         # optional
         sync: false
+      - key: X_BEARER_TOKEN           # optional — Smart Caller Hunter: X API app bearer token (your X developer account)
+        sync: false
+      - key: X_MONTHLY_BUDGET_USD     # optional — X spend cap per month; 0 / unset = X collection OFF
+        sync: false

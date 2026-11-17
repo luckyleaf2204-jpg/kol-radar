@@ -147,7 +147,8 @@ function renderTop() {
     : `<span class="pill bad"><span class="dot"></span>MẤT KẾT NỐI${v.error ? " · đang nối lại" : ""}</span>`;
   $("#updated").textContent = S.w ? "Cập nhật " + clock(S.w.now) : "Đang tải…";
   const newAlerts = alerts().filter((a) => a.ts > S.seenAlert).length;
-  $("#tabs").innerHTML = TABS.map(([k, l]) => `<a href="#${k}" class="${S.tab === k ? "on" : ""}">${esc(l)}${k === "alerts" && newAlerts ? `<span class="badge">${newAlerts}</span>` : ""}</a>`).join("");
+  $("#tabs").innerHTML = TABS.map(([k, l]) => `<a href="#${k}" class="${S.tab === k ? "on" : ""}">${esc(l)}${k === "alerts" && newAlerts ? `<span class="badge">${newAlerts}</span>` : ""}</a>`).join("") +
+    `<a href="/callers/">Smart Callers</a>`;
   const name = { stream: "Luồng giao dịch", poll: "Quét vòng", balances: "Số dư ví", prices: "Nguồn giá" };
   const chips = Object.entries(src).map(([k, s]) => {
     if (!s.ok) return pill(`${name[k]}: ${s.error ? "lỗi" : "chưa có dữ liệu"}`, s.error ? "bad" : "", s.error || "");

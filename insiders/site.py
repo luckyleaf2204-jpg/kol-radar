@@ -65,7 +65,7 @@ def git_commit() -> str | None:
         return None
 
 
-def make_handler(svc: InsiderService, access_code: str | None, health: dict):
+def make_handler(svc: InsiderService, access_code: str | None, health: dict, callers=None):
     class H(BaseHTTPRequestHandler):
         server_version = "insiders"
 
@@ -164,7 +164,21 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                                                      for x in sg if (x.get("paper") or {}).get("exit"))),
                                        "kinds": dict(__import__("collections").Counter(x["kind"] + "/" + x["tier"] for x in sg)),
                                        "ticks": sh.stat.get("ticks"), "error": sh.stat.get("error")}
+                if callers is not None:                       # Smart Caller Hunter: counts only
+                    h["callers"] = callers.health()
                 return self._json(200, h)
+            if path == "/callers":
+                self.send_response(301)
+                self.send_header("Location", "/callers/")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return None
+            if callers is not None and path.startswith("/callers/"):
+                from callers.web import PAGE as CPAGE, STATIC as CSTATIC
+                if path in CSTATIC:
+                    name, ctype = CSTATIC[path]
+                    return self._send(200, ctype, (CPAGE / name).read_bytes())
+                return self._send(404, "text/plain", b"")
             if path == "/legacy":
                 self.send_response(301)
                 self.send_header("Location", "/legacy/")
@@ -179,6 +193,10 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
                 return self._send(200, ctype, body)
             if path.startswith("/api/") and not self._authed():
                 return None
+            if callers is not None and path.startswith("/api/callers/"):
+                from urllib.parse import urlsplit
+                res = callers.get(path, urlsplit(self.path).query)
+                return self._json(*res) if res else self._json(404, {"error": "route"})
             if path == "/api/insiders":
                 return self._json(200, svc.status())
             if path == "/api/insiders/chart":
@@ -218,10 +236,13 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict):
         def _do_POST(self):
             path = self.path.split("?", 1)[0]
             n = int(self.headers.get("content-length") or 0)
-            if n:
-                self.rfile.read(min(n, 65536))
+            body = self.rfile.read(min(n, 262144)) if n else b""
             if not path.startswith("/api/") or not self._authed():
                 return None if path.startswith("/api/") else self._json(404, {"error": "route"})
+            if callers is not None and path.startswith("/api/callers/"):
+                from urllib.parse import urlsplit
+                res = callers.post(path, urlsplit(self.path).query, body)
+                return self._json(*res) if res else self._json(404, {"error": "route"})
             if path == "/api/insiders/turbo":                 # "Quét liên tục" on / off (?on=1 | ?on=0)
                 from urllib.parse import parse_qs, urlsplit
                 v = getattr(getattr(svc, "watcher", None), "vip", None)
@@ -249,7 +270,27 @@ def removed_counts(removed: dict) -> dict:
     return dict(sorted(out.items()))
 
 
-def serve(host: str = "127.0.0.1", port: int = 8780, watch: bool = True, svc: InsiderService | None = None):
+def _callers_app(svc, sdir: Path, start: bool):
+    """Smart Caller Hunter (callers/): its own callers.db next to the watch state; smart money = the Insiders group
+    wallets already traded the coin (from the watch state, when the watch runs)."""
+    from callers.web import CallersApp
+
+    def smart_money(mint: str):
+        w = getattr(svc, "watcher", None)
+        if w is None:
+            return None
+        coin = ((w.state.get("coins") or {}).get(mint) or {})
+        return bool(coin.get("wallets"))
+    notify = None
+    tok, chat = os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
+    if tok and chat and (os.environ.get("CALLERS_TELEGRAM") or "0") == "1":   # opt-in: HIGH_PRIORITY only
+        from insiders.watch import telegram_sender
+        notify = telegram_sender(tok, chat)
+    return CallersApp(sdir, start=start, smart_money=smart_money, notify=notify)
+
+
+def serve(host: str = "127.0.0.1", port: int = 8780, watch: bool = True, svc: InsiderService | None = None,
+          callers_app=None):
     svc = svc or InsiderService()
     sdir, durable = state_dir()
     started = svc.start_watch(sdir / "insider_watch.json") if watch and (os.environ.get("INSIDER_WATCH") or "1") != "0" \
@@ -260,7 +301,10 @@ def serve(host: str = "127.0.0.1", port: int = 8780, watch: bool = True, svc: In
     code = os.environ.get("APP_ACCESS_CODE") or None
     if host not in ("127.0.0.1", "localhost") and not code:
         print("[insiders] WARNING: public host without APP_ACCESS_CODE: anyone with the URL can read the page", flush=True)
-    httpd = ThreadingHTTPServer((host, port), make_handler(svc, code, health))
+    callers = None
+    if callers_app is not False and (os.environ.get("CALLERS") or "1") != "0":
+        callers = callers_app or _callers_app(svc, sdir, start=watch)
+    httpd = ThreadingHTTPServer((host, port), make_handler(svc, code, health, callers))
     print(f"[insiders] http://{host}:{port} · state {sdir} (durable {durable}) · watch {bool(started)}", flush=True)
     return httpd
 
