@@ -137,6 +137,7 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                                     "children_seed": sum(1 for x in (v.state.get("children") or {}).values() if x.get("seed")),
                                     "removed_by_day": removed_counts(v.state.get("removed") or {}),
                                     "turbo": v.turbo() if hasattr(v, "turbo") else None,
+                                    "paused": v.paused() if hasattr(v, "paused") else None,
                                     "wallets": len(v.wallets()), "poll": dict(getattr(v, "pstat", {}) or {}),
                                     "flows": len(w.state.get("flows", [])),
                                     "provider": __import__("insiders.vip", fromlist=["PROVIDER"]).PROVIDER}
@@ -243,6 +244,13 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                 from urllib.parse import urlsplit
                 res = callers.post(path, urlsplit(self.path).query, body)
                 return self._json(*res) if res else self._json(404, {"error": "route"})
+            if path == "/api/insiders/pause":                 # "Tạm dừng" / "Bật lại quét" (?on=1 pause | ?on=0 resume)
+                from urllib.parse import parse_qs, urlsplit
+                v = getattr(getattr(svc, "watcher", None), "vip", None)
+                if v is None or not hasattr(v, "set_paused"):
+                    return self._json(503, {"error": "no_stream"})
+                on = (parse_qs(urlsplit(self.path).query).get("on") or ["0"])[0] == "1"
+                return self._json(200, {"paused": v.set_paused(on)})
             if path == "/api/insiders/turbo":                 # "Quét liên tục" on / off (?on=1 | ?on=0)
                 from urllib.parse import parse_qs, urlsplit
                 v = getattr(getattr(svc, "watcher", None), "vip", None)

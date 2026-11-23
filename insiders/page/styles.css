@@ -176,3 +176,4 @@ details.bots > summary { cursor: pointer; color: var(--muted); padding: 6px 0; }
 
 .turbo { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 8px 0; padding: 8px 10px; border: 1px solid var(--line2); border-radius: 8px; }
 .turbo.on { border-color: var(--good); }
+.turbo.paused { border-color: var(--bad, #c0392b); }

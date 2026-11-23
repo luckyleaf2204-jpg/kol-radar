@@ -348,6 +348,12 @@ function coinBox(c0, load) {
     ${c.wallets.slice().sort((x, y) => (y.buy_sol || 0) - (x.buy_sol || 0)).map((w) => walletLine(w, c)).join("")}</article>`;
 }
 const focusNote = () => { const f = vip().focus || ["ALL"]; return f.includes("ALL") ? "" : `<div>${pill("ĐANG TẬP TRUNG: " + f.join(", ") + (f.includes("DEPTH") ? " (DEPTH gồm SNACKS)" : ""), "warn")} <span class="note">Chỉ theo dõi nhóm này và ví cha/con của nó. Đổi bằng biến INSIDER_FOCUS trên Render (ALL = mọi nhóm).</span></div>`; };
+const pauseBar = () => {               // "Tạm dừng": closes the live connection and stops polling (no Helius use) until resumed
+  const v = vip(), p = !!v.paused;
+  return `<div class="turbo ${p ? "paused" : ""}"><button class="btn ${p ? "primary" : ""}" id="pause" data-on="${p ? 0 : 1}">${p ? "▶ Bật lại quét" : "⏸ Tạm dừng quét"}</button>
+    <span class="small">${p ? `${pill("ĐANG TẠM DỪNG", "bad")} từ ${ago(v.paused_at)} · không theo dõi ví, không tốn Helius. Dữ liệu cũ vẫn xem được; bấm "Bật lại quét" khi cần.`
+      : `<span class="dim">Đang theo dõi ví trực tiếp (tốn lượt Helius). Bấm tạm dừng khi không cần, giữ nguyên sau khi server khởi động lại.</span>`}</span></div>`;
+};
 const turboBar = () => {               // "Quét liên tục": poll every wallet back to back while on (server switches it off after a while)
   const v = vip(), on = !!v.turbo, left = Math.max(0, (v.turbo_until || 0) - now()), p = v.poll || {};
   const mins = Math.round((v.turbo_max_s || 10800) / 60);
@@ -366,7 +372,8 @@ function viewActivity() {
       ${seg("awin", [["1h", "1 giờ"], ["6h", "6 giờ"], ["24h", "24 giờ"], ["all", "Tất cả"]], S.act.win)}
       ${seg("agroup", [["all", "Mọi nhóm"], ["INSIDERS", "INSIDERS"], ["DEPTH", "DEPTH"], ["STANK", "STANK"], ["LIÊN KẾT", "Ví liên kết"]], g)}</header>
     ${focusNote()}
-    ${turboBar()}
+    ${pauseBar()}
+    ${vip().paused ? "" : turboBar()}
     <div class="note">Mỗi coin một ô, một màu: coin mà ví trong danh sách mua ≥ ${thr((S.w.config || {}).board_min_sol || 1)}. Ô có nhiều nhóm ví cùng vào lên đầu. Số tiền quy ra USD theo giá SOL hiện tại; MC là vốn hoá coin lúc mua/bán. Ví BOT (giao dịch rất nhiều coin mỗi ngày) được gấp xuống cuối.</div>
     ${main.length ? `<div class="coins">${main.slice(0, 40).map((c, i) => coinBox(c, i < 15)).join("")}</div>` : `<div class="empty">Chưa có coin nào trong khung thời gian này.</div>`}
     ${bots.length ? `<details class="bots" ${S.act.bots ? "open" : ""} id="botfold"><summary>${bots.length} coin chỉ có ví BOT giao dịch</summary><div class="coins">${S.act.bots ? bots.slice(0, 40).map((c) => coinBox(c, false)).join("") : ""}</div></details>` : ""}</section>`;
@@ -715,6 +722,12 @@ function bind() {
   const lo = $("#logout"); if (lo) lo.onclick = () => { LS.del("insAccessCode"); location.reload(); };
   if ($("#chart")) drawChart();
 }
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("#pause"); if (!b) return;
+  b.disabled = true;
+  try { await api("/api/insiders/pause?on=" + b.dataset.on, "POST"); toast(b.dataset.on === "1" ? "Đã tạm dừng quét" : "Đã bật lại quét"); await refresh(); }
+  catch (err) { if (err.message !== "auth") toast("Không đổi được (" + err.message + ")"); b.disabled = false; }
+});
 document.addEventListener("click", async (e) => {
   const b = e.target.closest("#turbo"); if (!b) return;
   b.disabled = true;

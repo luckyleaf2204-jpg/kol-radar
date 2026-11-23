@@ -233,3 +233,24 @@ def test_continuous_scan_switch_is_post_only_and_guarded(server):
     assert st == 200 and json.loads(body) == {"turbo": True, "turbo_until": 123.0}
     st, body = call(base + "/api/insiders/turbo?on=0", "code-1", method="POST")
     assert st == 200 and json.loads(body)["turbo"] is False
+
+
+def test_pause_switch_is_post_only_and_guarded(server):
+    base, svc = server
+    assert call(base + "/api/insiders/pause?on=1", "code-1", method="POST")[0] == 503   # no stream running
+    box = {"p": False}
+
+    class V:
+        def set_paused(self, on):
+            box["p"] = on
+            return on
+
+        def paused(self):
+            return box["p"]
+    svc.watcher = type("W", (), {"vip": V()})()
+    assert call(base + "/api/insiders/pause?on=1", None, method="POST")[0] == 401
+    assert call(base + "/api/insiders/pause?on=1", "code-1")[0] == 404                  # GET: no such route
+    st, body = call(base + "/api/insiders/pause?on=1", "code-1", method="POST")
+    assert st == 200 and json.loads(body) == {"paused": True} and box["p"] is True
+    st, body = call(base + "/api/insiders/pause?on=0", "code-1", method="POST")
+    assert st == 200 and json.loads(body) == {"paused": False}
