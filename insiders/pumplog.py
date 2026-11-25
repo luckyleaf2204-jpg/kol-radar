@@ -11,6 +11,7 @@ PUMP = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
 _ALPH = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 CREATE = hashlib.sha256(b"event:CreateEvent").digest()[:8]
 TRADE = hashlib.sha256(b"event:TradeEvent").digest()[:8]
+COMPLETE = hashlib.sha256(b"event:CompleteEvent").digest()[:8]
 TOKEN_DEC = 6
 SUPPLY = 1_000_000_000                      # pump.fun tokens (whole) per coin
 
@@ -68,6 +69,8 @@ def decode(data: bytes) -> dict | None:
             e["ts"] = r.opt(r.i64)
             e["vtok"], e["vsol"] = r.opt(r.u64), r.opt(r.u64)
             return e
+        if d == COMPLETE:
+            return {"ev": "complete", "user": r.key(), "mint": r.key(), "bonding_curve": r.key(), "ts": r.opt(r.i64)}
         if d == TRADE:
             e = {"ev": "trade", "mint": r.key(), "sol": r.u64(), "tokens": r.u64(), "buy": r.take(1) == b"\x01", "user": r.key(),
                  "ts": r.i64(), "vsol": r.u64(), "vtok": r.u64()}

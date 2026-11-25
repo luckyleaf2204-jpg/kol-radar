@@ -61,7 +61,7 @@ def test_v4_database_migrates_to_v5_and_keeps_every_row_and_cohort(tmp_path):
     con.close()
     st = T.Store(p)
     after = B.table_rows(p)
-    assert st.version() == 6 == len(T.MIGRATIONS)
+    assert st.version() == 7 == len(T.MIGRATIONS)
     assert all(after[t] == n for t, n in before.items())
     assert st.q("SELECT cohort FROM wallets ORDER BY wallet") == [{"cohort": "DEPTH"}, {"cohort": "INSIDERS"}, {"cohort": "STANK"}]
     assert st.mint("M")["newest_sig"] == "CP" and st.mint("M")["pages"] == 7

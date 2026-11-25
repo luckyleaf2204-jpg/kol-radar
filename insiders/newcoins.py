@@ -34,6 +34,9 @@ BUNDLE_MIN = 3
 SMART_REFRESH_S = 600
 KEEP_TRADES_S = 2 * 86400
 KEEP_QUIET_COINS_S = 3 * 86400
+HORIZONS = (("15m", 900), ("1h", 3600), ("2h", 7200), ("6h", 21600), ("24h", 86400))
+LAUNCH_PRICE = 30 / 1_073_000_000                          # SOL per token on a fresh standard pump.fun SOL curve
+LATE_S = 300                                               # a snapshot taken > 5 min after its mark is "late" (e.g. restart)
 
 
 def sane(price: float | None) -> float | None:
@@ -83,7 +86,8 @@ class SmartBook:
 
 class Coin:
     __slots__ = ("mint", "creator", "t0", "seen", "buyers", "smart", "keys", "first_buy", "signals", "dev_tokens", "dev_sold",
-                 "create_slot", "slot_buyers", "early_buyers", "row", "dirty")
+                 "create_slot", "slot_buyers", "early_buyers", "row", "dirty", "tx_buyers", "snipe5", "maxp", "minp", "last_t",
+                 "migrated", "obs")
 
     def __init__(self, row: dict):
         self.mint, self.creator, self.t0, self.row = row["mint"], row["creator"], row["t_create"], row
@@ -92,6 +96,9 @@ class Coin:
         self.first_buy, self.signals = None, set(json.loads(row.get("signals") or "[]"))
         self.dev_tokens, self.dev_sold, self.create_slot, self.slot_buyers = row.get("dev_tokens") or 0, bool(row.get("dev_sold")), row.get("create_slot"), set()
         self.dirty = True
+        self.tx_buyers, self.snipe5, self.obs, self.migrated = set(), set(), set(), False
+        self.maxp = self.minp = row.get("price")
+        self.last_t = None
 
 
 class Engine:
@@ -104,6 +111,8 @@ class Engine:
         self.disc_lat: deque = deque(maxlen=500)                # seen_at - creation block time
         self.sig_lat: deque = deque(maxlen=2000)                # seen_at - trade block time
         self.last_retention = 0.0
+        self.sol_usd, self.sol_usd_ts = None, 0.0               # SOL price in USD (Jupiter, free), for display only
+        self.late: dict[str, dict] = {}                        # closed coins (120 min .. 24 h): price only, for the snapshots
         self.recover()
 
     # -- restart: coins younger than the window come back with their trades (no double count, keys rebuilt)
@@ -123,8 +132,29 @@ class Engine:
                         c.slot_buyers.add(t["wallet"])
                     if t["smart"] and t["wallet"] not in c.smart:
                         c.smart.append(t["wallet"])
+                    if t["sig"] == c.row.get("create_sig"):
+                        c.tx_buyers.add(t["wallet"])
+                    elif t["t"] - c.t0 <= 5 and t["slot"] != c.create_slot:
+                        c.snipe5.add(t["wallet"])
+                if t["price"]:
+                    c.maxp = max(c.maxp or t["price"], t["price"])
+                    c.minp = min(c.minp or t["price"], t["price"])
+                    c.last_t = t["t"]
+            c.obs = {o["horizon"] for o in self.s.q("SELECT horizon FROM nc_obs WHERE mint=?", (c.mint,))}
             c.dirty = False
             self.coins[c.mint] = c
+        # closed coins younger than 24 h: price tracking resumes from the last snapshot
+        for row in self.s.q("SELECT * FROM nc_coin WHERE t_create >= ? AND closed=1", (self.now() - 86400 - LATE_S,)):
+            obs = self.s.q("SELECT * FROM nc_obs WHERE mint=? ORDER BY t DESC", (row["mint"],))
+            if obs and obs[0]["horizon"] == "24h":
+                continue
+            last = obs[0] if obs else {}
+            self.late[row["mint"]] = {"t0": row["t_create"], "price": row["price"], "maxp": last.get("max_price") or row["price"],
+                                      "minp": last.get("min_price") or row["price"], "last_t": last.get("last_trade_t"),
+                                      "migrated": bool(last.get("migrated")), "std": row["platform"] == "pump.fun",
+                                      "feat": {k: last.get(k) for k in ("buyers", "early15", "smart", "smart_groups", "in_tx", "in_slot", "snipe5",
+                                                                      "dev_sold", "buy_sol", "sell_sol", "signals")} if last else self._feat_row(row),
+                                      "done": {o["horizon"] for o in obs}}
 
     def put(self, sig: str, slot: int | None, logs: list[str], seen_at: float) -> None:
         evs = P.events(logs)
@@ -136,8 +166,29 @@ class Engine:
             self.stat["dropped"] += 1
 
     # -- the engine loop: batches the queue, one SQLite transaction per batch
+    def refresh_sol_usd(self, get=None) -> float | None:
+        """Jupiter price API (public, not Helius), every 60 s; the last price is kept on failure. Display only."""
+        if self.sol_usd and self.now() - self.sol_usd_ts < 60:
+            return self.sol_usd
+        self.sol_usd_ts = self.now()
+        try:
+            if get is None:
+                import urllib.request
+                req = urllib.request.Request("https://lite-api.jup.ag/price/v3?ids=So11111111111111111111111111111111111111112",
+                                             headers={"Accept": "application/json", "User-Agent": "Mozilla/5.0"})
+                d = json.loads(urllib.request.urlopen(req, timeout=10).read())
+            else:
+                d = get()
+            p = float(((d or {}).get("So11111111111111111111111111111111111111112") or {}).get("usdPrice") or 0)
+            if p > 0:
+                self.sol_usd = round(p, 4)
+        except Exception:
+            pass
+        return self.sol_usd
+
     def run_forever(self, stop: threading.Event) -> None:
         while not stop.is_set():
+            self.refresh_sol_usd()
             batch = []
             try:
                 batch.append(self.q.get(timeout=0.5))
@@ -161,15 +212,24 @@ class Engine:
                 for e in evs:
                     if e["ev"] == "create":
                         self._create(db, e, sig, slot, seen)
+                    elif e["ev"] == "complete":
+                        self._complete(e)
                     else:
                         alerts += self._trade(db, e, sig, slot, seen)
             for c in list(self.coins.values()):
+                self._observe(db, c.mint, c.t0, now, c.obs, self._price_state(c), self._feat(c))
                 if now - c.t0 > WINDOW_S:                     # the window is over: frozen, kept for history
                     c.row["closed"], c.dirty = 1, True
                 if c.dirty:
                     self._save(db, c, now)
                 if c.row.get("closed"):
                     del self.coins[c.mint]
+                    self.late[c.mint] = {"t0": c.t0, **self._price_state(c), "std": c.row["platform"] == "pump.fun",
+                                         "feat": self._feat(c), "done": set(c.obs)}
+            for m, L in list(self.late.items()):
+                self._observe(db, m, L["t0"], now, L["done"], L, L["feat"])
+                if "24h" in L["done"] or now - L["t0"] > 86400 + 3600:
+                    del self.late[m]
             db.commit()
         if now - self.last_retention > 3600:
             self.retention(now)
@@ -209,7 +269,15 @@ class Engine:
     def _trade(self, db, e, sig, slot, seen) -> list:
         c = self.coins.get(e["mint"])
         if c is None:
-            self.stat["trades_other"] += 1                  # a coin created before we listened, or older than 120 min
+            L = self.late.get(e["mint"])
+            if L is not None and e["sol"] and L["std"]:      # 120 min .. 24 h: price only (no trade rows, no signals)
+                p = sane(P.price_sol(e.get("vsol"), e.get("vtok")))
+                if p:
+                    L["price"], L["last_t"] = p, e.get("ts") or seen
+                    L["maxp"], L["minp"] = max(L["maxp"] or p, p), min(L["minp"] or p, p)
+                self.stat["trades_late"] = self.stat.get("trades_late", 0) + 1
+                return []
+            self.stat["trades_other"] += 1                  # a coin created before we listened, or older than 24 h
             return []
         k = (sig, e["user"], int(e["buy"]))
         if k in c.keys:
@@ -235,6 +303,7 @@ class Engine:
         r["trades"] += 1
         if price and r["platform"] == "pump.fun":
             r["price"], r["mc_sol"] = price, price * P.SUPPLY
+            c.maxp, c.minp, c.last_t = max(c.maxp or price, price), min(c.minp or price, price), t
         if e.get("rsol") is not None:
             r["liq_sol"] = e["rsol"] / 1e9
         out = []
@@ -255,6 +324,10 @@ class Engine:
                     self._signal(db, c, "EARLY_BUY", t, seen, [e["user"]], {"wallet": e["user"], "sol": round(sol, 4), "sec_after_create": round(t - c.t0, 1), "sig": sig})
                 if minute < 15:
                     c.early_buyers.add(e["user"])
+                if sig == r.get("create_sig"):
+                    c.tx_buyers.add(e["user"])
+                elif t - c.t0 <= 5 and slot != c.create_slot:
+                    c.snipe5.add(e["user"])
                 if slot is not None and slot == c.create_slot:
                     c.slot_buyers.add(e["user"])
                     if len(c.slot_buyers) >= BUNDLE_MIN:
@@ -285,6 +358,43 @@ class Engine:
                 self._signal(db, c, "RISK", t, seen, [e["user"]], {"why": f"creator bán ở phút {minute:.1f}", "sig": sig})
         c.dirty = True
         return out
+
+    # -- observation round: snapshots only, never read by a signal rule
+    def _complete(self, e) -> None:
+        c = self.coins.get(e["mint"])
+        if c is not None:
+            c.migrated = True
+        elif e["mint"] in self.late:
+            self.late[e["mint"]]["migrated"] = True
+
+    @staticmethod
+    def _price_state(c: Coin) -> dict:
+        return {"price": c.row.get("price"), "maxp": c.maxp, "minp": c.minp, "last_t": c.last_t, "migrated": c.migrated}
+
+    def _feat(self, c: Coin) -> dict:
+        r = c.row
+        return {"buyers": len(c.buyers), "early15": len(c.early_buyers), "smart": len(c.smart),
+                "smart_groups": len({self.book.group(w) for w in c.smart}), "in_tx": len(c.tx_buyers),
+                "in_slot": len(c.slot_buyers - c.tx_buyers), "snipe5": len(c.snipe5), "dev_sold": int(c.dev_sold),
+                "buy_sol": round(r["buy_sol"], 4), "sell_sol": round(r["sell_sol"], 4), "signals": json.dumps(sorted(c.signals))}
+
+    @staticmethod
+    def _feat_row(row: dict) -> dict:
+        return {"buyers": row["buyers"], "early15": None, "smart": row["smart"], "smart_groups": None, "in_tx": None, "in_slot": None,
+                "snipe5": None, "dev_sold": row["dev_sold"], "buy_sol": row["buy_sol"], "sell_sol": row["sell_sol"], "signals": row["signals"]}
+
+    def _observe(self, db, mint, t0, now, done: set, ps: dict, feat: dict) -> None:
+        for h, sec in HORIZONS:
+            if h in done or now < t0 + sec:
+                continue
+            done.add(h)
+            status = "migrated" if ps.get("migrated") else "late" if now - (t0 + sec) > LATE_S else "ok"
+            db.execute("INSERT OR IGNORE INTO nc_obs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                       (mint, h, t0 + sec, now, status, ps.get("price"), ps.get("maxp"), ps.get("minp"), LAUNCH_PRICE, ps.get("last_t"),
+                        feat.get("buyers"), feat.get("early15"), feat.get("smart"), feat.get("smart_groups"), feat.get("in_tx"),
+                        feat.get("in_slot"), feat.get("snipe5"), feat.get("dev_sold"), feat.get("buy_sol"), feat.get("sell_sol"),
+                        feat.get("signals"), int(bool(ps.get("migrated")))))
+            self.stat["obs"] = self.stat.get("obs", 0) + 1
 
     def _signal(self, db, c: Coin, kind, t, seen, wallets, evidence, update=False) -> None:
         minute = max(0.0, (t - c.t0) / 60)
@@ -337,13 +447,14 @@ class Engine:
             return round(v[min(len(v) - 1, int(len(v) * p))], 2) if v else None
         day = self.now() - 86400
         q1 = lambda sql, a=(): self.s.q(sql, a)[0]["n"]          # noqa: E731
-        return {**self.stat, "active_coins": len(self.coins), "queue": self.q.qsize(), "smart_watchlist": len(self.book.smart),
+        return {**self.stat, "sol_usd": self.sol_usd, "active_coins": len(self.coins), "late_coins": len(self.late), "queue": self.q.qsize(), "smart_watchlist": len(self.book.smart),
                 "discovery_latency_s": {"p50": pct(self.disc_lat, .5), "p90": pct(self.disc_lat, .9)},
                 "signal_latency_s": {"p50": pct(self.sig_lat, .5), "p90": pct(self.sig_lat, .9)},
                 "coins_24h": q1("SELECT COUNT(*) AS n FROM nc_coin WHERE t_create >= ?", (day,)),
                 "with_buys_24h": q1("SELECT COUNT(*) AS n FROM nc_coin WHERE t_create >= ? AND buyers > 0", (day,)),
                 "smart_coins_24h": q1("SELECT COUNT(*) AS n FROM nc_coin WHERE t_create >= ? AND smart > 0", (day,)),
-                "signals_24h": q1("SELECT COUNT(*) AS n FROM nc_signal WHERE seen_at >= ?", (day,))}
+                "signals_24h": q1("SELECT COUNT(*) AS n FROM nc_signal WHERE seen_at >= ?", (day,)),
+                "obs_24h": q1("SELECT COUNT(*) AS n FROM nc_obs WHERE taken_at >= ?", (day,))}
 
 
 class Stream:
@@ -395,8 +506,17 @@ def coins(store, max_age_s: int = WINDOW_S, limit: int = 400) -> list[dict]:
     rows = store.q("SELECT mint, name, symbol, creator, platform, t_create, seen_at, price, mc_sol, liq_sol, buyers, smart, buy_sol, sell_sol, "
                    "trades, dev_sol, dev_sold, first_buy_t, first_buy_seen, signals, closed FROM nc_coin WHERE t_create >= ? "
                    "ORDER BY t_create DESC LIMIT ?", (now - max_age_s, limit))
+    ev = {}
+    sm = [r["mint"] for r in rows if r["smart"]]
+    if sm:
+        for s in store.q(f"SELECT mint, evidence FROM nc_signal WHERE kind='SMART_MONEY' AND mint IN ({','.join('?' * len(sm))})", sm):
+            e = json.loads(s["evidence"] or "{}")
+            ev[s["mint"]] = {"wallets": [{k: w.get(k) for k in ("wallet", "rank", "multi", "why")} for w in e.get("wallets", [])][:3],
+                             "last": e.get("last")}
     for r in rows:
         r["signals"] = json.loads(r["signals"] or "[]")
+        if r["mint"] in ev:
+            r["smart_ev"] = ev[r["mint"]]
     return rows
 
 

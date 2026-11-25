@@ -53,7 +53,7 @@ input[type=search] { width: 100%; }
 #fcount { color: var(--acc); font-weight: 700; }
 
 .list { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-.lh, .rw { display: grid; grid-template-columns: minmax(240px, 1fr) 150px repeat(4, 104px) 150px; gap: 16px; align-items: center; padding: 0 20px; }
+.lh, .rw { display: grid; grid-template-columns: minmax(240px, 1fr) 150px repeat(5, 100px) 150px; gap: 16px; align-items: center; padding: 0 20px; }
 .lh > span:last-child, .rw > div:last-child { padding-left: 18px; }
 .lh { height: 40px; font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); border-bottom: 1px solid var(--line2); position: sticky; top: 0; background: var(--card); z-index: 2; }
 .r { text-align: right; }
@@ -69,6 +69,10 @@ input[type=search] { width: 100%; }
 .cn .nm { color: var(--mut); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cn .nm .age { color: var(--acc); font: 600 12px var(--mono); }
 .cn .fb { color: var(--dim); font-size: 11.5px; }
+.cn .why { color: #c9b3ff; font-size: 12px; white-space: normal; margin-top: 2px; }
+.chips button.focus { border-color: rgba(179, 138, 255, .6); color: var(--violet); }
+.chips button.focus.on { background: var(--violet); color: #12081f; border-color: var(--violet); }
+.focusnote { color: var(--mut); font-size: 12.5px; margin: -4px 0 12px; }
 .num { font: 600 15px var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
 .num.z { color: var(--dim); font-weight: 500; } .num.smn { color: var(--violet); font-weight: 800; }
 .pr { display: inline-flex; align-items: center; justify-content: center; min-width: 110px; padding: 5px 12px; border-radius: 6px; font: 800 11.5px var(--mono); letter-spacing: .05em; }

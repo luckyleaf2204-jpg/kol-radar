@@ -408,11 +408,16 @@ def nc_get(nc, store, path: str, raw: str) -> tuple[int, object]:
             limit = max(1, min(1000, int(q.get("limit") or 400)))
         except ValueError:
             return 400, {"error": "number"}
-        return 200, {"coins": N.coins(st, age, limit), "now": time.time()}
+        return 200, {"coins": N.coins(st, age, limit), "now": time.time(), "sol_usd": eng.sol_usd if eng else None}
+    if name == "report":
+        from insiders.nc_report import report
+        return 200, report(st)
     if name == "coin":
         if not q.get("mint") or not _ADDR.fullmatch(q["mint"]):
             return 400, {"error": "mint"}
         d = N.coin_detail(st, q["mint"], eng.book if eng else None)
+        if d:
+            d["sol_usd"] = eng.sol_usd if eng else None
         return (200, d) if d else (404, {"error": "coin"})
     return 404, {"error": "route"}
 

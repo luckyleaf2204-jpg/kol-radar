@@ -218,6 +218,15 @@ MIGRATIONS = [
         mint TEXT, kind TEXT, t REAL, seen_at REAL, minute REAL, stage TEXT, wallets TEXT, evidence TEXT, PRIMARY KEY (mint, kind));
     CREATE INDEX IF NOT EXISTS ncs_t ON nc_signal (seen_at);
     """,
+    # v7 (observation round, approved 2026-11-25): per coin, snapshots at 15 min / 1 h / 2 h / 6 h / 24 h of price, the
+    # running high / low and the buyer mix, to measure the signals later. Records only: no signal rule reads it.
+    """
+    CREATE TABLE IF NOT EXISTS nc_obs (
+        mint TEXT, horizon TEXT, t REAL, taken_at REAL, status TEXT, price REAL, max_price REAL, min_price REAL, launch_price REAL,
+        last_trade_t REAL, buyers INTEGER, early15 INTEGER, smart INTEGER, smart_groups INTEGER, in_tx INTEGER, in_slot INTEGER,
+        snipe5 INTEGER, dev_sold INTEGER, buy_sol REAL, sell_sol REAL, signals TEXT, migrated INTEGER, PRIMARY KEY (mint, horizon));
+    CREATE INDEX IF NOT EXISTS nco_h ON nc_obs (horizon, t);
+    """,
 ]
 
 

@@ -189,3 +189,87 @@ def test_a_non_standard_curve_gets_no_mc(tmp_path):
     e.step(drain(e))
     c = st.q("SELECT platform, mc_sol, buyers, buy_sol FROM nc_coin WHERE mint=?", (MINT,))[0]
     assert c["platform"] == "pump.fun (đường cong khác)" and c["mc_sol"] is None and c["buyers"] == 1 and c["buy_sol"] == 1.0
+
+
+def complete(mint=MINT, ts=T0 + 4000):
+    b = P.COMPLETE + key(DEV) + key(mint) + key(CURVE) + struct.pack("<q", ts)
+    return "Program data: " + base64.b64encode(b).decode()
+
+
+class Clock:
+    def __init__(self, t):
+        self.t = t
+
+    def __call__(self):
+        return self.t
+
+
+def test_observation_snapshots_follow_the_coin_to_24h(tmp_path):
+    clk = Clock(T0 + 2)
+    st = T.Store(tmp_path / "t.db")
+    e = N.Engine(st, now=clk)
+    e.book.loaded = 1e18
+    e.book.smart = {W[1]: {"rank": 1, "multi": True, "why": ["x"], "creator_of": []}}
+    e.put("c1", 100, logs(create(), trade(W[0], 0.5, 1000)), T0 + 1)            # W0 buys inside the create tx
+    e.put("b1", 101, logs(trade(W[1], 2.0, 5000, ts=T0 + 3)), T0 + 4)            # a sniper-speed Smart Money buy
+    e.step(drain(e))
+    clk.t = T0 + 901
+    e.step([])
+    o = st.q("SELECT * FROM nc_obs WHERE mint=?", (MINT,))
+    assert [x["horizon"] for x in o] == ["15m"] and o[0]["status"] == "ok"
+    assert (o[0]["buyers"], o[0]["smart"], o[0]["smart_groups"], o[0]["in_tx"], o[0]["snipe5"]) == (2, 1, 1, 1, 1)
+    clk.t = T0 + 7300                                                             # the window closes: price-only tracking
+    e.step([])
+    assert MINT in e.late and MINT not in e.coins
+    e.put("l1", 300, logs(trade(W[2], 1.0, 100, ts=T0 + 8000, vsol=60_000_000_000, vtok=500_000_000_000_000)), T0 + 8001)
+    clk.t = T0 + 21700
+    e.step(drain(e))
+    six = st.q("SELECT * FROM nc_obs WHERE mint=? AND horizon='6h'", (MINT,))[0]
+    assert six["price"] == P.price_sol(60_000_000_000, 500_000_000_000_000) and six["max_price"] >= six["price"]
+    assert st.q("SELECT COUNT(*) AS n FROM nc_trade WHERE sig='l1'")[0]["n"] == 0       # after 120 min: no trade rows
+    e2 = N.Engine(st, now=clk)                                                    # restart: tracking resumes
+    e2.book.loaded = 1e18
+    assert MINT in e2.late and e2.late[MINT]["done"] == {"15m", "1h", "2h", "6h"}
+    e2.put("m1", 400, logs(complete()), T0 + 30000)
+    clk.t = T0 + 86500
+    e2.step(drain(e2))
+    last = st.q("SELECT * FROM nc_obs WHERE mint=? AND horizon='24h'", (MINT,))[0]
+    assert last["status"] == "migrated" and MINT not in e2.late
+
+
+def test_late_snapshot_is_marked_late(tmp_path):
+    clk = Clock(T0 + 2)
+    st = T.Store(tmp_path / "t.db")
+    e = N.Engine(st, now=clk)
+    e.book.loaded = 1e18
+    e.put("c1", 100, logs(create()), T0 + 1)
+    e.step(drain(e))
+    clk.t = T0 + 900 + 3600                                                       # the service was down at the 15 min mark
+    e.step([])
+    s = {r["horizon"]: r["status"] for r in st.q("SELECT horizon, status FROM nc_obs WHERE mint=?", (MINT,))}
+    assert s["15m"] == "late" and s["1h"] == "late"
+
+
+def test_sol_usd_kept_on_failure(tmp_path):
+    st, e = eng(tmp_path)
+    assert e.refresh_sol_usd(get=lambda: {"So11111111111111111111111111111111111111112": {"usdPrice": 142.5}}) == 142.5
+    e.sol_usd_ts = 0
+
+    def boom():
+        raise OSError("down")
+    assert e.refresh_sol_usd(get=boom) == 142.5
+
+
+def test_report_measures_from_the_15_minute_price(tmp_path):
+    from insiders.nc_report import report
+    st = T.Store(tmp_path / "t.db")
+    def obs(m, h, price, mx, **f):
+        st.x("INSERT INTO nc_obs (mint, horizon, t, taken_at, status, price, max_price, min_price, launch_price, buyers, smart, smart_groups, in_tx, snipe5, dev_sold, signals, migrated) "
+             "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0)", (m, h, 0, 0, "ok", price, mx, price, 1.0, f.get("buyers", 5), f.get("smart", 0),
+                                                            f.get("smart", 0), 0, 0, 0, json.dumps(f.get("signals", ["EARLY_BUY"]))))
+    obs("A", "15m", 2.0, 2.0, smart=1, signals=["SMART_MONEY"]); obs("A", "1h", 5.0, 6.0); obs("A", "24h", 0.5, 6.0)
+    obs("B", "15m", 2.0, 2.0); obs("B", "1h", 0.4, 2.0); obs("B", "24h", 0.1, 12.0)
+    r = report(st)
+    a, allg = r["groups"]["SMART_ANY"], r["groups"]["ALL"]
+    assert a["coins"] == 1 and a["1h"]["hit_2x"] == 1.0 and a["24h"]["crash"] == 1.0          # 2x within 1 h, then -75 %
+    assert allg["1h"]["crash"] == 0.5 and r["five_x_coins"] == 2 and r["five_x_without_smart_by_15m"] == 1
