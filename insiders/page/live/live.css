@@ -92,7 +92,46 @@ input[type=search] { width: 100%; }
 .emptyst { padding: 50px; text-align: center; color: var(--mut); }
 
 .side { width: 540px; max-width: 46vw; border-left: 1px solid var(--line2); background: var(--bg2); overflow: auto; padding: 20px 22px 50px; }
-@media (max-width: 1000px) { .side { position: fixed; inset: 0; max-width: none; width: auto; z-index: 40; } .lh, .rw { grid-template-columns: minmax(160px, 2fr) 120px repeat(2, 70px) 90px; } .hide-s { display: none; } }
+@media (max-width: 1000px) { .side { position: fixed; inset: 0; max-width: none; width: auto; z-index: 40; } }
+
+/* phones / narrow screens: one card per coin, numbers labelled, panel full screen */
+@media (max-width: 760px) {
+  body { font-size: 14px; }
+  .hd { padding: 10px 12px; gap: 10px; flex-wrap: nowrap; }
+  .brand { font-size: 15px; white-space: nowrap; } .ctx { display: none; }
+  .live { font-size: 11px; padding: 3px 9px; white-space: nowrap; }
+  .hd .grow { display: none; } .hd .menu { margin-left: auto; }
+  .hd .ghost { padding: 5px 9px; font-size: 12px; white-space: nowrap; }
+  .main { padding: 12px 10px 40px; }
+  .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .tile { padding: 10px; border-radius: 10px; } .tile .k { font-size: 9.5px; letter-spacing: .06em; } .tile .v { font-size: 22px; } .tile .s { display: none; }
+  .bar { gap: 8px; margin-bottom: 10px; }
+  .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; flex: 1; min-width: 0; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chips button { flex: none; padding: 7px 13px; font-size: 12.5px; }
+  .bar > .grow { display: none; }
+  .pop { position: fixed; left: 10px; right: 10px; top: 60px; min-width: 0; }
+  .list { border-radius: 10px; background: transparent; border: 0; }
+  .lh { display: none; }
+  .rw { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-areas: "cn cn cn sg sg" "n1 n2 n3 n4 n5" "rk rk rk rk rk";
+        gap: 8px 6px; padding: 12px; margin-bottom: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); min-height: 0; }
+  .rw.p-sm, .rw.p-ha { border-left-width: 0; }
+  .rw .cn { grid-area: cn; } .rw .sgc { grid-area: sg; justify-self: end; align-self: start; }
+  .rw .num:nth-of-type(3) { grid-area: n1; } .rw .num:nth-of-type(4) { grid-area: n2; } .rw .num:nth-of-type(5) { grid-area: n3; }
+  .rw .num:nth-of-type(6) { grid-area: n4; } .rw .num:nth-of-type(7) { grid-area: n5; }
+  .rw .num { text-align: left; font-size: 14px; background: var(--bg2); border-radius: 6px; padding: 5px 7px; }
+  .rw .num::before { content: attr(data-l); display: block; font: 600 9.5px var(--mono); color: var(--dim); letter-spacing: .06em; text-transform: uppercase; }
+  .rw .rk { grid-area: rk; } .rw .rk:empty { display: none; }
+  .rw > div:last-child { padding-left: 0; }
+  .pr { min-width: 0; padding: 4px 9px; font-size: 10.5px; }
+  .cn .sym { font-size: 17px; } .cn .nm { white-space: normal; }
+  .side { padding: 14px 12px 60px; }
+  .side .x { position: sticky; top: 0; z-index: 3; background: var(--bg2); }
+  .grid4 { grid-template-columns: repeat(2, 1fr); }
+  .ev div { grid-template-columns: 1fr; gap: 2px; } .ev .m { text-align: left; }
+  .bt { font-size: 12px; } .bt th:nth-child(4), .bt td:nth-child(4) { display: none; }
+  .toast { left: 10px; right: 10px; bottom: 10px; max-width: none; }
+}
 .side h2 { margin: 0; font: 800 22px var(--mono); }
 .side .x { float: right; }
 .side .sub { color: var(--mut); font-size: 13px; margin: 4px 0 8px; }

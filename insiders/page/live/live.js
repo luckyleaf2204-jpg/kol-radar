@@ -146,10 +146,10 @@ function row(c) {
       <div class="nm">${esc(c.name)} · <span class="age" data-t="${c.t_create}">${age(now() - c.t_create)}</span></div>
       <div class="fb">${firstBuy(c)}</div>${F.sig === "FOCUS" && c.smart_ev ? `<div class="why">${reason(c)}</div>` : ""}
       ${F.sig === "FOCUS" ? (S.det[c.mint] && S.det[c.mint].d ? socials(S.det[c.mint].d, true) : `<div class="soc"><span class="no">đang tải X / dev…</span></div>`) : ""}</div>
-    <div><span class="pr ${p}">${TXT[p]}</span></div>
-    <div class="num">${mc}</div><div class="num ${c.liq_sol ? "" : "z"}">${usd(c.liq_sol)}</div><div class="num ${vol ? "" : "z"}">${usd(vol)}</div>
-    <div class="num ${c.buyers ? "" : "z"}">${c.buyers || 0}</div><div class="num ${c.smart ? "smn" : "z"}">${c.smart || 0}</div>
-    <div>${c.signals.includes("RISK") ? `<span class="risk" title="Xem lý do trong panel">⚠ RỦI RO</span>` : ""}</div></div>`;
+    <div class="sgc"><span class="pr ${p}">${TXT[p]}</span></div>
+    <div class="num" data-l="MC">${mc}</div><div class="num ${c.liq_sol ? "" : "z"}" data-l="Liq">${usd(c.liq_sol)}</div><div class="num ${vol ? "" : "z"}" data-l="Vol">${usd(vol)}</div>
+    <div class="num ${c.buyers ? "" : "z"}" data-l="Buyers">${c.buyers || 0}</div><div class="num ${c.smart ? "smn" : "z"}" data-l="Smart">${c.smart || 0}</div>
+    <div class="rk">${c.signals.includes("RISK") ? `<span class="risk" title="Xem lý do trong panel">⚠ RỦI RO</span>` : ""}</div></div>`;
 }
 function render() {
   const rows = S.coins.filter(pass);
@@ -262,7 +262,7 @@ async function refreshSide() {
     <h3>Dự án & Dev</h3>
     <div class="proj">
       ${socials(c, false)}
-      ${c.project && c.project.description ? `<div class="desc">${esc(c.project.description)}</div>` : `<div class="no" style="color:var(--dim)">Không có mô tả trên pump.fun.</div>`}
+      ${c.project && c.project.description ? `<div class="desc">${esc(c.project.description)}</div>` : `<div class="no" style="color:var(--dim)">Dev không viết mô tả trong metadata.</div>`}
       ${c.project && c.project.ath_mcap_usd ? `<div><span class="k">ATH (pump.fun)</span> $${fmt(c.project.ath_mcap_usd, 0)}${c.project.complete ? " · đã tốt nghiệp" : ""}</div>` : ""}
       ${c.dev_profile ? `<div><span class="k">Hồ sơ pump.fun của dev</span> ${esc(c.dev_profile.username)} · ${fmt(c.dev_profile.followers, 0)} follower${c.dev_profile.bio ? ` · ${esc(c.dev_profile.bio)}` : ""}</div>` : ""}
       <div><span class="k">Creator</span> <a href="https://solscan.io/account/${c.creator}" target="_blank" rel="noopener">${short(c.creator, 6)} ↗</a> · mua ${usd(c.dev_sol)}${c.dev_sold ? ' · <span style="color:var(--red)">đã bán</span>' : " · chưa bán"}${c.dev_class ? ` · ${esc(c.dev_class)}` : ""}</div>
