@@ -14,7 +14,8 @@ const CHIPS = [["FOCUS", "⭐ Đáng chú ý"], ["", "Tất cả"], ["EARLY_BUY"
 const FOCUS_AGE = 900;                                     // "Đáng chú ý": Smart Money bought, no risk warning, younger than 15 min
 const AGES = [["5m", 300], ["15m", 900], ["1h", 3600], ["2h", 7200]];
 const F = Object.assign({ age: 3600, sig: "", minsol: "0", minsm: "0", hasbuy: false, norisk: false, q: "", snd: false }, LS.get("nc.f2", {}));
-const S = { code: LS.get("insAccessCode", ""), coins: [], seen: new Set(), alerted: new Set(LS.get("nc.alerted", [])), open: null, skew: 0, first: true };
+const DET_TTL = 60;                                         // seconds a coin's project / dev facts are reused in the list
+const S = { det: {}, code: LS.get("insAccessCode", ""), coins: [], seen: new Set(), alerted: new Set(LS.get("nc.alerted", [])), open: null, skew: 0, first: true };
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const short = (a, n = 4) => a ? `${a.slice(0, n)}…${a.slice(-n)}` : "";
 const fmt = (v, d = 2) => v === null || v === undefined ? "–" : Number(v).toLocaleString("en-US", { maximumFractionDigits: d });
@@ -103,6 +104,38 @@ function reason(c) {
   return `ví #${w.rank} ${short(w.wallet, 4)}${w.multi ? " (đa coin)" : ""}${l.sol ? ` mua ${usd(l.sol)} ở phút ${fmt(l.minute, 1)}` : ""}` +
     `${w.why && w.why[0] ? ` · ${esc(w.why[0])}` : ""}${e.wallets.length > 1 ? ` · +${e.wallets.length - 1} ví Smart khác` : ""}`;
 }
+// X / Telegram / web links and the dev in one line (list) — from the coin detail (pump.fun public API + our data)
+function xHandle(u) {
+  const m = /(?:x|twitter)\.com\/([A-Za-z0-9_]{1,15})(?:[/?#]|$)/i.exec(u || "");
+  return m && !["i", "home", "search", "intent"].includes(m[1].toLowerCase()) ? "@" + m[1] : null;
+}
+function socials(d, compact) {
+  const p = d.project || {}, u = d.dev_profile || {}, h = d.dev_history || {};
+  const out = [];
+  if (p.twitter) {
+    const kind = /\/status\//.test(p.twitter) ? " (bài đăng)" : /\/communities\//.test(p.twitter) ? " (cộng đồng)" : "";
+    out.push(`<a href="${esc(p.twitter)}" target="_blank" rel="noopener">𝕏 ${esc(/\/communities\//.test(p.twitter) ? "cộng đồng X" : (xHandle(p.twitter) || "link"))}${kind && !/communities/.test(p.twitter) ? kind : ""}</a>`);
+  }
+  else out.push(`<span class="no">𝕏 không có</span>`);
+  if (p.telegram) out.push(`<a href="${esc(p.telegram)}" target="_blank" rel="noopener">Telegram</a>`);
+  if (p.website) out.push(`<a href="${esc(p.website)}" target="_blank" rel="noopener">Web</a>`);
+  if (p.launcher) out.push(`<span class="warn" title="Công cụ dùng để tạo coin (theo metadata)">tạo bằng ${esc(p.launcher)}</span>`);
+  if (!d.project && !compact) out.push(`<span class="no">không đọc được metadata</span>`);
+  const dev = u.username ? `${esc(u.username)}${u.x ? ` (𝕏 @${esc(u.x)})` : ""}` : short(d.creator, 4);
+  const prev = h.coins_seen ? `${h.coins_seen} coin khác từ ${age(now() - h.since)} trước` : "coin đầu tiên thấy";
+  const cls = h.coins_seen >= 5 ? "bad" : h.coins_seen ? "warn" : "ok";
+  out.push(`<span>Dev ${dev} · <span class="${cls}">${prev}</span>${h.dev_sold ? ` · <span class="bad">đã bán ở ${h.dev_sold}</span>` : ""}${d.dev_sold ? ` · <span class="bad">ĐÃ BÁN coin này</span>` : ""}</span>`);
+  if (!compact && d.dev_flags && d.dev_flags.length) out.push(`<span class="bad">${d.dev_flags.map(esc).join(", ")}</span>`);
+  return `<div class="soc">${out.join("")}</div>`;
+}
+async function detail(m) {
+  const h = S.det[m];
+  if (h && now() - h.t < DET_TTL) return h.d;
+  if (h && h.busy) return h.d;
+  S.det[m] = { t: h ? h.t : 0, d: h ? h.d : null, busy: true };
+  try { const d = await api(`/api/nc/coin?mint=${m}`); S.det[m] = { t: now(), d }; return d; }
+  catch (e) { S.det[m] = { t: now(), d: h ? h.d : null }; return null; }
+}
 function row(c) {
   const p = primary(c);
   const cls = ["rw", p === "HIGH_ALERT" ? "p-ha" : c.smart ? "p-sm" : "", S.first || S.seen.has(c.mint) ? "" : "new", S.open === c.mint ? "sel" : ""].join(" ");
@@ -111,7 +144,8 @@ function row(c) {
   return `<div class="${cls}" data-m="${c.mint}">
     <div class="cn"><div class="sym">${esc(c.symbol || "?")}</div>
       <div class="nm">${esc(c.name)} · <span class="age" data-t="${c.t_create}">${age(now() - c.t_create)}</span></div>
-      <div class="fb">${firstBuy(c)}</div>${F.sig === "FOCUS" && c.smart_ev ? `<div class="why">${reason(c)}</div>` : ""}</div>
+      <div class="fb">${firstBuy(c)}</div>${F.sig === "FOCUS" && c.smart_ev ? `<div class="why">${reason(c)}</div>` : ""}
+      ${F.sig === "FOCUS" ? (S.det[c.mint] && S.det[c.mint].d ? socials(S.det[c.mint].d, true) : `<div class="soc"><span class="no">đang tải X / dev…</span></div>`) : ""}</div>
     <div><span class="pr ${p}">${TXT[p]}</span></div>
     <div class="num">${mc}</div><div class="num ${c.liq_sol ? "" : "z"}">${usd(c.liq_sol)}</div><div class="num ${vol ? "" : "z"}">${usd(vol)}</div>
     <div class="num ${c.buyers ? "" : "z"}">${c.buyers || 0}</div><div class="num ${c.smart ? "smn" : "z"}">${c.smart || 0}</div>
@@ -121,6 +155,10 @@ function render() {
   const rows = S.coins.filter(pass);
   $("#rows").innerHTML = (F.sig === "FOCUS" ? `<div class="focusnote" style="padding:12px 20px 0">Coin có ví Smart Money mua, không có cảnh báo rủi ro, dưới 15 phút tuổi. Đây là danh sách để theo dõi, không phải lệnh mua: tỷ lệ đúng đang được đo trong đợt quan sát.</div>` : "") +
     rows.slice(0, 250).map(row).join("");
+  if (F.sig === "FOCUS") {                                  // a handful of coins: fetch their project / dev facts, then redraw
+    const todo = rows.slice(0, 20).filter((c) => !S.det[c.mint] || (now() - S.det[c.mint].t >= DET_TTL && !S.det[c.mint].busy));
+    if (todo.length) Promise.all(todo.map((c) => detail(c.mint))).then(() => { if (F.sig === "FOCUS") render(); });
+  }
   $("#empty").innerHTML = rows.length ? "" : (F.sig === "FOCUS" ? "Hiện chưa có coin nào đạt điều kiện: có Smart Money mua, không có cảnh báo rủi ro, dưới 15 phút tuổi. Tín hiệu này hiếm; danh sách tự cập nhật." : S.coins.length ? "Không có coin nào khớp bộ lọc." : (S.status && !S.status.running
     ? `Luồng coin mới đang tắt: ${esc(S.status.note || "")}. Không hiển thị dữ liệu giả.` : "Đang chờ coin mới đầu tiên…"));
 }
@@ -221,7 +259,20 @@ async function refreshSide() {
     <div class="grid4">${[["MC", c.mc_sol === null ? "–" : usd(c.mc_sol)], ["Liq", usd(c.liq_sol)], ["Buyers", c.buyers], ["Smart", sm.length],
       ["Vào (mua)", usd(c.buy_sol)], ["Ra (bán)", usd(c.sell_sol)], ["Creator mua", usd(c.dev_sol)], ["Mua trong tx/slot tạo", `${inTx}/${inSlot}`]]
       .map(([k, v]) => `<div><div class="k">${k}</div><div class="v">${v}</div></div>`).join("")}</div>
-    ${risk ? `<div class="riskbox"><b>⚠ CẢNH BÁO RỦI RO</b><br>${(risk.evidence.whys || []).map(esc).join("<br>")}</div>` : ""}
+    <h3>Dự án & Dev</h3>
+    <div class="proj">
+      ${socials(c, false)}
+      ${c.project && c.project.description ? `<div class="desc">${esc(c.project.description)}</div>` : `<div class="no" style="color:var(--dim)">Không có mô tả trên pump.fun.</div>`}
+      ${c.project && c.project.ath_mcap_usd ? `<div><span class="k">ATH (pump.fun)</span> $${fmt(c.project.ath_mcap_usd, 0)}${c.project.complete ? " · đã tốt nghiệp" : ""}</div>` : ""}
+      ${c.dev_profile ? `<div><span class="k">Hồ sơ pump.fun của dev</span> ${esc(c.dev_profile.username)} · ${fmt(c.dev_profile.followers, 0)} follower${c.dev_profile.bio ? ` · ${esc(c.dev_profile.bio)}` : ""}</div>` : ""}
+      <div><span class="k">Creator</span> <a href="https://solscan.io/account/${c.creator}" target="_blank" rel="noopener">${short(c.creator, 6)} ↗</a> · mua ${usd(c.dev_sol)}${c.dev_sold ? ' · <span style="color:var(--red)">đã bán</span>' : " · chưa bán"}${c.dev_class ? ` · ${esc(c.dev_class)}` : ""}</div>
+      ${(c.dev_history && c.dev_history.recent.length) ? `<div><span class="k">Coin khác của dev (hệ thống đã thấy)</span>
+        <table class="bt"><tbody>${c.dev_history.recent.slice(0, 8).map((o) => `<tr><td>${esc(o.symbol)}</td><td class="r">${age(now() - o.t_create)} trước</td>
+          <td class="r">${o.buyers} buyers</td><td class="r">${o.peak_mc_sol ? "đỉnh " + usd(o.peak_mc_sol) : (o.mc_sol ? usd(o.mc_sol) : "–")}</td>
+          <td>${o.dev_sold ? '<span class="bd tx">DEV BÁN</span>' : ""}${o.signals.includes("SMART_MONEY") ? '<span class="bd sm">SMART</span>' : ""}</td></tr>`).join("")}</tbody></table></div>`
+        : `<div style="color:var(--dim)">Chưa thấy coin nào khác của dev này kể từ khi luồng bắt đầu chạy.</div>`}
+    </div>
+    ${risk ? `<div class="riskbox" style="margin-top:12px"><b>⚠ CẢNH BÁO RỦI RO</b><br>${(risk.evidence.whys || []).map(esc).join("<br>")}</div>` : ""}
     ${sm.length ? `<h3>Smart Money đã mua (${sm.length})</h3><table class="bt"><tbody>${sm.map((w) => buyerRow(w, c)).join("")}</tbody></table>` : ""}
     <h3>Tín hiệu & bằng chứng</h3>
     <div class="ev">${sigs.map((s) => `<div><span><span class="pr ${s.kind}" style="min-width:0;padding:3px 8px">${TXT[s.kind]}</span></span><span class="m">phút ${fmt(s.minute, 1)}</span><span class="e">${evidence(s)}</span></div>`).join("") || "<div class='e'>Chưa có</div>"}</div>

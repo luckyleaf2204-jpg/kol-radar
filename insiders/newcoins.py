@@ -555,4 +555,71 @@ def coin_detail(store, mint: str, book: SmartBook | None = None) -> dict | None:
     buyers.sort(key=lambda w: (w["first_t"], w["first_slot"] or 0))
     c["buyers_list"] = buyers
     c["trades_list"] = trades[-200:][::-1]
+    c["dev_history"] = dev_history(store, c["creator"], mint)
+    cr = (info or {}).get(c["creator"]) or {}
+    c["dev_flags"], c["dev_class"] = cr.get("flags", []), cr.get("class")
     return c
+
+
+_META: dict[str, tuple[float, dict | None]] = {}
+_META_LOCK = threading.Lock()
+IPFS_GW = "https://gateway.pinata.cloud/ipfs/"            # ipfs.io / dweb.link refuse server requests (403)
+
+
+def metadata(uri: str | None, get=None, now=time.time) -> dict | None:
+    """The coin's metadata JSON set by its creator at launch (the CreateEvent uri): X / Telegram / website / description,
+    and the tool that launched it (the metadata host, or "Deployed using ..."). https to public hosts only, 64 KB max,
+    cached 1 h (a failure 10 min). Untrusted text: the page escapes it."""
+    from urllib.parse import urlsplit
+    from insiders.pumpinfo import _https, _public_https
+    if not uri:
+        return None
+    with _META_LOCK:
+        hit = _META.get(uri)
+    if hit and now() < hit[0]:
+        return hit[1]
+    url = uri
+    if "/ipfs/" in uri and urlsplit(uri).hostname in ("ipfs.io", "dweb.link", "w3s.link", "cloudflare-ipfs.com"):
+        url = IPFS_GW + uri.split("/ipfs/", 1)[1]
+    host = (urlsplit(uri).hostname or "").lower()
+    out = None
+    if _public_https(url):
+        try:
+            if get is None:
+                import urllib.request
+                req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"})
+                d = json.loads(urllib.request.urlopen(req, timeout=8).read(65536))
+            else:
+                d = get(url)
+            desc = (d.get("description") or "").strip()[:600] if isinstance(d, dict) else ""
+            launcher = None
+            if "Deployed using" in desc:
+                launcher = desc.split("Deployed using", 1)[1].strip().split()[0][:60] if desc.split("Deployed using", 1)[1].strip() else None
+            elif host and "ipfs" not in host:
+                launcher = host
+            out = {"twitter": _https(d.get("twitter")), "telegram": _https(d.get("telegram")), "website": _https(d.get("website")),
+                   "description": desc or None, "created_on": (d.get("createdOn") or None), "launcher": launcher,
+                   "metadata_host": host}
+        except Exception:
+            out = None
+    with _META_LOCK:
+        _META[uri] = (now() + (3600 if out else 600), out)
+        if len(_META) > 5000:
+            for k in sorted(_META, key=lambda k: _META[k][0])[:1000]:
+                del _META[k]
+    return out
+
+
+def dev_history(store, creator: str, mint: str | None = None, limit: int = 12) -> dict:
+    """The creator's other coins SEEN BY THIS STREAM (since it started): how many, how they did. Our own data only."""
+    rows = store.q("SELECT mint, symbol, name, t_create, buyers, smart, mc_sol, dev_sold, signals, platform FROM nc_coin WHERE creator=? "
+                   "ORDER BY t_create DESC LIMIT 200", (creator,))
+    other = [r for r in rows if r["mint"] != mint]
+    peaks = {o["mint"]: o["mx"] for o in store.q(
+        "SELECT mint, MAX(max_price) AS mx FROM nc_obs WHERE mint IN (SELECT mint FROM nc_coin WHERE creator=?) GROUP BY mint", (creator,))}
+    for r in other:
+        r["peak_mc_sol"] = round(peaks[r["mint"]] * P.SUPPLY, 1) if peaks.get(r["mint"]) else None
+        r["signals"] = json.loads(r["signals"] or "[]")
+    first = min((r["t_create"] for r in rows), default=None)
+    return {"coins_seen": len(other), "since": first, "with_buyers": sum(1 for r in other if r["buyers"]),
+            "dev_sold": sum(1 for r in other if r["dev_sold"]), "recent": other[:limit]}

@@ -72,6 +72,13 @@ input[type=search] { width: 100%; }
 .cn .why { color: #c9b3ff; font-size: 12px; white-space: normal; margin-top: 2px; }
 .chips button.focus { border-color: rgba(179, 138, 255, .6); color: var(--violet); }
 .chips button.focus.on { background: var(--violet); color: #12081f; border-color: var(--violet); }
+.soc { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-top: 4px; font-size: 12px; color: var(--mut); }
+.soc a { color: var(--acc); }
+.soc .no { color: var(--dim); }
+.soc .warn { color: var(--amber); } .soc .bad { color: var(--red); } .soc .ok { color: var(--green); }
+.proj { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 13px; display: grid; gap: 6px; }
+.proj .k { color: var(--dim); font: 600 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.proj .desc { color: var(--mut); white-space: pre-wrap; max-height: 90px; overflow: auto; }
 .focusnote { color: var(--mut); font-size: 12.5px; margin: -4px 0 12px; }
 .num { font: 600 15px var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
 .num.z { color: var(--dim); font-weight: 500; } .num.smn { color: var(--violet); font-weight: 800; }

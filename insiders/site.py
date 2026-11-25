@@ -418,8 +418,22 @@ def nc_get(nc, store, path: str, raw: str) -> tuple[int, object]:
         d = N.coin_detail(st, q["mint"], eng.book if eng else None)
         if d:
             d["sol_usd"] = eng.sol_usd if eng else None
+            pi = _pumpinfo()                                    # pump.fun public API (cached): links, description, dev profile
+            d["project"] = N.metadata(d.get("uri"))                # the creator's own metadata at launch (X, TG, web, tool)
+            d["dev_profile"] = pi.user(d["creator"]) if d.get("creator") else None
         return (200, d) if d else (404, {"error": "coin"})
     return 404, {"error": "route"}
+
+
+_PI = None
+
+
+def _pumpinfo():
+    global _PI
+    if _PI is None:
+        from insiders.pumpinfo import PumpInfo
+        _PI = PumpInfo()
+    return _PI
 
 
 def open_newcoins(sdir: Path, on: bool):

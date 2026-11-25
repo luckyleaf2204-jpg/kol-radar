@@ -273,3 +273,28 @@ def test_report_measures_from_the_15_minute_price(tmp_path):
     a, allg = r["groups"]["SMART_ANY"], r["groups"]["ALL"]
     assert a["coins"] == 1 and a["1h"]["hit_2x"] == 1.0 and a["24h"]["crash"] == 1.0          # 2x within 1 h, then -75 %
     assert allg["1h"]["crash"] == 0.5 and r["five_x_coins"] == 2 and r["five_x_without_smart_by_15m"] == 1
+
+
+def test_dev_history_lists_the_creators_other_coins(tmp_path):
+    st, e = eng(tmp_path)
+    other = P.b58(bytes([7]) + bytes(31))
+    e.put("c0", 90, logs(create(mint=other, ts=T0 - 600)), T0 - 599)
+    e.put("s0", 91, logs(trade(DEV, 1.0, 1000, buy=False, ts=T0 - 500, mint=other)), T0 - 499)
+    e.put("c1", 100, logs(create()), T0 + 1)
+    e.step(drain(e))
+    d = N.coin_detail(st, MINT, e.book)
+    h = d["dev_history"]
+    assert h["coins_seen"] == 1 and h["recent"][0]["mint"] == other and h["dev_sold"] == 1
+
+
+def test_metadata_reads_links_and_launcher_and_rewrites_ipfs():
+    seen = []
+
+    def get(url):
+        seen.append(url)
+        return {"twitter": "https://x.com/abc/status/1", "telegram": "javascript:alert(1)", "website": "https://abc.io",
+                "description": "hello Deployed using j7tracker.io", "createdOn": "https://pump.fun"}
+    m = N.metadata("https://ipfs.io/ipfs/QmTest1", get=get, now=lambda: 1.0)
+    assert seen == [N.IPFS_GW + "QmTest1"] and m["twitter"] == "https://x.com/abc/status/1" and m["telegram"] is None
+    assert m["launcher"] == "j7tracker.io" and m["website"] == "https://abc.io"
+    assert N.metadata("http://10.0.0.1/x", get=get, now=lambda: 1.0) is None and len(seen) == 1    # never a private host
