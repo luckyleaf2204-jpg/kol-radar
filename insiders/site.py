@@ -25,7 +25,11 @@ from pathlib import Path
 from insiders.service import InsiderService
 
 PAGE = Path(__file__).with_name("page")
-STATIC = {"/": ("index.html", "text/html; charset=utf-8"), "/index.html": ("index.html", "text/html; charset=utf-8"),
+STATIC = {"/": ("live/index.html", "text/html; charset=utf-8"), "/index.html": ("live/index.html", "text/html; charset=utf-8"),
+          "/live/live.js": ("live/live.js", "application/javascript; charset=utf-8"),
+          "/live/live.css": ("live/live.css", "text/css; charset=utf-8"),
+          # the earlier Insiders dashboard (watch, VIP, paper): secondary menu
+          "/dashboard/": ("index.html", "text/html; charset=utf-8"),
           "/app.js": ("app.js", "application/javascript; charset=utf-8"),
           "/styles.css": ("styles.css", "text/css; charset=utf-8"),
           # the earlier research page (generated from the SOL Memecoin Hunter UI by tools/build_insiders_page.py)
@@ -72,7 +76,7 @@ def git_commit() -> str | None:
         return None
 
 
-def make_handler(svc: InsiderService, access_code: str | None, health: dict, callers=None, esm=None):
+def make_handler(svc: InsiderService, access_code: str | None, health: dict, callers=None, esm=None, nc=None):
     class H(BaseHTTPRequestHandler):
         server_version = "insiders"
         protocol_version = "HTTP/1.1"                       # keep-alive: every response sets Content-Length
@@ -204,6 +208,11 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                         time.strftime("%Y-%m-%d", time.gmtime())), "safe_stop": wh.stat.get("safe_stop")}
                 if getattr(svc, "last_backup", None) is not None or getattr(svc, "backup_error", None):
                     h["backup"] = {"last": getattr(svc.last_backup, "name", None), "error": svc.backup_error}
+                if nc is not None:                            # New Coins LIVE: counts only
+                    m = nc[0].metrics()
+                    h["newcoins"] = {"connected": nc[1].stat["connected"], "msgs": nc[1].stat["msgs"], "reconnects": nc[1].stat["reconnects"],
+                                     **{k: m[k] for k in ("creates", "trades_tracked", "active_coins", "queue", "dropped", "signals",
+                                                          "discovery_latency_s", "signal_latency_s", "smart_watchlist")}}
                 if callers is not None:                       # Smart Caller Hunter: counts only
                     h["callers"] = callers.health()
                 return self._json(200, h)
@@ -219,6 +228,12 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                     name, ctype = CSTATIC[path]
                     return self._send(200, ctype, (CPAGE / name).read_bytes())
                 return self._send(404, "text/plain", b"")
+            if path == "/dashboard":
+                self.send_response(301)
+                self.send_header("Location", "/dashboard/")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return None
             if path == "/early":
                 self.send_response(301)
                 self.send_header("Location", "/early/")
@@ -243,6 +258,8 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                 from urllib.parse import urlsplit
                 res = callers.get(path, urlsplit(self.path).query)
                 return self._json(*res) if res else self._json(404, {"error": "route"})
+            if path.startswith("/api/nc/"):
+                return self._json(*nc_get(nc, esm, path, self.path))
             if path.startswith("/api/insiders/esm/"):
                 from urllib.parse import urlsplit
                 return self._json(*esm_get(esm, path, self.path, svc))
@@ -370,6 +387,59 @@ def esm_get(store, path: str, raw: str, svc=None) -> tuple[int, object]:
         d = V.coin_detail(store, q["mint"])
         return (200, d) if d else (404, {"error": "coin"})
     return 404, {"error": "route"}
+
+
+def nc_get(nc, store, path: str, raw: str) -> tuple[int, object]:
+    """GET /api/nc/{status|coins|coin}: New Coins LIVE (read only). `nc` = (engine, stream) when the stream runs."""
+    from insiders import newcoins as N
+    q = _qs(raw)
+    name = path.rsplit("/", 1)[-1]
+    eng, stream = nc if nc else (None, None)
+    st = eng.s if eng else store
+    if name == "status":
+        return 200, {"running": eng is not None, "stream": dict(stream.stat) if stream else None,
+                     "metrics": eng.metrics() if eng else None,
+                     "note": None if eng else "luồng coin mới tắt (chạy main.py không --no-watch, hoặc đặt INSIDER_NEWCOINS=1)"}
+    if st is None:
+        return 503, {"error": "nc_off"}
+    if name == "coins":
+        try:
+            age = max(60, min(7 * 86400, int(q.get("age") or 7200)))
+            limit = max(1, min(1000, int(q.get("limit") or 400)))
+        except ValueError:
+            return 400, {"error": "number"}
+        return 200, {"coins": N.coins(st, age, limit), "now": time.time()}
+    if name == "coin":
+        if not q.get("mint") or not _ADDR.fullmatch(q["mint"]):
+            return 400, {"error": "mint"}
+        d = N.coin_detail(st, q["mint"], eng.book if eng else None)
+        return (200, d) if d else (404, {"error": "coin"})
+    return 404, {"error": "route"}
+
+
+def open_newcoins(sdir: Path, on: bool):
+    """The New Coins stream (public websocket by default, no RPC calls) + engine threads. Off unless asked."""
+    flag = os.environ.get("INSIDER_NEWCOINS")
+    if flag == "0" or not (on or flag == "1"):
+        return None
+    import threading
+    from insiders import newcoins as N
+    from insiders.track import Store
+    alert = None
+    tok, chat = os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
+    if tok and chat and os.environ.get("NEWCOINS_TELEGRAM") == "1":    # opt-in: SMART_MONEY / HIGH_ALERT only
+        from insiders.watch import telegram_sender
+        send = telegram_sender(tok, chat)
+
+        def alert(a):
+            send(f"<b>{a['kind']}</b> {a.get('symbol') or ''} phút {a['minute']:.1f} https://pump.fun/coin/{a['mint']}")
+    eng = N.Engine(Store(sdir / "insiders_track.db"), alert=alert)
+    stream = N.Stream(eng)
+    stop = threading.Event()
+    threading.Thread(target=eng.run_forever, args=(stop,), daemon=True, name="nc-engine").start()
+    threading.Thread(target=stream.run_forever, args=(stop,), daemon=True, name="nc-stream").start()
+    print(f"[insiders] New Coins LIVE: stream {stream.stat['provider']} websocket", flush=True)
+    return eng, stream
 
 
 def open_esm(sdir: Path):
@@ -551,7 +621,9 @@ def serve(host: str = "127.0.0.1", port: int = 8780, watch: bool = True, svc: In
         callers = callers_app or _callers_app(svc, sdir, start=watch)
     esm = open_esm(sdir)
     health["esm"] = esm is not None
-    httpd = ThreadingHTTPServer((host, port), make_handler(svc, code, health, callers, esm))
+    nc = open_newcoins(sdir, on=bool(started))
+    health["newcoins"] = nc is not None
+    httpd = ThreadingHTTPServer((host, port), make_handler(svc, code, health, callers, esm, nc))
     print(f"[insiders] http://{host}:{port} · state {sdir} (durable {durable}) · watch {bool(started)}", flush=True)
     return httpd
 

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07090c">
+  <title>New Coins LIVE · KOL-Radar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/live/live.css?v=__V__">
+</head>
+<body>
+  <header class="hd">
+    <div class="brand">KOL<span>·</span>RADAR</div>
+    <div class="tag">NEW COINS</div>
+    <div id="live" class="live off"><i></i><b>…</b></div>
+    <div id="kpi" class="kpi"></div>
+    <div class="grow"></div>
+    <div class="menu"><button id="mbtn" aria-haspopup="true">Nghiên cứu ▾</button>
+      <div id="mlist" class="mlist" hidden>
+        <a href="/early/">Early Smart Money (RADAR lịch sử, chủ thể, cohort)</a>
+        <a href="/dashboard/">Dashboard Insiders cũ (watch, VIP, paper)</a>
+        <a href="/callers/">Smart Caller Hunter</a>
+      </div></div>
+  </header>
+  <div class="bar">
+    <div class="seg" id="age"></div>
+    <div class="seg" id="sig"></div>
+    <label>SOL vào ≥ <select id="minsol"><option>0</option><option>0.5</option><option>2</option><option>5</option><option>20</option></select></label>
+    <label>Smart ≥ <select id="minsm"><option>0</option><option>1</option><option>2</option></select></label>
+    <label class="chk"><input type="checkbox" id="hasbuy"> Có lệnh mua</label>
+    <label class="chk"><input type="checkbox" id="norisk"> Ẩn RISK</label>
+    <input id="q" type="search" placeholder="Tìm symbol / tên / mint…">
+    <div class="grow"></div>
+    <label class="chk" title="Âm báo khi có SMART MONEY / HIGH ALERT"><input type="checkbox" id="snd"> Âm báo</label>
+    <span id="cnt" class="cnt"></span>
+  </div>
+  <main class="wrap">
+    <section class="feed"><table class="t"><thead><tr>
+      <th class="r">Tuổi</th><th>Coin</th><th class="r">MC (SOL)</th><th class="r">Liq</th><th class="r">Ví mua</th><th class="r">SM</th>
+      <th class="r">SOL vào</th><th class="r">Mua đầu</th><th>Tín hiệu</th><th>Giai đoạn</th></tr></thead><tbody id="rows"></tbody></table>
+      <div id="empty" class="emptyst"></div>
+    </section>
+    <aside id="side" class="side" hidden></aside>
+  </main>
+  <div id="toast" class="toast"></div>
+  <script src="/live/live.js?v=__V__" defer></script>
+</body>
+</html>

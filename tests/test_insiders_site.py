@@ -57,7 +57,10 @@ def test_api_needs_the_code_and_never_returns_the_key(server):
 
 def test_page_and_assets_are_served(server):
     base, _ = server
-    st, html = call(base + "/")
+    st, live = call(base + "/")                                          # the main page: New Coins LIVE
+    assert st == 200 and "New Coins LIVE" in live and "/live/live.js?v=" in live and "__V__" not in live
+    assert call(base + "/live/live.js")[0] == 200 and call(base + "/live/live.css")[0] == 200
+    st, html = call(base + "/dashboard/")                                # the earlier dashboard: secondary menu
     assert st == 200 and "INSIDERS" in html and "PAPER MODE" in html and "__V__" not in html
     v = html.split("/app.js?v=")[1].split('"')[0]
     assert len(v) == 10 and f"/styles.css?v={v}" in html                    # cache-busting tag from the files

@@ -199,6 +199,25 @@ MIGRATIONS = [
         mint TEXT, sig TEXT, wallet TEXT, kind TEXT, sol REAL, tokens TEXT, quote TEXT, quote_amt REAL, slot INTEGER,
         block_time REAL, payer TEXT, fee INTEGER, signer INTEGER, PRIMARY KEY (mint, sig, wallet, kind));
     """,
+    # v6 (New Coins LIVE): coins seen at creation on the pump.fun log stream, their trades in the first 120 minutes,
+    # signals. New tables only.
+    """
+    CREATE TABLE IF NOT EXISTS nc_coin (
+        mint TEXT PRIMARY KEY, name TEXT, symbol TEXT, uri TEXT, creator TEXT, bonding_curve TEXT, platform TEXT,
+        t_create REAL, create_sig TEXT, create_slot INTEGER, seen_at REAL, price REAL, mc_sol REAL, liq_sol REAL,
+        buyers INTEGER DEFAULT 0, smart INTEGER DEFAULT 0, buy_sol REAL DEFAULT 0, sell_sol REAL DEFAULT 0, trades INTEGER DEFAULT 0,
+        dev_sol REAL DEFAULT 0, dev_tokens REAL DEFAULT 0, dev_sold INTEGER DEFAULT 0, first_buy_t REAL, first_buy_seen REAL,
+        signals TEXT, updated REAL, closed INTEGER DEFAULT 0, source TEXT);
+    CREATE INDEX IF NOT EXISTS ncc_t ON nc_coin (t_create);
+    CREATE TABLE IF NOT EXISTS nc_trade (
+        mint TEXT, sig TEXT, wallet TEXT, buy INTEGER, sol REAL, tokens REAL, price REAL, t REAL, slot INTEGER, seen_at REAL,
+        dev INTEGER DEFAULT 0, smart INTEGER DEFAULT 0, PRIMARY KEY (sig, mint, wallet, buy));
+    CREATE INDEX IF NOT EXISTS nct_mint ON nc_trade (mint, t);
+    CREATE INDEX IF NOT EXISTS nct_wallet ON nc_trade (wallet, t);
+    CREATE TABLE IF NOT EXISTS nc_signal (
+        mint TEXT, kind TEXT, t REAL, seen_at REAL, minute REAL, stage TEXT, wallets TEXT, evidence TEXT, PRIMARY KEY (mint, kind));
+    CREATE INDEX IF NOT EXISTS ncs_t ON nc_signal (seen_at);
+    """,
 ]
 
 

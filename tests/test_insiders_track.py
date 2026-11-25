@@ -145,7 +145,7 @@ def test_migration_to_v2_keeps_every_coin_event_and_checkpoint(tmp_path):
     db.commit()
     db.close()
     st = T.Store(path)
-    assert st.version() == len(T.MIGRATIONS) == 5
+    assert st.version() == len(T.MIGRATIONS) == 6
     m = st.mint(MINT)
     assert (m["name"], m["status"], m["newest_sig"], m["back_before"], m["pages"], m["history_state"]) == \
         ("OLD", "live", "NEWEST", "BACK", 9, "done")
