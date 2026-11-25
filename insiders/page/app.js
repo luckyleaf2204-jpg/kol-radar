@@ -13,9 +13,10 @@ const S = {
   act: { win: LS.get("kr.awin", "24h"), group: "all", bots: false }, fl: { dir: "all", group: "all", min: 0.5 },
   sig: { win: LS.get("kr.win", "24h"), multi: LS.get("kr.multi", false), sort: LS.get("kr.sort", "time"), open: null },
   al: { level: "all", view: LS.get("kr.alview", "trade") }, wl: { mode: "list", role: "all", sort: "wins", open: null, detail: null },
-  pp: { tab: "shadow" }, seenAlert: LS.get("kr.seenAlert", 0), sound: LS.get("kr.sound", true), err: null,
+  pp: { tab: "shadow" }, tr: { radar: null, coins: null, pending: [], status: null, off: false, err: null, win: LS.get("kr.rwin", "24h"),
+    who: LS.get("kr.rwho", "all"), hideBots: LS.get("kr.rbots", false), modal: null }, seenAlert: LS.get("kr.seenAlert", 0), sound: LS.get("kr.sound", true), err: null,
 };
-const TABS = [["activity", "Hoạt động"], ["flows", "Dòng tiền"], ["wallets", "Danh sách ví"], ["settings", "Cài đặt"]];
+const TABS = [["radar", "Radar"], ["coins", "Coins"], ["activity", "Hoạt động"], ["flows", "Dòng tiền"], ["wallets", "Danh sách ví"], ["settings", "Cài đặt"]];
 const WIN = { "5m": 300, "15m": 900, "1h": 3600, "24h": 86400, all: 1e12 };
 const ROLE = { holder: ["VÍ GỐC", "bad"], successor: ["VÍ KẾ THỪA", "warn"], child: ["VÍ LIÊN KẾT", "acc"], external: ["DỰ ÁN", "bad"], other: ["KHÁC", ""] };
 const GROUP_CLS = { INSIDERS: "acc", DEPTH: "warn", VALENTINO: "bad", STANK: "good" };
@@ -92,14 +93,15 @@ async function refresh() {
     const d = await api("/api/insiders/watch");
     S.w = d.watch; S.names = d.tickers || {}; S.err = null;
   } catch (e) { if (e.message === "auth") return; S.err = "Không tải được dữ liệu (" + e.message + "). Sẽ thử lại."; }
-  renderTop(); render(); notifyNew();
+  await refreshTrack();
+  renderTop(); if (!S.tr.modal) render(); notifyNew();   // an open dialog keeps what is typed
 }
 function start() {
-  S.tab = (location.hash || "#activity").slice(1);
-  if (!TABS.some(([k]) => k === S.tab)) S.tab = "activity";
+  S.tab = (location.hash || "#radar").slice(1);
+  if (!TABS.some(([k]) => k === S.tab)) S.tab = "radar";
   refresh();
   S.timer = setInterval(() => { if (!document.hidden) refresh(); }, 20000);
-  window.addEventListener("hashchange", () => { S.tab = (location.hash || "#activity").slice(1); if (!TABS.some(([k]) => k === S.tab)) S.tab = "activity"; renderTop(); render(true); });
+  window.addEventListener("hashchange", () => { S.tab = (location.hash || "#radar").slice(1); if (!TABS.some(([k]) => k === S.tab)) S.tab = "radar"; renderTop(); render(true); });
 }
 
 // ---------------------------------------------------------------- derived data
@@ -163,7 +165,7 @@ function render(fromNav) {
   const main = $("#main");
   if (!S.w) { main.innerHTML = `<div class="empty">${esc(S.err || "Đang tải…")}</div>`; return; }
   const y = window.scrollY;
-  const fn = { activity: viewActivity, flows: viewFlows, wallets: viewWalletList, settings: viewSettings }[S.tab] || viewActivity;
+  const fn = { radar: viewRadar, coins: viewCoins, activity: viewActivity, flows: viewFlows, wallets: viewWalletList, settings: viewSettings }[S.tab] || viewRadar;
   main.innerHTML = fn();
   if (!fromNav) window.scrollTo(0, y); else window.scrollTo(0, 0);
   const seen = S.prevSig[S.tab] || {}, next = {};
@@ -721,6 +723,7 @@ function bind() {
   const snd = $("#sound"); if (snd) snd.onchange = () => { S.sound = snd.checked; LS.set("kr.sound", snd.checked); };
   const lo = $("#logout"); if (lo) lo.onclick = () => { LS.del("insAccessCode"); location.reload(); };
   if ($("#chart")) drawChart();
+  bindTrack();
 }
 document.addEventListener("click", async (e) => {
   const b = e.target.closest("#pause"); if (!b) return;
@@ -754,4 +757,193 @@ function notifyNew() {          // a sound + system notification for strong aler
     const a = fresh[0]; try { new Notification("Cảnh báo mạnh: " + (a.symbol ? "$" + a.symbol : short(a.mint)), { body: a.kind === "GROUPBUY" ? `${a.n_wallets} ví nhóm ${a.group} cùng mua · ${usdOf(a.sol)}` : `${a.n_families || a.n_wallets || 2} nhóm ví cùng vào · ${usdOf(a.sol)}` }); } catch (_) { /* blocked */ }
   }
 }
+
+// ---------------------------------------------------------------- 9. Radar + Coins (track.py: watchlist, buys, funding)
+// Read-only views: every number comes from /api/insiders/track/*; nothing here signs or sends a transaction.
+async function apiPost(path, obj) {
+  const r = await fetch(path, { method: "POST", headers: { "X-Access-Code": S.code, "Content-Type": "application/json" },
+    body: JSON.stringify(obj || {}), cache: "no-store" });
+  if (r.status === 401) { showLogin("Sai mã truy cập"); throw new Error("auth"); }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || ("http " + r.status));
+  return d;
+}
+async function refreshTrack() {
+  const T = S.tr;
+  try {
+    const [rd, cs, st] = await Promise.all([api("/api/insiders/track/radar?win=" + encodeURIComponent(T.win)),
+      api("/api/insiders/track/coins"), api("/api/insiders/track/status")]);
+    T.radar = rd; T.coins = cs.coins || []; T.pending = cs.pending || []; T.status = st; T.off = false; T.err = null;
+  } catch (e) {
+    if (e.message === "auth") return;
+    T.off = e.message === "http 503"; T.err = T.off ? null : "Không tải được dữ liệu theo dõi coin (" + e.message + ")";
+  }
+}
+const STATUS_VI = { queued: ["CHỜ", ""], scanning: ["ĐANG QUÉT LỊCH SỬ", "acc"], live: ["TRỰC TIẾP", "good"], paused: ["TẠM DỪNG", "warn"],
+  error: ["LỖI", "bad"], stale: ["DỮ LIỆU CŨ", "warn"] };
+const statusPill = (s) => pill(...(STATUS_VI[s] || [s || "?", ""]));
+const BOT_VI = { "bot-like": ["BOT", "bad"], "automation-possible": ["CÓ THỂ TỰ ĐỘNG", "warn"], "human-like": ["GIỐNG NGƯỜI", ""], unknown: null };
+const botPill = (b) => { const x = b && BOT_VI[b.label]; return x ? pill(x[0], x[1], (b.why || []).join(" · ") + ` (tin cậy ${b.confidence})`) : ""; };
+const latTxt = (s) => s === null || s === undefined ? `<span class="unk">—</span>` : `<span class="${s <= 10 ? "good" : s <= 60 ? "" : "warn"}">${s < 60 ? nf(s, 1) + "s" : dur(s)}</span>`;
+const SRC_VI = { ws: "trực tiếp", poll: "quét vòng", "mint-poll": "theo coin", history: "lịch sử" };
+function trackBanner() {
+  const T = S.tr, st = T.status || {};
+  if (T.off) return `<div class="banner warn">Bộ theo dõi coin đang tắt trên server (INSIDER_TRACK=0).</div>`;
+  if (T.err) return `<div class="banner bad">${esc(T.err)}</div>`;
+  const parts = [];
+  if (st.paused) parts.push(`<div class="banner warn">Đang <b>tạm dừng quét</b>: không có giao dịch mới cho tới khi bật lại (tab Hoạt động).</div>`);
+  const fresh = st.latest_parsed ? now() - st.latest_parsed : null;
+  if (!st.paused && fresh !== null && fresh > 1800) parts.push(`<div class="banner warn">Dữ liệu cũ: sự kiện mới nhất được xử lý ${ago(st.latest_parsed)}.</div>`);
+  return parts.join("");
+}
+function coverageNote() {
+  const c = (S.tr.radar || {}).coverage || {};
+  return `<div class="note cov"><b>Phạm vi hiện tại:</b> ${esc(c.note || "")} <span class="dim">(Global Buyer Discovery: chưa có.)</span></div>`;
+}
+function fundCell(r) {
+  if (r.candidate) {
+    const p = r.candidate, first = (p.paths || [[]])[0] || [];
+    return `${pill("ỨNG VIÊN", "vio", "giả thuyết có bằng chứng on-chain, chưa xác minh")} <span class="small">${p.hops} bước từ ${acct(p.known)} ${groupPill(p.group)}</span>
+      <div class="dim small">${first.map((e) => `${short(e.src)}→${short(e.dst)} ${nf(e.amount, 2)} ${e.asset === "SOL" ? "SOL" : "token"}`).join(" · ")}
+      · ${p.independent_paths} đường</div>`;
+  }
+  const f = r.funding;
+  if (!f) return `<span class="dim small">chưa truy</span>`;
+  return `${acct(f.src)} ${f.known ? groupPill(f.group) : f.label ? pill(f.label) : ""}<div class="dim small">gửi ${nf(f.amount, 2)} ${f.asset === "SOL" ? "SOL" : "token"} · ${ago(f.ts)}</div>`;
+}
+function scoreCell(r) {
+  if (r.known) return `${groupPill(r.group)}<div class="dim small">ví nhóm đã biết</div>`;
+  if (!r.rank) return `<span class="dim small">chưa xếp hạng</span>`;
+  const k = r.rank;
+  return `<b class="mono">${nf(k.score * 100, 0)}</b><span class="dim small">/100 · ${esc(k.certainty)}</span><div class="dim small">${esc((k.why || []).slice(0, 2).join(" · "))}</div>`;
+}
+function viewRadar() {
+  const T = S.tr, rd = T.radar || {}, sol = rd.sol_usd;
+  let rows = (rd.buys || []);
+  if (T.who === "known") rows = rows.filter((r) => r.known);
+  if (T.who === "cand") rows = rows.filter((r) => r.candidate);
+  if (T.who === "other") rows = rows.filter((r) => !r.known && !r.candidate);
+  if (T.hideBots) rows = rows.filter((r) => !(r.bot && r.bot.label === "bot-like"));
+  const st = T.status || {}, by = st.by_status || {};
+  const seg = (k, opts, cur) => `<span class="seg">${opts.map(([v, l]) => `<button data-${k}="${v}" class="${cur === v ? "on" : ""}">${esc(l)}</button>`).join("")}</span>`;
+  const tr = rows.slice(0, 150).map((r) => ({ key: r.sig + r.wallet, sig: String(r.ts), cls: r.known ? "strong" : r.candidate ? "cand" : "",
+    cells: [`<span class="small">${clock(r.ts)}</span><div class="dim small">${ago(r.ts)}</div>`,
+      `${acct(r.wallet)} ${botPill(r.bot)}${r.kind === "CREATE" ? " " + pill("TẠO COIN", "bad") : ""}`,
+      `<b>${esc(r.symbol ? "$" + r.symbol : r.name || short(r.mint))}</b> <span class="copy" data-copy="${esc(r.mint)}" title="Sao chép CA">⧉</span>
+        <div class="dim small mono">${esc(short(r.mint))} · <a href="https://dexscreener.com/solana/${esc(r.mint)}" target="_blank" rel="noopener">chart</a>${r.tracked_coin ? " · <span class=\"acc-t\">đang theo dõi</span>" : ""}</div>`,
+      r.sol ? `<b class="mono">${nf(r.sol, 3)} SOL</b>${r.usd ? `<div class="dim small">${usdK(r.usd)}</div>` : ""}` : `<span class="unk">—</span>`,
+      r.mc_usd ? `<span class="mono">${usdK(r.mc_usd)}</span>` : `<span class="unk" title="chưa biết supply / decimals: không ước đoán">—</span>`,
+      scoreCell(r), fundCell(r),
+      `${latTxt(r.latency_s)}<div class="dim small">${esc(SRC_VI[r.source] || r.source || "")}</div>`] }));
+  const tiles = [["Coin đang theo dõi", (by.live || 0) + (by.scanning || 0) + (by.queued || 0), `${by.error || 0} lỗi · ${(T.pending || []).length} chờ địa chỉ`],
+    ["Ví theo dõi trực tiếp", vip().wallets || 0, `${vip().subscribed || 0} trên socket`],
+    ["Lệnh mua trong khung", (rd.buys || []).length, rd.window_s ? "trong " + dur(rd.window_s) : ""],
+    ["Độ trễ (trực tiếp)", (((st.latency || {}).ws || {}).seen_median_s ?? "—") + "s", "trung vị khối → thấy"]];
+  return `<section class="panel"><header><h2>Radar · lệnh mua mới</h2><span class="grow"></span>
+      ${seg("rwin", [["5m", "5 phút"], ["1h", "1 giờ"], ["6h", "6 giờ"], ["24h", "24 giờ"], ["7d", "7 ngày"]], T.win)}
+      ${seg("rwho", [["all", "Tất cả"], ["known", "Ví nhóm"], ["cand", "Ứng viên"], ["other", "Ví khác"]], T.who)}
+      <label class="chk"><input type="checkbox" id="rbots" ${T.hideBots ? "checked" : ""}> Ẩn ví BOT</label></header>
+    ${trackBanner()}${coverageNote()}
+    <div class="tiles">${tiles.map(([l, v, d]) => `<div class="tile"><div class="dim small">${esc(l)}</div><b class="mono">${esc(String(v))}</b><div class="dim small">${esc(d)}</div></div>`).join("")}</div>
+    ${table([["Lúc"], ["Ví", "addr"], ["Coin / CA"], ["SOL thực chi", "num"], ["MC lúc mua", "num"], ["Điểm / nhóm"], ["Nguồn tiền"], ["Độ trễ", "num"]], tr,
+      { empty: T.off ? "Bộ theo dõi coin đang tắt." : "Chưa có lệnh mua nào trong khung thời gian này. Thêm coin ở tab Coins để thấy mọi người mua coin đó." })}
+    <div class="note">SOL thực chi: số SOL ví trả trong giao dịch (theo phía pool). MC lúc mua = giá đã trả × supply; để trống khi chưa biết supply.
+      Điểm: xếp hạng có giải thích (liên hệ funding, mua sớm, mua cùng ví nhóm, độ mới, số dư), không phải khuyến nghị.
+      Ứng viên: giả thuyết dựa trên bằng chứng on-chain, chưa xác minh thuộc nhóm nào. ${sol ? "Giá SOL $" + nf(sol, 2) + "." : ""}</div></section>`;
+}
+function viewCoins() {
+  const T = S.tr, cs = T.coins || [];
+  const rows = cs.map((c) => {
+    const hist = c.history_state === "done" ? (c.history_note || "xong") : c.history_state === "skipped" ? "không quét lịch sử"
+      : c.history_state === "parsing" ? `đang đọc giao dịch sớm · ${c.queue} chờ` : c.history_state === "paging" ? `đã lùi ${c.pages} trang · ${nf(c.sigs_seen, 0)} chữ ký` : "chờ";
+    const act = (op, l, cls = "") => `<button class="btn small ${cls}" data-cop="${op}" data-mint="${esc(c.mint)}">${l}</button>`;
+    return { key: c.mint, sig: [c.status, c.buyers, c.pages, c.queue].join("|"), cls: "",
+      cells: [`<b>${esc(c.name || short(c.mint))}</b> <span class="copy" data-copy="${esc(c.mint)}" title="Sao chép CA">⧉</span>
+          <div class="dim small mono">${esc(short(c.mint))}${c.token_program ? " · " + esc(c.token_program) : ""}</div>${c.tags ? `<div>${c.tags.split(",").map(groupPill).join("")}</div>` : ""}`,
+        `${statusPill(c.status)}${c.verified === "mint" ? "" : c.verified ? "" : ` <span class="dim small">chưa xác minh</span>`}${c.last_error ? `<div class="bad small">${esc(c.last_error)}</div>` : ""}`,
+        `<span class="small">${esc(hist)}</span>${c.gap ? `<div class="warn small">bỏ qua ${c.gap} giao dịch (quá tải)</div>` : ""}`,
+        `<b class="mono">${c.buyers || 0}</b><div class="dim small">${c.buys || 0} lệnh</div>`,
+        `<span class="small">${ago(c.last_event_ts)}</span><div class="dim small">quét ${ago(c.last_poll)}</div>`,
+        `<span class="small">${when(c.added_ts)}</span>`,
+        `<span class="acts">${c.status === "paused" ? act("resume", "Tiếp tục") : act("pause", "Tạm dừng")}${c.status === "error" ? act("retry", "Thử lại") : ""}${act("remove", "Bỏ theo dõi", "danger")}</span>`] };
+  });
+  const pend = (T.pending || []).map((p) => ({ key: "p" + p.name, sig: "", cells: [`<b>${esc(p.name)}</b>`,
+    p.read_mint ? `<span class="mono small">${esc(p.read_mint)}</span>` : `<span class="dim small">—</span>`, `<span class="warn small">${esc(p.reason)}</span>`,
+    `<button class="btn small" data-addname="${esc(p.name)}">Nhập địa chỉ</button>`] }));
+  return `<section class="panel"><header><h2>Coins đang theo dõi (${cs.length})</h2><span class="grow"></span>
+      <button class="btn primary" id="addcoin">+ Thêm coin</button></header>
+    ${trackBanner()}
+    ${table([["Coin / CA"], ["Trạng thái"], ["Lịch sử"], ["Người mua", "num"], ["Sự kiện mới nhất", "num"], ["Thêm lúc", "num"], [""]], rows,
+      { empty: T.off ? "Bộ theo dõi coin đang tắt." : "Chưa có coin nào. Bấm “+ Thêm coin” và dán địa chỉ mint." })}
+    ${pend.length ? `<h2>Cần địa chỉ mint (${pend.length})</h2><div class="note">Các coin này chưa có địa chỉ mint chắc chắn nên chưa được theo dõi. Hệ thống không đoán địa chỉ.</div>
+      ${table([["Coin"], ["Địa chỉ đã đọc"], ["Lý do"], [""]], pend)}` : ""}
+    <div class="note">Mỗi coin: kiểm tra địa chỉ là token mint trên chain → quét lịch sử (lùi theo trang, có checkpoint, đọc các giao dịch sớm nhất) → theo dõi trực tiếp.
+      Bỏ theo dõi không xoá sự kiện hay ví đã ghi. Lượt gọi Helius dùng chung một giới hạn mỗi phút.</div></section>
+    ${T.modal ? addModal() : ""}`;
+}
+const B58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+function addModal() {
+  const m = S.tr.modal;
+  const lines = (m.text || "").split(/\n/).map((l) => l.split(/[,;\t]/)[0].trim()).filter((l) => l && !l.startsWith("#") && !/^(mint|address|ca)$/i.test(l));
+  const bad = lines.filter((l) => !B58.test(l)).length;
+  const res = (m.results || []).map((r) => `<li class="${r.result === "added" ? "good" : r.result === "already tracked" ? "dim" : "bad"}"><span class="mono">${esc(short(r.mint) || "(trống)")}</span> · ${esc({ added: "đã thêm", "already tracked": "đã có", invalid: "không hợp lệ", failed: "lỗi" }[r.result] || r.result)}${r.error ? " · " + esc(r.error) : ""}</li>`).join("");
+  return `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="mtitle"><div class="mbox">
+    <header><h2 id="mtitle">Thêm coin để theo dõi</h2><span class="grow"></span><button class="btn" id="mclose" aria-label="Đóng">✕</button></header>
+    <label for="mtext">Địa chỉ mint Solana <span class="dim small">(một dòng một mint, hoặc CSV: mint,tên,ghi chú)</span></label>
+    <textarea id="mtext" rows="4" spellcheck="false" placeholder="6nQCcuXypcAjncXK7gzvJcdwvqitgJRdG3k1no4Jpump">${esc(m.text || "")}</textarea>
+    <div class="small ${bad ? "bad" : lines.length ? "good" : "dim"}" id="mcheck">${lines.length ? `${lines.length - bad} địa chỉ đúng định dạng${bad ? ` · ${bad} sai định dạng` : ""} (server kiểm tra lại trên chain)` : "Dán địa chỉ mint"}</div>
+    <div class="row2"><div><label for="mname">Tên hiển thị <span class="dim small">(khi thêm 1 coin)</span></label><input id="mname" value="${esc(m.name || "")}" maxlength="40"></div>
+      <div><label for="mtags">Nhóm / tag</label><input id="mtags" value="${esc(m.tags || "")}" placeholder="DEPTH, STANK" maxlength="80"></div></div>
+    <label for="mnote">Ghi chú</label><input id="mnote" value="${esc(m.note || "")}" maxlength="300">
+    <label class="chk"><input type="checkbox" id="mhist" ${m.history !== false ? "checked" : ""}> Quét lịch sử (người mua sớm nhất)</label>
+    <label class="chk"><input type="checkbox" id="mlive" ${m.live !== false ? "checked" : ""}> Theo dõi giao dịch mới</label>
+    <div class="note">Chỉ đọc dữ liệu on-chain. Không giao dịch, không chấm điểm rủi ro.</div>
+    ${res ? `<ul class="mres">${res}</ul>` : ""}
+    <footer><button class="btn" id="mcancel">${res ? "Đóng" : "Huỷ"}</button><button class="btn primary" id="msubmit" ${lines.length && !m.busy ? "" : "disabled"}>${m.busy ? "Đang thêm…" : "Bắt đầu theo dõi"}</button></footer>
+  </div></div>`;
+}
+function modalRead() {
+  const m = S.tr.modal; if (!m) return;
+  m.text = $("#mtext").value; m.name = $("#mname").value; m.tags = $("#mtags").value; m.note = $("#mnote").value;
+  m.history = $("#mhist").checked; m.live = $("#mlive").checked;
+}
+function bindTrack() {
+  $$("[data-rwin]").forEach((b) => b.onclick = async () => { S.tr.win = b.dataset.rwin; LS.set("kr.rwin", S.tr.win); await refreshTrack(); render(); });
+  $$("[data-rwho]").forEach((b) => b.onclick = () => { S.tr.who = b.dataset.rwho; LS.set("kr.rwho", S.tr.who); render(); });
+  const rb = $("#rbots"); if (rb) rb.onchange = () => { S.tr.hideBots = rb.checked; LS.set("kr.rbots", rb.checked); render(); };
+  const ac = $("#addcoin"); if (ac) ac.onclick = () => { S.tr.modal = { history: true, live: true }; render(); setTimeout(() => $("#mtext") && $("#mtext").focus(), 0); };
+  $$("[data-addname]").forEach((b) => b.onclick = () => { S.tr.modal = { name: b.dataset.addname, history: true, live: true }; render(); setTimeout(() => $("#mtext") && $("#mtext").focus(), 0); });
+  if (!S.tr.modal) return;
+  const close = () => { S.tr.modal = null; render(); };
+  $("#mclose").onclick = close; $("#mcancel").onclick = close;
+  const mt = $("#mtext");
+  mt.oninput = () => {                    // live format check without re-rendering the textarea (keeps the caret)
+    const ls = mt.value.split(/\n/).map((l) => l.split(/[,;\t]/)[0].trim()).filter((l) => l && !l.startsWith("#") && !/^(mint|address|ca)$/i.test(l));
+    const bad = ls.filter((l) => !B58.test(l)).length, el = $("#mcheck");
+    el.className = "small " + (bad ? "bad" : ls.length ? "good" : "dim");
+    el.textContent = ls.length ? `${ls.length - bad} địa chỉ đúng định dạng${bad ? ` · ${bad} sai định dạng` : ""} (server kiểm tra lại trên chain)` : "Dán địa chỉ mint";
+    $("#msubmit").disabled = !ls.length;
+  };
+  $(".modal").onkeydown = (e) => { if (e.key === "Escape") close(); };
+  $("#msubmit").onclick = async () => {
+    modalRead(); const m = S.tr.modal; m.busy = true; render();
+    try {
+      const d = await apiPost("/api/insiders/track/coins", { text: m.text, name: m.name, note: m.note, history: m.history, live: m.live,
+        tags: (m.tags || "").split(",").map((x) => x.trim()).filter(Boolean) });
+      m.results = d.results || []; const n = m.results.filter((r) => r.result === "added").length;
+      toast(n ? `Đã thêm ${n} coin` : "Không có coin mới"); if (n) m.text = "";
+    } catch (e) { if (e.message !== "auth") m.results = [{ mint: "", result: "failed", error: e.message }]; }
+    m.busy = false; await refreshTrack(); render();
+  };
+}
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-cop]"); if (!b) return;
+  const op = b.dataset.cop, mint = b.dataset.mint;
+  if (op === "remove" && !confirm("Bỏ theo dõi coin này? Sự kiện và ví đã ghi vẫn được giữ.")) return;
+  b.disabled = true;
+  try { await api(`/api/insiders/track/coin?mint=${encodeURIComponent(mint)}&op=${op}`, "POST");
+    toast({ pause: "Đã tạm dừng coin", resume: "Đã tiếp tục", retry: "Sẽ thử lại", remove: "Đã bỏ theo dõi" }[op]); await refreshTrack(); render(); }
+  catch (err) { if (err.message !== "auth") toast("Không thực hiện được (" + err.message + ")"); b.disabled = false; }
+});
+
 document.addEventListener("DOMContentLoaded", () => { if (S.code) start(); else showLogin(""); });

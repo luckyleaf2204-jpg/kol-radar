@@ -54,6 +54,11 @@ MAX_WALLETS = int(os.environ.get("INSIDER_MAX_WALLETS") or (1000 if _HELIUS else
 # Parents / children are only followed while they hold CHILD_MIN_SOL (balances re-read every BAL_EVERY_S): the others
 # stay known (up to MAX_CHILDREN) and come back on their own once funded again. The base list is always followed.
 CHILD_MIN_SOL = float(os.environ.get("INSIDER_CHILD_MIN_SOL") or 1)
+# Balance is not the only gate: a parent / child under CHILD_MIN_SOL is still followed when its evidence rank
+# (track.rank_children: funding link, early buys, buys next to group wallets, freshness) reaches RANK_FOLLOW_MIN,
+# at most LOW_BAL_SLOTS such wallets (the Helius cost stays bounded).
+RANK_FOLLOW_MIN = float(os.environ.get("INSIDER_RANK_FOLLOW_MIN") or 0.45)
+LOW_BAL_SLOTS = int(os.environ.get("INSIDER_LOW_BAL_SLOTS") or 150)
 # Tokens moved between a listed wallet and another wallet are kept only when worth this much (DexScreener / Jupiter
 # price): spam airdrops and dust have no market or almost no value.
 TOKEN_FLOW_MIN_USD = float(os.environ.get("INSIDER_TOKEN_FLOW_MIN_USD") or 50)
@@ -76,6 +81,18 @@ QUIET_EVERY = 4
 TURBO_MAX_S = float(os.environ.get("INSIDER_TURBO_MAX_S") or 3 * 3600)
 TURBO_GAP_S = 0.025 if _HELIUS else 0.3
 POLL_LIMIT = 20                                                  # signatures read per wallet per round
+# B2 backfill: after a start, a socket reconnect or a resume (and every CATCHUP_EVERY_S) every wallet on the socket is
+# read back to its checkpoint (poll_last), 1000 signatures a page; past the page cap the rest is an explicit gap
+# (wallet, before, until) filled later page by page. Nothing is dropped without a record.
+CATCHUP_PAGES = int(os.environ.get("INSIDER_CATCHUP_PAGES") or 3)
+# one getSignaturesForAddress per socket wallet per round (1000 wallets hourly = 24 000 calls / day); 0 = only after
+# a start / reconnect / resume
+CATCHUP_EVERY_S = float(os.environ.get("INSIDER_CATCHUP_EVERY_S") or 3600)
+GAP_PAGES_PER_ROUND = int(os.environ.get("INSIDER_GAP_PAGES") or 2)
+RETRY_MAX = 2000                                                 # transactions not served yet, tried again later
+RETRY_TRIES = 5
+WS_HANDLED_MAX = 500                                             # per wallet, handled live since its checkpoint
+PAGE = 1000
 FLOW_MIN_SOL = float(os.environ.get("INSIDER_FLOW_MIN_SOL") or 0.5)          # a SOL move worth recording
 ADOPT_IN_MIN_SOL = float(os.environ.get("INSIDER_ADOPT_IN_MIN_SOL") or 1.0)  # a wallet paying a listed one joins too
 MAX_FLOWS = 2000
@@ -150,6 +167,11 @@ class VipStream:
         self.focus = [g.strip().upper() for g in (focus or "").split(",") if g.strip()] if isinstance(focus, str) else focus
         self.base = vip_list(result, self.focus)
         self.seen = deque(maxlen=5000)
+        self.catchup_due: str | None = "start"                 # B2: read back to the checkpoints at the next round
+        self.catchup_ts = 0.0
+        self._blk = threading.RLock()                          # gaps / retry list / seen, shared by the threads
+        self.bstat = {"catchups": 0, "last_reason": None, "last_at": None, "backfilled": 0, "positions": 0,
+                      "errors": 0, "gaps_opened": 0, "gaps_closed": 0, "retried": 0}
         self.stat = {"connected": False, "subscribed": 0, "last_msg": None, "reconnects": 0, "error": None,
                      "pushed": 0, "handled": 0, "missed": 0}
         self.retry_sleep = True
@@ -167,6 +189,8 @@ class VipStream:
         self.ws_refused: set[str] = set()
         self.bal_ts, self.ws_dirty = 0.0, False
         self.px: dict[str, tuple] = {}                         # mint -> (time, name / symbol / price facts)
+        self.rank: dict[str, dict] = {}                        # evidence rank of parents / children (track.py)
+        self.track = None                                      # track.Tracker: events / edges / signals store
         self.sol_usd, self.sol_usd_ts = None, 0.0
         self.pstat = {"rounds": 0, "wallets": 0, "round_s": None, "new": 0, "errors": 0, "last": None}
         self.holders = {h["wallet"] for h in v.get("holders", [])}
@@ -204,8 +228,13 @@ class VipStream:
     def wallets(self) -> dict[str, str]:
         """The base list always first and always whole; live children holding CHILD_MIN_SOL (or not read yet) fill the
         rest up to MAX_WALLETS, history links first, then the richest."""
-        kids = sorted(((a, v) for a, v in self.state["children"].items() if self._alive(a, v) and self._rich(v)),
-                      key=lambda x: (not x[1].get("seed"), -(x[1].get("bal") or 0), -x[1]["since"]))
+        rank = self.rank or {}
+        score = lambda a: (rank.get(a) or {}).get("score") or 0.0       # noqa: E731
+        alive = [(a, v) for a, v in self.state["children"].items() if self._alive(a, v)]
+        rich = [(a, v) for a, v in alive if self._rich(v)]
+        low = sorted(((a, v) for a, v in alive if not self._rich(v) and score(a) >= RANK_FOLLOW_MIN),
+                     key=lambda x: -score(x[0]))[:LOW_BAL_SLOTS]
+        kids = sorted(rich + low, key=lambda x: (not x[1].get("seed"), -score(x[0]), -(x[1].get("bal") or 0), -x[1]["since"]))
         kids = kids[:max(0, MAX_WALLETS - len(self.base))]
         return {**self.base, **{a: self._why_kid(v) for a, v in kids}}
 
@@ -256,6 +285,8 @@ class VipStream:
         p = (v.get("parent") or "")[:6]
         if v.get("store"):
             return f"ví cất token (nhận từ {p}… ngay sau khi mua)"
+        if v.get("bal") is not None and v["bal"] < CHILD_MIN_SOL:
+            return f"theo bằng chứng (số dư {v['bal']:g} SOL) · " + ("ví cha" if v.get("dir") == "in" else "ví con") + f" của {p}…"
         if v.get("dir") == "in":
             return f"ví cha của {p}…" + (f" (gửi {v.get('sol')} SOL cho ví đó)" if v.get("sol") else "")
         return f"ví con của {p}…" + (f" (nhận {v.get('sol')} SOL từ ví đó)" if v.get("sol") else "")
@@ -321,7 +352,8 @@ class VipStream:
         return {"role": self.role(wallet), "group": self.group(wallet), "role_note": ext.get("role"), "dir": kid.get("dir"),
                 "tier": self.tier(wallet), "wins": self.wins.get(wallet, 0),
                 "family": self.family(wallet), "parent": kid.get("parent") or (sorted(self.succ_from.get(wallet) or [None])[0]),
-                "funded_sol": kid.get("sol"), "since": kid.get("since")}
+                "funded_sol": kid.get("sol"), "since": kid.get("since"), "bal": kid.get("bal"),
+                "rank": {k: (self.rank.get(wallet) or {}).get(k) for k in ("score", "why", "certainty")} if self.rank.get(wallet) else None}
 
     def tier(self, wallet: str) -> str:
         """The wallet's own tier, else its family's (a child / successor inherits from where its money came)."""
@@ -410,10 +442,12 @@ class VipStream:
         return len(sigs) >= BOT_TX_48H and (sigs[-1].get("blockTime") or 0) > self.now() - 48 * 3600
 
     # ---------------------------------------------------------------- analysis of one pushed transaction
-    def handle(self, wallet: str, sig: str) -> list[dict]:
-        if sig in self.seen:
-            return []
-        self.seen.append(sig)
+    def handle(self, wallet: str, sig: str, observed: float | None = None, source: str = "poll") -> list[dict]:
+        with self._blk:                                       # socket worker and backfill can race on one signature
+            if sig in self.seen:
+                return []
+            self.seen.append(sig)
+        observed = observed or self.now()
         tx = None
         for k in range(4):                    # just after confirmation the node may not serve it yet / be busy
             try:
@@ -426,11 +460,18 @@ class VipStream:
             time.sleep(1.5 * (k + 1)) if self.retry_sleep else None
         self.stat["handled" if tx else "missed"] = self.stat.get("handled" if tx else "missed", 0) + 1
         if not tx:
+            self._retry_later(wallet, sig, source)
             return []
+        if source == "ws":                                    # handled live: the next catch-up does not read it again
+            with self._blk:
+                h = self.state.setdefault("ws_handled", {}).setdefault(wallet, [])
+                h.append(sig)
+                del h[:-WS_HANDLED_MAX]
         why = self.wallets().get(wallet, "special wallet")
         self.state.setdefault("last_seen", {})[wallet] = tx.get("blockTime")
         out = []
         evs = analyse(tx, wallet)
+        self._track(tx, wallet, evs, observed, source)
         for ev in evs:
             with self.w.lock:
                 self.w._ledger(ev, why)
@@ -480,12 +521,52 @@ class VipStream:
         if got >= ADOPT_IN_MIN_SOL and not moved and frm and frm not in self.wallets():
             self._adopt(frm, wallet, round(got, 3), direction="in")         # whoever pays a listed wallet is followed too
         if out:
+            self._track_signals(out)
             with self.w.lock:
                 self.w.state["alerts"] = (out[::-1] + self.w.state["alerts"])[:600]
                 self.state["events"] = self.state.get("events", 0) + len(out)
             self.w.save()
             self.w._send(out)
         return out
+
+    def _track(self, tx: dict, wallet: str, evs: list, observed: float, source: str) -> None:
+        """Normalised events + funding / transfer edges into the tracking store (never blocks the alert path)."""
+        t = self.track
+        if t is None:
+            return
+        try:
+            from insiders.track import PARSER_VERSION, sol_and_token_in
+            keys = [k.get("pubkey") if isinstance(k, dict) else k for k in
+                    ((tx.get("transaction") or {}).get("message") or {}).get("accountKeys") or []]
+            for ev in evs:
+                if ev["kind"] == "FUND":
+                    t.s.add_edge(wallet, ev["to"], "SOL", ev.get("sol") or 0, ev.get("ts"), ev.get("sig"), "fund")
+                    continue
+                t.s.add_event({**ev, "slot": tx.get("slot"), "source": source, "observed_at": observed,
+                               "parsed_at": self.now(), "signer": bool(keys) and keys[0] == wallet,
+                               "confidence": "high" if ev["kind"] in ("BUY", "SELL", "CREATE") else "medium",
+                               "parser": PARSER_VERSION})
+            for src, asset, amt in sol_and_token_in(tx, wallet):
+                if on_curve(src) and (asset != "SOL" or amt >= FLOW_MIN_SOL):
+                    t.s.add_edge(src, wallet, asset, amt, tx.get("blockTime"),
+                                 ((tx.get("transaction") or {}).get("signatures") or [None])[0], "fund" if asset == "SOL" else "token")
+        except Exception as e:                                # the store is a record: never stop the stream
+            self.stat["error"] = redact(f"track: {type(e).__name__}")
+
+    def _track_signals(self, out: list[dict]) -> None:
+        t = self.track
+        if t is None:
+            return
+        for a in out:
+            if a.get("kind") in ("GROUPBUY", "BUYSEND", "VIPSTRONG", "CREATE", "BUY") and a.get("mint"):
+                try:
+                    ws = a.get("holders") or [a.get("wallet")]
+                    t.record_signal(a["kind"], a["mint"], [w for w in ws if w], a.get("ts"),
+                                    {"sig": a.get("sig"), "sol": a.get("sol"), "group": a.get("group") or self.group(a.get("wallet") or ""),
+                                     "n_wallets": a.get("n_wallets"), "to": a.get("to"), "usd": a.get("usd")},
+                                    dedup=f"{a['kind']}|{a['mint']}|{a.get('sig')}")
+                except Exception as e:
+                    self.stat["error"] = redact(f"track: {type(e).__name__}")
 
     def _cohort(self, wallet: str) -> str | None:
         fam = self.family(wallet)
@@ -690,11 +771,12 @@ class VipStream:
 
         async def worker():
             while True:
-                addr, sig = await work.get()
+                addr, sig, seen_at = await work.get()
                 try:
-                    await asyncio.to_thread(self.handle, addr, sig)
+                    await asyncio.to_thread(self.handle, addr, sig, seen_at, "ws")
                 except Exception as e:                               # one bad transaction never stops the stream
                     self.stat["error"] = f"handle: {type(e).__name__}"
+                    self._retry_later(addr, sig, "ws")               # and is tried again, never silently lost
                 finally:
                     queued.discard(sig)
                     work.task_done()
@@ -775,13 +857,14 @@ class VipStream:
                         if addr and sig and val.get("err") is None and sig not in queued and sig not in self.seen:
                             self.stat["pushed"] += 1
                             try:
-                                work.put_nowait((addr, sig))                 # never wait on a slow fetch here
+                                work.put_nowait((addr, sig, self.now()))     # never wait on a slow fetch here
                                 queued.add(sig)
                             except asyncio.QueueFull:
                                 self.stat["missed"] += 1
             except Exception as e:                                   # dropped: reconnect and resubscribe
                 self.stat.update(connected=False, error=redact(f"{type(e).__name__}: {str(e)[:80]}"))
                 self.stat["reconnects"] += 1
+                self.catchup_due = self.catchup_due or "reconnect"   # what came while the socket was down
                 self.ws = None
                 if "1013" in str(e) or "Rate limit" in str(e):              # refused for too many attempts: cool down
                     backoff = max(backoff, LIMITED_BACKOFF_S)
@@ -806,6 +889,8 @@ class VipStream:
                     and (n % QUIET_EVERY == 0 or self.now() - (seen_at.get(a) or 0) < QUIET_S or a not in last)]
         t0, new = time.monotonic(), 0
         found: list[tuple[str, str]] = []
+        moved: dict[str, str] = {}                                 # checkpoints, applied once the round is handled
+        handled_live = self.state.setdefault("ws_handled", {})
         for a in todo:
             try:
                 sigs = rpc("getSignaturesForAddress", [a, {"limit": POLL_LIMIT}]) or []
@@ -815,30 +900,194 @@ class VipStream:
             if not sigs:
                 continue
             prev = last.get(a)
-            last[a] = sigs[0]["signature"]
             if prev is None:
+                last[a] = sigs[0]["signature"]
                 continue                                           # first look: remember the position only
+            moved[a] = sigs[0]["signature"]
             fresh = []
+            hit = False
             for x in sigs:
                 if x["signature"] == prev:
+                    hit = True
                     break
                 if x.get("err") is None:
                     fresh.append(x["signature"])
-            found += [(a, sig) for sig in reversed(fresh) if sig not in self.seen]   # oldest first
+            if not hit and len(sigs) >= POLL_LIMIT:                # more than one round's worth: page back to prev
+                more, complete = self._since(rpc, a, prev, before=sigs[-1]["signature"])
+                fresh += [x["signature"] for x in more if x.get("err") is None]
+                if not complete:
+                    self._open_gap(a, (more[-1] if more else sigs[-1])["signature"], prev, "poll: quá trần trang")
+            done = set(handled_live.get(a) or [])
+            found += [(a, sig, self.now(), "poll") for sig in reversed(fresh)
+                      if sig not in self.seen and sig not in done]   # oldest first
         new = len(found)
-
-        def one(item):
-            try:
-                self.handle(*item)
-            except Exception as e:                                 # one bad transaction never stops the round
-                self.stat["error"] = redact(f"poll: {type(e).__name__}")
-        if found:
-            from concurrent.futures import ThreadPoolExecutor
-            with ThreadPoolExecutor(max_workers=POLL_WORKERS) as ex:
-                list(ex.map(one, found))
+        self._run_items(found)
+        last.update(moved)
+        for a in moved:
+            handled_live.pop(a, None)
         self.pstat.update(rounds=self.pstat["rounds"] + 1, wallets=len(todo), new=self.pstat["new"] + new,
                           round_s=round(time.monotonic() - t0, 1), last=self.now())
         return new
+
+    # ------------------------------------------------------------ B2 backfill
+    def _since(self, rpc, a: str, until: str | None, before: str | None = None, pages: int | None = None):
+        """Signatures of `a` newer than `until` (and older than `before`), newest first, PAGE a call, at most `pages`
+        calls. Returns (signatures, complete); an RPC failure after its retries ends the read as incomplete."""
+        got: list[dict] = []
+        for _ in range(max(1, CATCHUP_PAGES if pages is None else pages)):
+            opts = {"limit": PAGE}
+            if until:
+                opts["until"] = until
+            if before:
+                opts["before"] = before
+            try:
+                sigs = rpc("getSignaturesForAddress", [a, opts]) or []
+                if not isinstance(sigs, list) or any(not isinstance(x, dict) or not x.get("signature") for x in sigs):
+                    raise ValueError("unexpected getSignaturesForAddress answer")
+            except Exception:                                  # RPC down / timeout / 429 after Rpc's retries / junk
+                self.bstat["errors"] += 1
+                return got, False
+            got += sigs
+            if len(sigs) < PAGE:
+                return got, True
+            before = sigs[-1]["signature"]
+        return got, False
+
+    def gaps(self, open_only: bool = False) -> list[dict]:
+        g = self.state.setdefault("gaps", [])
+        return [x for x in g if not x.get("closed")] if open_only else g
+
+    def _open_gap(self, wallet: str, before: str, until: str | None, reason: str) -> dict:
+        """Signatures older than `before` and newer than `until` (the old checkpoint) were not read yet; with
+        until=None the gap is the one transaction `before`."""
+        with self._blk:
+            g = self.state.setdefault("gaps", [])
+            self.state["gap_seq"] = max(self.state.get("gap_seq") or 0, max((y.get("id") or 0) for y in g) if g else 0) + 1
+            x = {"id": self.state["gap_seq"], "wallet": wallet, "before": before, "until": until, "reason": reason,
+                 "opened": self.now(), "filled": 0, "closed": None}
+            g.append(x)
+            closed = [y for y in g if y.get("closed")]
+            if len(closed) > 200:                              # open gaps always stay; old closed ones go
+                drop = {id(y) for y in closed[:len(closed) - 200]}
+                g[:] = [y for y in g if id(y) not in drop]
+            self.bstat["gaps_opened"] += 1
+            return x
+
+    def _retry_later(self, wallet: str, sig: str, source: str) -> None:
+        """getTransaction gave nothing after its tries: kept to try again (never silently lost)."""
+        with self._blk:
+            r = self.state.setdefault("retry", [])
+            old = next((x for x in r if x["sig"] == sig), None)
+            tries = 1
+            if old is not None:
+                r.remove(old)
+                tries = old["tries"] + 1
+            if tries > RETRY_TRIES:                            # given up: an explicit gap of one transaction
+                self._open_gap(wallet, sig, None, f"getTransaction không trả sau {RETRY_TRIES} lượt")
+            elif len(r) >= RETRY_MAX:
+                self._open_gap(wallet, sig, None, "hàng thử lại đầy")
+            else:
+                r.append({"wallet": wallet, "sig": sig, "source": source, "tries": tries, "first": self.now()})
+            try:
+                self.seen.remove(sig)                           # the next try is not taken for a duplicate
+            except ValueError:
+                pass
+
+    def _run_items(self, items: list[tuple]) -> int:
+        def one(item):
+            try:
+                self.handle(*item)
+            except Exception as e:                             # a crash in the analysis: tried again, then a gap
+                self.stat["error"] = redact(f"{item[3]}: {type(e).__name__}")
+                self._retry_later(item[0], item[1], item[3])
+        if items:
+            from concurrent.futures import ThreadPoolExecutor
+            with ThreadPoolExecutor(max_workers=POLL_WORKERS) as ex:
+                list(ex.map(one, items))
+        return len(items)
+
+    def catch_up(self, rpc=None, reason: str = "periodic", wallets=None) -> int:
+        """Read every socket wallet back to its checkpoint; returns the transactions handed to handle(). A wallet
+        with no checkpoint yet only gets one (its newest signature): nothing before it was ever in scope."""
+        rpc = rpc or self.rpc
+        last = self.state.setdefault("poll_last", {})
+        handled_live = self.state.setdefault("ws_handled", {})
+        todo = list(wallets) if wallets is not None else list(self.ws_set())
+        items: list[tuple] = []
+        moved: list[tuple] = []
+        for a in todo:
+            cp = last.get(a)
+            if cp is None:
+                try:
+                    sigs = rpc("getSignaturesForAddress", [a, {"limit": 1}]) or []
+                    sigs[0]["signature"] if sigs else None
+                except Exception:
+                    self.bstat["errors"] += 1
+                    continue
+                if sigs:
+                    last[a] = sigs[0]["signature"]
+                    self.bstat["positions"] += 1
+                continue
+            got, complete = self._since(rpc, a, cp)
+            if not got:
+                continue                                       # nothing new (or a failure: the checkpoint stays)
+            done = set(handled_live.get(a) or [])
+            items += [(a, x["signature"], self.now(), "backfill") for x in reversed(got)
+                      if x.get("err") is None and x["signature"] not in done and x["signature"] not in self.seen]
+            moved.append((a, got[0]["signature"], None if complete else (got[-1]["signature"], cp)))
+        n = self._run_items(items)                             # handled first: a save in between keeps the old
+        for a, newest, gap in moved:                           # checkpoint, so a crash re-reads instead of losing
+            if gap:
+                self._open_gap(a, gap[0], gap[1], f"quét bù ({reason}): quá {CATCHUP_PAGES} trang")
+            last[a] = newest
+            handled_live.pop(a, None)
+        self.bstat.update(catchups=self.bstat["catchups"] + 1, last_reason=reason, last_at=self.now(),
+                          backfilled=self.bstat["backfilled"] + n)
+        self.catchup_ts = self.now()
+        return n
+
+    def fill_gaps(self, rpc=None, pages: int | None = None) -> int:
+        """A few pages of the open gaps (oldest first), then the transactions waiting for another try."""
+        rpc = rpc or self.rpc
+        items: list[tuple] = []
+        moves: list[tuple] = []
+        budget = GAP_PAGES_PER_ROUND if pages is None else pages
+        for g in self.gaps(open_only=True):
+            if g.get("until") is None:                         # one transaction: tried again below, kept open
+                continue
+            if budget <= 0:
+                break
+            budget -= 1
+            got, complete = self._since(rpc, g["wallet"], g["until"], before=g["before"], pages=1)
+            items += [(g["wallet"], x["signature"], self.now(), "backfill") for x in reversed(got)
+                      if x.get("err") is None and x["signature"] not in self.seen]
+            if got or complete:
+                moves.append((g, got, complete))
+        with self._blk:
+            again = list(self.state.setdefault("retry", [])[:20])
+        items += [(r["wallet"], r["sig"], self.now(), r.get("source") or "backfill") for r in again]
+        self.bstat["retried"] += len(again)
+        n = self._run_items(items)
+        for g, got, complete in moves:                         # the cursor moves once its page is handled
+            g["filled"] += len(got)
+            if complete:
+                g["closed"] = self.now()
+                self.bstat["gaps_closed"] += 1
+            else:
+                g["before"] = got[-1]["signature"]
+        with self._blk:                                        # a failed try replaced its entry (tries + 1):
+            retry = self.state.setdefault("retry", [])         # the ones still the same object were handled
+            retry[:] = [r for r in retry if not any(r is x for x in again)]
+        return n
+
+    def backfill_round(self, rpc=None) -> int:
+        """Called by the poll loop: a catch-up when one is due, then some gap pages."""
+        n = 0
+        if self.catchup_due or self.now() - self.catchup_ts > CATCHUP_EVERY_S:
+            reason, self.catchup_due = self.catchup_due or "periodic", None
+            n += self.catch_up(rpc, reason)
+        n += self.fill_gaps(rpc)
+        return n
 
     def refresh_sol_usd(self, get=None) -> float | None:
         """SOL price in USD (Jupiter), for every amount and market cap the page shows in dollars; kept on failure."""
@@ -865,9 +1114,12 @@ class VipStream:
 
     def set_paused(self, on: bool) -> bool:
         """Pause (socket closed, polling / dev stats stopped: no Helius calls) or resume; kept across restarts."""
+        was = self.paused()
         self.state["paused_at"] = self.now() if on else 0
         if on:
             self.state["turbo_until"] = 0
+        elif was:
+            self.catchup_due = "resume"                        # what came during the pause
         try:
             self.w.save()
         except Exception:
@@ -902,6 +1154,7 @@ class VipStream:
                 self.refresh_sol_usd()
                 self.refresh_balances(rpc)
                 self.poll_once(fast if self.turbo() else rpc)
+                self.backfill_round(rpc)
                 self.w.save()
             except Exception as e:                                 # the loop never dies
                 self.stat["error"] = redact(f"poll: {type(e).__name__}: {str(e)[:60]}")
@@ -918,7 +1171,9 @@ class VipStream:
                 "sol_usd": self.sol_usd, "focus": self.focus or ["ALL"], "poll": self.pstat, "turbo_until": self.state.get("turbo_until") or 0,
                 "turbo": self.turbo(), "turbo_max_s": TURBO_MAX_S, "paused": self.paused(), "paused_at": self.state.get("paused_at") or 0, "child_min_sol": CHILD_MIN_SOL,
                 "parked": sum(1 for a, v in self.state["children"].items() if self._alive(a, v) and not self._rich(v)), "ws_max": WS_MAX, "refused": len(self.ws_refused), "provider": PROVIDER,
-                "max_wallets": MAX_WALLETS, "adopt_min_sol": ADOPT_MIN_SOL, "strong_window_s": STRONG_WINDOW_S}
+                "max_wallets": MAX_WALLETS, "adopt_min_sol": ADOPT_MIN_SOL, "strong_window_s": STRONG_WINDOW_S,
+                "backfill": {**self.bstat, "gaps_open": len(self.gaps(open_only=True)),
+                             "retry_waiting": len(self.state.get("retry") or []), "due": self.catchup_due}}
 
     def start(self, stop: threading.Event) -> threading.Thread:
         th = threading.Thread(target=lambda: asyncio.run(self.run(stop)), daemon=True)

@@ -1,0 +1,82 @@
+{
+ "note": "chỉ để đánh giá chiến lược; KHÔNG dùng cho điểm Early Smart Money",
+ "coins": {
+  "CHUCHU": {
+   "p_120m": 1.2969304838380827e-06,
+   "x_120m": 3.583,
+   "6h": {
+    "price": 7.186e-07,
+    "x_vs_open": 1.985,
+    "x_vs_120m": 0.554,
+    "trades": 23
+   },
+   "24h": {
+    "status": "INSUFFICIENT_DATA",
+    "why": "mốc chưa tới (t_create + 24 giờ = 2026-11-25 15:41 UTC)"
+   }
+  },
+  "FRENS": {
+   "p_120m": 9.056472533003588e-07,
+   "x_120m": 23.095,
+   "6h": {
+    "price": 2.0870894105074166e-06,
+    "x_vs_open": 53.223,
+    "x_vs_120m": 2.305,
+    "trades": 12
+   },
+   "24h": {
+    "price": 2.533158376428842e-06,
+    "x_vs_open": 64.598,
+    "x_vs_120m": 2.797,
+    "trades": 11
+   }
+  },
+  "MACCA": {
+   "p_120m": 1.8e-11,
+   "x_120m": null,
+   "6h": {
+    "status": "INSUFFICIENT_DATA",
+    "why": "chỉ 0 lệnh có giá bằng SOL"
+   },
+   "24h": {
+    "price": 1.127151938809353e-05,
+    "x_vs_open": null,
+    "x_vs_120m": null,
+    "trades": 5,
+    "note": "không có giá SOL trong cửa sổ 120 phút (pool USDC) → không so sánh được"
+   }
+  },
+  "SCINU": {
+   "p_120m": 3.460217745498264e-08,
+   "x_120m": 0.838,
+   "6h": {
+    "price": 4.267698890678935e-07,
+    "x_vs_open": 10.341,
+    "x_vs_120m": 12.334,
+    "trades": 21
+   },
+   "24h": {
+    "price": 2.0100216912402187e-07,
+    "x_vs_open": 4.87,
+    "x_vs_120m": 5.809,
+    "trades": 23
+   }
+  },
+  "STANK": {
+   "p_120m": 7.046475815741768e-07,
+   "x_120m": 1.406,
+   "6h": {
+    "price": 1.1051966950874521e-06,
+    "x_vs_open": 2.204,
+    "x_vs_120m": 1.568,
+    "trades": 16
+   },
+   "24h": {
+    "price": 1.5648631597044683e-06,
+    "x_vs_open": 3.121,
+    "x_vs_120m": 2.221,
+    "trades": 8
+   }
+  }
+ }
+}

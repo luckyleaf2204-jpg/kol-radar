@@ -26,6 +26,7 @@ PUBLIC_RPC = "https://api.mainnet-beta.solana.com"
 PUMP = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
 WSOL = "So11111111111111111111111111111111111111112"
 STABLES = {"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"}
+STABLE_NAMES = {"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": "USDC", "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB": "USDT"}
 EVERY_S = int(os.environ.get("INSIDER_WATCH_EVERY_S") or 120)   # a poll starts every 2 minutes
 NEW_COIN_S = 24 * 3600
 FUND_MIN_LAMPORTS = 500_000_000
@@ -206,8 +207,10 @@ def _trade_sol(tx: dict, wallet: str, mint: str, dt: int) -> float | None:
     return abs(pv) * abs(dt) / max(1, same) / 1e9
 
 
-def analyse(tx: dict, wallet: str) -> list[dict]:
-    """Events of `wallet` in one transaction: CREATE / BUY / RECEIVE (tokens in), SELL / SEND (tokens out), FUND."""
+def analyse(tx: dict, wallet: str, with_quote: bool = False) -> list[dict]:
+    """Events of `wallet` in one transaction: CREATE / BUY / RECEIVE (tokens in), SELL / SEND (tokens out), FUND.
+    with_quote: tag a SEND / RECEIVE that was really a swap against USDC / USDT (quote, quote_amt). Off by default so
+    the alert payloads of watch / vip stay exactly as before; parse_mint_events (tracker, research) turns it on."""
     meta = tx.get("meta") or {}
     if meta.get("err") is not None:
         return []
@@ -234,6 +237,9 @@ def analyse(tx: dict, wallet: str) -> list[dict]:
     pump_create = PUMP in keys and "Instruction: Create" in logs
     created = bool(keys) and keys[0] == wallet and (pump_create or bool(minted))
     moved = [m for m in set(pre) | set(post) if m not in (WSOL, *STABLES) and post[m] != pre[m]]
+    # a swap against a stablecoin (e.g. a GMGN route paying out USDC) moves no SOL to the wallet: the event keeps its
+    # kind (SEND / RECEIVE, no SOL price) but says what was received / paid, so it is not mistaken for a transfer
+    stable_mv = {m: post[m] - pre[m] for m in STABLES if post[m] != pre[m]}
     for mint in set(pre) | set(post):
         dt = post[mint] - pre[mint]
         if mint in (WSOL, *STABLES) or not dt:
@@ -254,8 +260,13 @@ def analyse(tx: dict, wallet: str) -> list[dict]:
             if pool is not None and len(moved) == 1 and pool * 0.9 - 0.02 <= got <= pool:
                 sol = got                                    # what the wallet really received, fees taken
             kind = "SELL" if sol > 0 else "SEND"
-        ev.append({"ts": ts, "sig": sig, "wallet": wallet, "kind": kind, "mint": mint, "sol": round(sol, 3),
-                   "tokens": abs(dt)})
+        e = {"ts": ts, "sig": sig, "wallet": wallet, "kind": kind, "mint": mint, "sol": round(sol, 3), "tokens": abs(dt)}
+        if with_quote and kind in ("SEND", "RECEIVE") and len(moved) == 1 and stable_mv:
+            q_mint, q_amt = max(stable_mv.items(), key=lambda kv: abs(kv[1]))
+            if (kind == "SEND" and q_amt > 0) or (kind == "RECEIVE" and q_amt < 0):
+                e["quote"] = STABLE_NAMES.get(q_mint, q_mint)
+                e["quote_amt"] = round(abs(q_amt) / 1e6, 6)  # USDC / USDT: 6 decimals
+        ev.append(e)
     if created and not any(e["kind"] == "CREATE" for e in ev):
         mints = sorted(minted) or [b["mint"] for b in meta.get("postTokenBalances") or [] if b.get("mint") not in (WSOL, *STABLES)]
         if mints:

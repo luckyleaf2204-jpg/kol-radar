@@ -1,0 +1,2230 @@
+{
+ "rule": ">= 3 slot chung (mỗi slot <= 40 ví), nhóm >= 3 ví; nhãn hành vi, không phải kết luận cùng chủ",
+ "groups": [
+  {
+   "id": "C001",
+   "wallets": [
+    "4dbKnVgJhagHYkagvAfPJQoK7amNpzPPdCAGR1m2n8o9",
+    "5DsVcXWvsT11B2WSQ1UqdZWtHideRFvBVpDpZqn3GMVK",
+    "66kfSxWV6CrZiuBxRe5oL2ty9pJQ8dFnPw65fGoC3miM",
+    "6eWNpvPGavLtcr9NzL4ms6UToZvAyi7wEhKjCvAfvtrC",
+    "AcysJyF3VVkS6pUU2AgMYNaNrkjXAuTW4Q2LPkPp6TCT",
+    "FLMgVECVhyNTUZ48qyy6TakcR7RgRBVRgNrQPZrgRNif",
+    "HnNG8q3Uuz9yGzcTT6WamSeJiauobC5Anbjvxevjq6r9"
+   ],
+   "shared_slots": 7,
+   "coins": [
+    "CHUCHU",
+    "SCINU"
+   ],
+   "slots": [
+    "CHUCHU:473398430",
+    "CHUCHU:473398431",
+    "CHUCHU:473398463",
+    "CHUCHU:473398507",
+    "CHUCHU:473398655",
+    "SCINU:472997941",
+    "SCINU:473000416"
+   ],
+   "typical_fee_lamports": {
+    "4dbKnVgJhagHYkagvAfPJQoK7amNpzPPdCAGR1m2n8o9": 2005000,
+    "5DsVcXWvsT11B2WSQ1UqdZWtHideRFvBVpDpZqn3GMVK": 2005000,
+    "66kfSxWV6CrZiuBxRe5oL2ty9pJQ8dFnPw65fGoC3miM": 2005000,
+    "6eWNpvPGavLtcr9NzL4ms6UToZvAyi7wEhKjCvAfvtrC": 5000,
+    "AcysJyF3VVkS6pUU2AgMYNaNrkjXAuTW4Q2LPkPp6TCT": 2010000,
+    "FLMgVECVhyNTUZ48qyy6TakcR7RgRBVRgNrQPZrgRNif": 2005000,
+    "HnNG8q3Uuz9yGzcTT6WamSeJiauobC5Anbjvxevjq6r9": 2005000
+   },
+   "same_fee_share": 0.71,
+   "own_fee_payer": true,
+   "kinds_per_slot": {
+    "CHUCHU:473398430": {
+     "4dbKnVgJ": [
+      "BUY"
+     ],
+     "5DsVcXWv": [
+      "BUY"
+     ],
+     "66kfSxWV": [
+      "BUY"
+     ],
+     "6eWNpvPG": [
+      "BUY"
+     ],
+     "AcysJyF3": [
+      "BUY"
+     ],
+     "FLMgVECV": [
+      "BUY"
+     ],
+     "HnNG8q3U": [
+      "BUY"
+     ]
+    },
+    "CHUCHU:473398431": {
+     "4dbKnVgJ": [
+      "BUY"
+     ],
+     "5DsVcXWv": [
+      "BUY"
+     ],
+     "66kfSxWV": [
+      "BUY"
+     ],
+     "6eWNpvPG": [
+      "BUY"
+     ],
+     "FLMgVECV": [
+      "BUY"
+     ],
+     "HnNG8q3U": [
+      "BUY"
+     ]
+    },
+    "CHUCHU:473398463": {
+     "4dbKnVgJ": [
+      "SELL"
+     ],
+     "5DsVcXWv": [
+      "SELL"
+     ],
+     "66kfSxWV": [
+      "SELL"
+     ],
+     "6eWNpvPG": [
+      "SELL"
+     ],
+     "AcysJyF3": [
+      "SELL"
+     ],
+     "FLMgVECV": [
+      "SELL"
+     ],
+     "HnNG8q3U": [
+      "SELL"
+     ]
+    },
+    "CHUCHU:473398507": {
+     "4dbKnVgJ": [
+      "SELL"
+     ],
+     "5DsVcXWv": [
+      "SELL"
+     ],
+     "66kfSxWV": [
+      "SELL"
+     ],
+     "6eWNpvPG": [
+      "SELL"
+     ],
+     "AcysJyF3": [
+      "SELL"
+     ],
+     "FLMgVECV": [
+      "SELL"
+     ],
+     "HnNG8q3U": [
+      "SELL"
+     ]
+    },
+    "CHUCHU:473398655": {
+     "4dbKnVgJ": [
+      "BUY"
+     ],
+     "5DsVcXWv": [
+      "BUY"
+     ],
+     "66kfSxWV": [
+      "BUY"
+     ],
+     "6eWNpvPG": [
+      "BUY"
+     ],
+     "AcysJyF3": [
+      "BUY"
+     ],
+     "FLMgVECV": [
+      "BUY"
+     ],
+     "HnNG8q3U": [
+      "BUY"
+     ]
+    },
+    "SCINU:472997941": {
+     "4dbKnVgJ": [
+      "BUY"
+     ],
+     "5DsVcXWv": [
+      "BUY"
+     ],
+     "66kfSxWV": [
+      "BUY"
+     ],
+     "6eWNpvPG": [
+      "BUY"
+     ],
+     "AcysJyF3": [
+      "BUY"
+     ],
+     "FLMgVECV": [
+      "BUY"
+     ],
+     "HnNG8q3U": [
+      "BUY"
+     ]
+    },
+    "SCINU:473000416": {
+     "4dbKnVgJ": [
+      "SEND/USDC"
+     ],
+     "5DsVcXWv": [
+      "SEND/USDC"
+     ],
+     "66kfSxWV": [
+      "SEND/USDC"
+     ],
+     "6eWNpvPG": [
+      "SELL"
+     ],
+     "AcysJyF3": [
+      "SELL"
+     ],
+     "FLMgVECV": [
+      "SEND/USDC"
+     ],
+     "HnNG8q3U": [
+      "SEND/USDC"
+     ]
+    }
+   }
+  },
+  {
+   "id": "C002",
+   "wallets": [
+    "2351du6dyERkj1YBu6D4s8Jc4SpmY17AqzSmeH4JgkpZ",
+    "7ER9dTZLgz28euwCRhwUAaG2EHvSAdL8LU4rh5zqwhUE",
+    "CKz4sXenERmvMHWPGGF94to7C98R8cZtuiQQUcELhUCd",
+    "FvsXYejoiTtrpxALmdzUGwmeacvvtVzRUxtpfYkYNx57",
+    "GXApNhkzdCchEqTK75ju6vmyKiZssCLiDUmKiqdfBSje",
+    "cfpU3ezDcEQahsg9sipJPXuUCYnRJK4B8VMSSov97Yf"
+   ],
+   "shared_slots": 29,
+   "coins": [
+    "CHUCHU"
+   ],
+   "slots": [
+    "CHUCHU:473399741",
+    "CHUCHU:473399746",
+    "CHUCHU:473399758",
+    "CHUCHU:473399966",
+    "CHUCHU:473399968",
+    "CHUCHU:473400280",
+    "CHUCHU:473400701",
+    "CHUCHU:473402941",
+    "CHUCHU:473403434",
+    "CHUCHU:473404014",
+    "CHUCHU:473404085",
+    "CHUCHU:473404118",
+    "CHUCHU:473404127",
+    "CHUCHU:473404139",
+    "CHUCHU:473404150",
+    "CHUCHU:473404166",
+    "CHUCHU:473404180",
+    "CHUCHU:473404247",
+    "CHUCHU:473404358",
+    "CHUCHU:473404402",
+    "CHUCHU:473404403",
+    "CHUCHU:473404409",
+    "CHUCHU:473404458",
+    "CHUCHU:473404482",
+    "CHUCHU:473404542",
+    "CHUCHU:473404947",
+    "CHUCHU:473405220",
+    "CHUCHU:473405368",
+    "CHUCHU:473405415"
+   ],
+   "typical_fee_lamports": {
+    "2351du6dyERkj1YBu6D4s8Jc4SpmY17AqzSmeH4JgkpZ": 33935,
+    "7ER9dTZLgz28euwCRhwUAaG2EHvSAdL8LU4rh5zqwhUE": 33935,
+    "CKz4sXenERmvMHWPGGF94to7C98R8cZtuiQQUcELhUCd": 33935,
+    "FvsXYejoiTtrpxALmdzUGwmeacvvtVzRUxtpfYkYNx57": 33935,
+    "GXApNhkzdCchEqTK75ju6vmyKiZssCLiDUmKiqdfBSje": 33935,
+    "cfpU3ezDcEQahsg9sipJPXuUCYnRJK4B8VMSSov97Yf": 33935
+   },
+   "same_fee_share": 1.0,
+   "own_fee_payer": true,
+   "kinds_per_slot": {
+    "CHUCHU:473399741": {
+     "2351du6d": [
+      "BUY"
+     ],
+     "FvsXYejo": [
+      "BUY"
+     ]
+    },
+    "CHUCHU:473399746": {
+     "2351du6d": [
+      "BUY"
+     ],
+     "FvsXYejo": [
+      "BUY"
+     ]
+    },
+    "CHUCHU:473399758": {
+     "2351du6d": [
+      "SELL"
+     ],
+     "FvsXYejo": [
+      "SELL"
+     ]
+    },
+    "CHUCHU:473399966": {
+     "7ER9dTZL": [
+      "BUY"
+     ],
+     "CKz4sXen": [
+      "BUY"
+     ]
+    },
+    "CHUCHU:473399968": {
+     "7ER9dTZL": [
+      "BUY"
+     ],
+     "CKz4sXen": [
+      "BUY"
+     ]
+    },
+    "CHUCHU:473400280": {
+     "2351du6d": [
+      "BUY"
+     ],
+     "FvsXYejo": [
+      "BUY"
+     ]
+    },
+    "CHUCHU:473400701": {
+     "GXApNhkz": [
+      "BUY"
+     ],
+     "cfpU3ezD": [
+      "BUY"
+     ]
+    },
+    "CHUCHU:473402941": {
+     "GXApNhkz": [
+      "BUY"
+     ],
+     "cfpU3ezD": [
+      "BUY"
+     ]
+    },
+    "CHUCHU:473403434": {
+     "2351du6d": [
+      "SELL"
+     ],
+     "7ER9dTZL": [
+      "SELL"
+     ],
+     "CKz4sXen": [
+      "SELL"
+     ],
+     "FvsXYejo": [
+      "SELL"
+     ],
+     "GXApNhkz": [
+      "SELL"
+     ],
+     "cfpU3ezD": [
+      "SELL"
+     ]
+    },
+    "CHUCHU:473404014": {
+     "2351du6d": [
+      "SELL"
+     ],
+     "7ER9dTZL": [
+      "SELL"
+     ],
+     "CKz4sXen": [
+      "SELL"
+     ],
+     "FvsXYejo": [
+      "SELL"
+     ],
+     "GXApNhkz": [
+      "SELL"
+     ],
+     "cfpU3ezD": [
+      "SELL"
+     ]
+    },
+    "CHUCHU:473404085": {
+     "2351du6d": [
+      "SELL"
+     ],
+     "7ER9dTZL": [
+      "SELL"
+     ],
+     "CKz4sXen": [
+      "SELL"
+     ],
+     "FvsXYejo": [
+      "SELL"
+     ],
+     "GXApNhkz": [
+      "SELL"
+     ],
+     "cfpU3ezD": [
+      "SELL"
+     ]
+    },
+    "CHUCHU:473404118": {
+     "2351du6d": [
+      "SELL"
+     ],
+     "7ER9dTZL": [
+      "SELL"
+     ],
+     "CKz4sXen": [
+      "SELL"
+     ],
+     "FvsXYejo": [
+      "SELL"
+     ],
+     "GXApNhkz": [
+      "SELL"
+     ],
+     "cfpU3ezD": [
+      "SELL"
+     ]
+    }
+   }
+  },
+  {
+   "id": "C003",
+   "wallets": [
+    "4ybgPyNLsm3gqUENsZjMijD1Qv3ZsqGiSFTL5oXP4xCW",
+    "5Gn8vCuwWUpqKevefeze3BM9T6Gff2oh8GF5qKZTiMMk",
+    "6pBcGSdkGR1pqEeEXxT5pKPqaJHDkv3eRUuUSAw2tQTt",
+    "Axd8e2s1cpmefhK9DTM7rnHgLuTih71zxhqeecUvyKYP",
+    "D9q9aqkZ5h4tzyHG7EDVxNxSUhCJsYSp9Hj2WxkVB7yU",
+    "FGwT2sXPcWi7i4xWL7c4ebjQECWobxBNS3HZJfTjhZAJ"
+   ],
+   "shared_slots": 11,
+   "coins": [
+    "STANK"
+   ],
+   "slots": [
+    "STANK:462905867",
+    "STANK:462905921",
+    "STANK:462906109",
+    "STANK:462906289",
+    "STANK:462906999",
+    "STANK:462907404",
+    "STANK:462907488",
+    "STANK:462911336",
+    "STANK:462913444",
+    "STANK:462915118",
+    "STANK:462915119"
+   ],
+   "typical_fee_lamports": {
+    "4ybgPyNLsm3gqUENsZjMijD1Qv3ZsqGiSFTL5oXP4xCW": 8274,
+    "5Gn8vCuwWUpqKevefeze3BM9T6Gff2oh8GF5qKZTiMMk": 8274,
+    "6pBcGSdkGR1pqEeEXxT5pKPqaJHDkv3eRUuUSAw2tQTt": 8274,
+    "Axd8e2s1cpmefhK9DTM7rnHgLuTih71zxhqeecUvyKYP": 8274,
+    "D9q9aqkZ5h4tzyHG7EDVxNxSUhCJsYSp9Hj2WxkVB7yU": 8274,
+    "FGwT2sXPcWi7i4xWL7c4ebjQECWobxBNS3HZJfTjhZAJ": 8274
+   },
+   "same_fee_share": 1.0,
+   "own_fee_payer": true,
+   "kinds_per_slot": {
+    "STANK:462905867": {
+     "4ybgPyNL": [
+      "BUY"
+     ],
+     "5Gn8vCuw": [
+      "BUY"
+     ],
+     "6pBcGSdk": [
+      "BUY"
+     ],
+     "Axd8e2s1": [
+      "BUY"
+     ],
+     "D9q9aqkZ": [
+      "BUY"
+     ],
+     "FGwT2sXP": [
+      "BUY"
+     ]
+    },
+    "STANK:462905921": {
+     "4ybgPyNL": [
+      "BUY"
+     ],
+     "5Gn8vCuw": [
+      "BUY"
+     ],
+     "6pBcGSdk": [
+      "BUY"
+     ],
+     "Axd8e2s1": [
+      "BUY"
+     ],
+     "D9q9aqkZ": [
+      "BUY"
+     ],
+     "FGwT2sXP": [
+      "BUY"
+     ]
+    },
+    "STANK:462906109": {
+     "4ybgPyNL": [
+      "SELL"
+     ],
+     "5Gn8vCuw": [
+      "SELL"
+     ],
+     "6pBcGSdk": [
+      "SELL"
+     ],
+     "Axd8e2s1": [
+      "SELL"
+     ],
+     "D9q9aqkZ": [
+      "SELL"
+     ],
+     "FGwT2sXP": [
+      "SELL"
+     ]
+    },
+    "STANK:462906289": {
+     "4ybgPyNL": [
+      "BUY"
+     ],
+     "5Gn8vCuw": [
+      "BUY"
+     ],
+     "6pBcGSdk": [
+      "BUY"
+     ],
+     "Axd8e2s1": [
+      "BUY"
+     ],
+     "D9q9aqkZ": [
+      "BUY"
+     ],
+     "FGwT2sXP": [
+      "BUY"
+     ]
+    },
+    "STANK:462906999": {
+     "4ybgPyNL": [
+      "BUY"
+     ],
+     "5Gn8vCuw": [
+      "BUY"
+     ],
+     "6pBcGSdk": [
+      "BUY"
+     ],
+     "Axd8e2s1": [
+      "BUY"
+     ],
+     "D9q9aqkZ": [
+      "BUY"
+     ],
+     "FGwT2sXP": [
+      "BUY"
+     ]
+    },
+    "STANK:462907404": {
+     "4ybgPyNL": [
+      "SELL"
+     ],
+     "5Gn8vCuw": [
+      "SELL"
+     ],
+     "6pBcGSdk": [
+      "SELL"
+     ],
+     "Axd8e2s1": [
+      "SELL"
+     ],
+     "D9q9aqkZ": [
+      "SELL"
+     ],
+     "FGwT2sXP": [
+      "SELL"
+     ]
+    },
+    "STANK:462907488": {
+     "4ybgPyNL": [
+      "BUY"
+     ],
+     "5Gn8vCuw": [
+      "BUY"
+     ],
+     "6pBcGSdk": [
+      "BUY"
+     ],
+     "Axd8e2s1": [
+      "BUY"
+     ],
+     "D9q9aqkZ": [
+      "BUY"
+     ],
+     "FGwT2sXP": [
+      "BUY"
+     ]
+    },
+    "STANK:462911336": {
+     "4ybgPyNL": [
+      "SELL"
+     ],
+     "5Gn8vCuw": [
+      "SELL"
+     ],
+     "6pBcGSdk": [
+      "SELL"
+     ],
+     "Axd8e2s1": [
+      "SELL"
+     ],
+     "D9q9aqkZ": [
+      "SELL"
+     ],
+     "FGwT2sXP": [
+      "SELL"
+     ]
+    },
+    "STANK:462913444": {
+     "4ybgPyNL": [
+      "BUY"
+     ],
+     "5Gn8vCuw": [
+      "BUY"
+     ],
+     "6pBcGSdk": [
+      "BUY"
+     ],
+     "Axd8e2s1": [
+      "BUY"
+     ],
+     "D9q9aqkZ": [
+      "BUY"
+     ],
+     "FGwT2sXP": [
+      "BUY"
+     ]
+    },
+    "STANK:462915118": {
+     "4ybgPyNL": [
+      "SELL"
+     ],
+     "6pBcGSdk": [
+      "SELL"
+     ],
+     "D9q9aqkZ": [
+      "SELL"
+     ],
+     "FGwT2sXP": [
+      "SELL"
+     ]
+    },
+    "STANK:462915119": {
+     "5Gn8vCuw": [
+      "SELL"
+     ],
+     "Axd8e2s1": [
+      "SELL"
+     ]
+    }
+   }
+  },
+  {
+   "id": "C004",
+   "wallets": [
+    "EBqEXnVdQcP8Wg5MFvq3YkZUm37UuwDtA7M5zX6gr8xS",
+    "Erq5XDrLsxbQwbEgDFfqKYHxgw5LTvdkLW84YNW367Y8",
+    "Eu6cWC4sxaQLfq1Su7m3gd5zZ2wSdTRPoLznFdLdxAVj",
+    "GxcweaxPcxVzMgNZAA2pjktCRiRiE1xePb6tiyiRKqGG",
+    "H79ued8Jbtokd4FGyU3jzDTanBaYcPpY3FRurjDnCfqc"
+   ],
+   "shared_slots": 3,
+   "coins": [
+    "FRENS"
+   ],
+   "slots": [
+    "FRENS:459817057",
+    "FRENS:459817063",
+    "FRENS:459817370"
+   ],
+   "typical_fee_lamports": {
+    "EBqEXnVdQcP8Wg5MFvq3YkZUm37UuwDtA7M5zX6gr8xS": 137692,
+    "Erq5XDrLsxbQwbEgDFfqKYHxgw5LTvdkLW84YNW367Y8": 137692,
+    "Eu6cWC4sxaQLfq1Su7m3gd5zZ2wSdTRPoLznFdLdxAVj": 138533,
+    "GxcweaxPcxVzMgNZAA2pjktCRiRiE1xePb6tiyiRKqGG": 138533,
+    "H79ued8Jbtokd4FGyU3jzDTanBaYcPpY3FRurjDnCfqc": 140216
+   },
+   "same_fee_share": 0.4,
+   "own_fee_payer": true,
+   "kinds_per_slot": {
+    "FRENS:459817057": {
+     "EBqEXnVd": [
+      "BUY"
+     ],
+     "Erq5XDrL": [
+      "BUY"
+     ],
+     "Eu6cWC4s": [
+      "BUY"
+     ],
+     "GxcweaxP": [
+      "BUY"
+     ],
+     "H79ued8J": [
+      "BUY"
+     ]
+    },
+    "FRENS:459817063": {
+     "EBqEXnVd": [
+      "BUY"
+     ],
+     "Erq5XDrL": [
+      "BUY"
+     ],
+     "Eu6cWC4s": [
+      "BUY"
+     ],
+     "GxcweaxP": [
+      "BUY"
+     ],
+     "H79ued8J": [
+      "BUY"
+     ]
+    },
+    "FRENS:459817370": {
+     "EBqEXnVd": [
+      "SELL"
+     ],
+     "Erq5XDrL": [
+      "SELL"
+     ],
+     "Eu6cWC4s": [
+      "SELL"
+     ],
+     "GxcweaxP": [
+      "SELL"
+     ],
+     "H79ued8J": [
+      "SELL"
+     ]
+    }
+   }
+  },
+  {
+   "id": "C005",
+   "wallets": [
+    "44fA3UFw37QVcoaxQWKwWL3v2jLgMMffvQvCGg7KcgH7",
+    "959PXK85geyZB534cWbUhQaq2q7Fyx764dgcLm3robBm",
+    "DDmfoL1NTh94aw6Ho1K1C5qwuFzhaMQjTRUDJ2Gu5fqo",
+    "E7NTdot2M2nft7dXAdwzKPCYkTNhZpWmhf43iCqBb5pX"
+   ],
+   "shared_slots": 8,
+   "coins": [
+    "CHUCHU"
+   ],
+   "slots": [
+    "CHUCHU:473404113",
+    "CHUCHU:473404220",
+    "CHUCHU:473405151",
+    "CHUCHU:473405265",
+    "CHUCHU:473405266",
+    "CHUCHU:473405907",
+    "CHUCHU:473406236",
+    "CHUCHU:473406723"
+   ],
+   "typical_fee_lamports": {
+    "44fA3UFw37QVcoaxQWKwWL3v2jLgMMffvQvCGg7KcgH7": 80301,
+    "959PXK85geyZB534cWbUhQaq2q7Fyx764dgcLm3robBm": 80301,
+    "DDmfoL1NTh94aw6Ho1K1C5qwuFzhaMQjTRUDJ2Gu5fqo": 80301,
+    "E7NTdot2M2nft7dXAdwzKPCYkTNhZpWmhf43iCqBb5pX": 80301
+   },
+   "same_fee_share": 1.0,
+   "own_fee_payer": true,
+   "kinds_per_slot": {
+    "CHUCHU:473404113": {
+     "44fA3UFw": [
+      "BUY"
+     ],
+     "959PXK85": [
+      "BUY"
+     ],
+     "DDmfoL1N": [
+      "BUY"
+     ],
+     "E7NTdot2": [
+      "BUY"
+     ]
+    },
+    "CHUCHU:473404220": {
+     "44fA3UFw": [
+      "BUY"
+     ],
+     "959PXK85": [
+      "BUY"
+     ],
+     "DDmfoL1N": [
+      "BUY"
+     ],
+     "E7NTdot2": [
+      "BUY"
+     ]
+    },
+    "CHUCHU:473405151": {
+     "44fA3UFw": [
+      "BUY"
+     ],
+     "959PXK85": [
+      "BUY"
+     ],
+     "DDmfoL1N": [
+      "BUY"
+     ],
+     "E7NTdot2": [
+      "BUY"
+     ]
+    },
+    "CHUCHU:473405265": {
+     "44fA3UFw": [
+      "BUY"
+     ],
+     "959PXK85": [
+      "BUY"
+     ],
+     "DDmfoL1N": [
+      "BUY"
+     ],
+     "E7NTdot2": [
+      "BUY"
+     ]
+    },
+    "CHUCHU:473405266": {
+     "44fA3UFw": [
+      "BUY"
+     ],
+     "959PXK85": [
+      "BUY"
+     ],
+     "DDmfoL1N": [
+      "BUY"
+     ],
+     "E7NTdot2": [
+      "BUY"
+     ]
+    },
+    "CHUCHU:473405907": {
+     "44fA3UFw": [
+      "BUY"
+     ],
+     "959PXK85": [
+      "BUY"
+     ],
+     "DDmfoL1N": [
+      "BUY"
+     ],
+     "E7NTdot2": [
+      "BUY"
+     ]
+    },
+    "CHUCHU:473406236": {
+     "44fA3UFw": [
+      "BUY"
+     ],
+     "959PXK85": [
+      "BUY"
+     ],
+     "DDmfoL1N": [
+      "BUY"
+     ],
+     "E7NTdot2": [
+      "BUY"
+     ]
+    },
+    "CHUCHU:473406723": {
+     "44fA3UFw": [
+      "SELL"
+     ],
+     "959PXK85": [
+      "SELL"
+     ],
+     "DDmfoL1N": [
+      "SELL"
+     ],
+     "E7NTdot2": [
+      "SELL"
+     ]
+    }
+   }
+  },
+  {
+   "id": "C006",
+   "wallets": [
+    "42YtP9yQveq3NJcLzhQjzSB4pWnS3cbJvyo1EmGtgF9d",
+    "8BZPRwUC8is9yGrdaiJ2mXxS3xPdiGqm6vEinCdgCeyv",
+    "94yFK2TPMCUFy8yhhnUNBuBL5S1m8ieDEwxhedon9pfw",
+    "FsTD5usSSfut1dcSufZAbWfBcj6dxAN1SXRmiH6tT8gx"
+   ],
+   "shared_slots": 4,
+   "coins": [
+    "FRENS"
+   ],
+   "slots": [
+    "FRENS:459819466",
+    "FRENS:459819471",
+    "FRENS:459826114",
+    "FRENS:459826207"
+   ],
+   "typical_fee_lamports": {
+    "42YtP9yQveq3NJcLzhQjzSB4pWnS3cbJvyo1EmGtgF9d": 69278,
+    "8BZPRwUC8is9yGrdaiJ2mXxS3xPdiGqm6vEinCdgCeyv": 70165,
+    "94yFK2TPMCUFy8yhhnUNBuBL5S1m8ieDEwxhedon9pfw": 73304,
+    "FsTD5usSSfut1dcSufZAbWfBcj6dxAN1SXRmiH6tT8gx": 73304
+   },
+   "same_fee_share": 0.5,
+   "own_fee_payer": true,
+   "kinds_per_slot": {
+    "FRENS:459819466": {
+     "94yFK2TP": [
+      "BUY"
+     ],
+     "FsTD5usS": [
+      "BUY"
+     ]
+    },
+    "FRENS:459819471": {
+     "42YtP9yQ": [
+      "BUY"
+     ],
+     "8BZPRwUC": [
+      "BUY"
+     ],
+     "94yFK2TP": [
+      "BUY"
+     ],
+     "FsTD5usS": [
+      "BUY"
+     ]
+    },
+    "FRENS:459826114": {
+     "42YtP9yQ": [
+      "SELL"
+     ],
+     "8BZPRwUC": [
+      "SELL"
+     ],
+     "94yFK2TP": [
+      "SELL"
+     ],
+     "FsTD5usS": [
+      "SELL"
+     ]
+    },
+    "FRENS:459826207": {
+     "42YtP9yQ": [
+      "SELL"
+     ],
+     "8BZPRwUC": [
+      "SELL"
+     ],
+     "94yFK2TP": [
+      "SELL"
+     ],
+     "FsTD5usS": [
+      "SELL"
+     ]
+    }
+   }
+  },
+  {
+   "id": "C007",
+   "wallets": [
+    "8SMeWRvmJDHzXWDWerhvZyjSnUtEuBaAaKozoGTFSUxX",
+    "FQG2Bmr6HqWuubSFs6ZrtB1EwGxuG2y6XyzyxVmyMkpm",
+    "GpNHGPQXQEnrrbL8paxGdEWrNEvdFcZFVtC6ztMoYuYo",
+    "ZZGtLggQHdZ2LgkDtnbJ1eVQMYLpQN7H1fjCGZAw8G1"
+   ],
+   "shared_slots": 9,
+   "coins": [
+    "FRENS"
+   ],
+   "slots": [
+    "FRENS:459819556",
+    "FRENS:459819584",
+    "FRENS:459821078",
+    "FRENS:459824390",
+    "FRENS:459825336",
+    "FRENS:459825894",
+    "FRENS:459825896",
+    "FRENS:459826264",
+    "FRENS:459826266"
+   ],
+   "typical_fee_lamports": {
+    "8SMeWRvmJDHzXWDWerhvZyjSnUtEuBaAaKozoGTFSUxX": 31748,
+    "FQG2Bmr6HqWuubSFs6ZrtB1EwGxuG2y6XyzyxVmyMkpm": 31748,
+    "GpNHGPQXQEnrrbL8paxGdEWrNEvdFcZFVtC6ztMoYuYo": 31748,
+    "ZZGtLggQHdZ2LgkDtnbJ1eVQMYLpQN7H1fjCGZAw8G1": 31748
+   },
+   "same_fee_share": 1.0,
+   "own_fee_payer": true,
+   "kinds_per_slot": {
+    "FRENS:459819556": {
+     "8SMeWRvm": [
+      "BUY"
+     ],
+     "FQG2Bmr6": [
+      "BUY"
+     ],
+     "GpNHGPQX": [
+      "BUY"
+     ],
+     "ZZGtLggQ": [
+      "BUY"
+     ]
+    },
+    "FRENS:459819584": {
+     "8SMeWRvm": [
+      "BUY"
+     ],
+     "FQG2Bmr6": [
+      "BUY"
+     ],
+     "GpNHGPQX": [
+      "BUY"
+     ],
+     "ZZGtLggQ": [
+      "BUY"
+     ]
+    },
+    "FRENS:459821078": {
+     "8SMeWRvm": [
+      "BUY"
+     ],
+     "FQG2Bmr6": [
+      "BUY"
+     ]
+    },
+    "FRENS:459824390": {
+     "8SMeWRvm": [
+      "BUY"
+     ],
+     "FQG2Bmr6": [
+      "BUY"
+     ],
+     "GpNHGPQX": [
+      "BUY"
+     ],
+     "ZZGtLggQ": [
+      "BUY"
+     ]
+    },
+    "FRENS:459825336": {
+     "8SMeWRvm": [
+      "BUY"
+     ],
+     "FQG2Bmr6": [
+      "BUY"
+     ],
+     "GpNHGPQX": [
+      "BUY"
+     ]
+    },
+    "FRENS:459825894": {
+     "8SMeWRvm": [
+      "BUY"
+     ],
+     "FQG2Bmr6": [
+      "BUY"
+     ],
+     "GpNHGPQX": [
+      "BUY"
+     ]
+    },
+    "FRENS:459825896": {
+     "8SMeWRvm": [
+      "BUY"
+     ],
+     "FQG2Bmr6": [
+      "BUY"
+     ],
+     "GpNHGPQX": [
+      "BUY"
+     ]
+    },
+    "FRENS:459826264": {
+     "8SMeWRvm": [
+      "SELL"
+     ],
+     "FQG2Bmr6": [
+      "SELL"
+     ],
+     "GpNHGPQX": [
+      "SELL"
+     ]
+    },
+    "FRENS:459826266": {
+     "8SMeWRvm": [
+      "SELL"
+     ],
+     "FQG2Bmr6": [
+      "SELL"
+     ],
+     "GpNHGPQX": [
+      "SELL"
+     ]
+    }
+   }
+  },
+  {
+   "id": "C008",
+   "wallets": [
+    "5TySreVqUxGmCYdExWSULfCenxboMAK4uZXpFjGfjk7a",
+    "7tkPWE2cZ3uQncuiF9DzpAdR7YLSG2Q14M8cjZMCaAqr",
+    "CFkdHRybyzwFffHcjMAkzZmWBtxV5PjwofDNWge8tjG3",
+    "UNpijHv2KrwsbLYZwQtyprSLdHqjxLXxN8jtLsLL4zo"
+   ],
+   "shared_slots": 4,
+   "coins": [
+    "STANK"
+   ],
+   "slots": [
+    "STANK:462906049",
+    "STANK:462906150",
+    "STANK:462928160",
+    "STANK:462928181"
+   ],
+   "typical_fee_lamports": {
+    "5TySreVqUxGmCYdExWSULfCenxboMAK4uZXpFjGfjk7a": 332427,
+    "7tkPWE2cZ3uQncuiF9DzpAdR7YLSG2Q14M8cjZMCaAqr": 332427,
+    "CFkdHRybyzwFffHcjMAkzZmWBtxV5PjwofDNWge8tjG3": 332427,
+    "UNpijHv2KrwsbLYZwQtyprSLdHqjxLXxN8jtLsLL4zo": 332427
+   },
+   "same_fee_share": 1.0,
+   "own_fee_payer": true,
+   "kinds_per_slot": {
+    "STANK:462906049": {
+     "5TySreVq": [
+      "BUY"
+     ],
+     "7tkPWE2c": [
+      "BUY"
+     ],
+     "CFkdHRyb": [
+      "BUY"
+     ],
+     "UNpijHv2": [
+      "BUY"
+     ]
+    },
+    "STANK:462906150": {
+     "5TySreVq": [
+      "BUY"
+     ],
+     "7tkPWE2c": [
+      "BUY"
+     ],
+     "CFkdHRyb": [
+      "BUY"
+     ],
+     "UNpijHv2": [
+      "BUY"
+     ]
+    },
+    "STANK:462928160": {
+     "5TySreVq": [
+      "SELL"
+     ],
+     "7tkPWE2c": [
+      "SELL"
+     ],
+     "CFkdHRyb": [
+      "SELL"
+     ],
+     "UNpijHv2": [
+      "SELL"
+     ]
+    },
+    "STANK:462928181": {
+     "5TySreVq": [
+      "SELL"
+     ],
+     "7tkPWE2c": [
+      "SELL"
+     ],
+     "CFkdHRyb": [
+      "SELL"
+     ],
+     "UNpijHv2": [
+      "SELL"
+     ]
+    }
+   }
+  },
+  {
+   "id": "C009",
+   "wallets": [
+    "3Z8gkwsMWssfbdv4SBFBKbeegp1xbx9aEV4TQtD1Pa5G",
+    "ByF3u2R5b1uwKLYZWrkxuDs7neHhbNGZRx4p1hQCRbk1",
+    "C74gHhbyneLwBnME7SfcbtKmXee4vWyF3xHdpTzGKL1k",
+    "D4N1SX3X6AjekuBjHssFSF7hz55esLReJVbpdfyuSnuZ"
+   ],
+   "shared_slots": 3,
+   "coins": [
+    "STANK"
+   ],
+   "slots": [
+    "STANK:462907393",
+    "STANK:462907405",
+    "STANK:462907433"
+   ],
+   "typical_fee_lamports": {
+    "3Z8gkwsMWssfbdv4SBFBKbeegp1xbx9aEV4TQtD1Pa5G": 218973,
+    "ByF3u2R5b1uwKLYZWrkxuDs7neHhbNGZRx4p1hQCRbk1": 218973,
+    "C74gHhbyneLwBnME7SfcbtKmXee4vWyF3xHdpTzGKL1k": 218973,
+    "D4N1SX3X6AjekuBjHssFSF7hz55esLReJVbpdfyuSnuZ": 218973
+   },
+   "same_fee_share": 1.0,
+   "own_fee_payer": true,
+   "kinds_per_slot": {
+    "STANK:462907393": {
+     "3Z8gkwsM": [
+      "BUY"
+     ],
+     "ByF3u2R5": [
+      "BUY"
+     ],
+     "C74gHhby": [
+      "BUY"
+     ],
+     "D4N1SX3X": [
+      "BUY"
+     ]
+    },
+    "STANK:462907405": {
+     "3Z8gkwsM": [
+      "BUY"
+     ],
+     "ByF3u2R5": [
+      "BUY"
+     ],
+     "C74gHhby": [
+      "BUY"
+     ],
+     "D4N1SX3X": [
+      "BUY"
+     ]
+    },
+    "STANK:462907433": {
+     "3Z8gkwsM": [
+      "BUY"
+     ],
+     "ByF3u2R5": [
+      "BUY"
+     ],
+     "C74gHhby": [
+      "BUY"
+     ],
+     "D4N1SX3X": [
+      "BUY"
+     ]
+    }
+   }
+  },
+  {
+   "id": "C010",
+   "wallets": [
+    "9vmUqGdSLxZC3qaqFzEffvV91RhLuzCJYamhS76TPNXp",
+    "GL84CfuyURXi7M2T6R8RMjA36vZ7iFyz7uDzywVYjj6n",
+    "GsgnLc84hd8nTbZg4iMgFM9w7STaoLVSXpwAYwCh7Kpt"
+   ],
+   "shared_slots": 19,
+   "coins": [
+    "FRENS"
+   ],
+   "slots": [
+    "FRENS:459808968",
+    "FRENS:459808976",
+    "FRENS:459808994",
+    "FRENS:459815401",
+    "FRENS:459816297",
+    "FRENS:459817025",
+    "FRENS:459817026",
+    "FRENS:459817048",
+    "FRENS:459817436",
+    "FRENS:459817451",
+    "FRENS:459819795",
+    "FRENS:459820476",
+    "FRENS:459820618",
+    "FRENS:459820736",
+    "FRENS:459821184",
+    "FRENS:459827773",
+    "FRENS:459837128",
+    "FRENS:459837148",
+    "FRENS:459837849"
+   ],
+   "typical_fee_lamports": {
+    "9vmUqGdSLxZC3qaqFzEffvV91RhLuzCJYamhS76TPNXp": 85405,
+    "GL84CfuyURXi7M2T6R8RMjA36vZ7iFyz7uDzywVYjj6n": 85405,
+    "GsgnLc84hd8nTbZg4iMgFM9w7STaoLVSXpwAYwCh7Kpt": 85405
+   },
+   "same_fee_share": 1.0,
+   "own_fee_payer": true,
+   "kinds_per_slot": {
+    "FRENS:459808968": {
+     "9vmUqGdS": [
+      "BUY"
+     ],
+     "GL84Cfuy": [
+      "BUY"
+     ],
+     "GsgnLc84": [
+      "BUY"
+     ]
+    },
+    "FRENS:459808976": {
+     "9vmUqGdS": [
+      "SELL"
+     ],
+     "GL84Cfuy": [
+      "SELL"
+     ],
+     "GsgnLc84": [
+      "SELL"
+     ]
+    },
+    "FRENS:459808994": {
+     "9vmUqGdS": [
+      "SELL"
+     ],
+     "GL84Cfuy": [
+      "SELL"
+     ],
+     "GsgnLc84": [
+      "SELL"
+     ]
+    },
+    "FRENS:459815401": {
+     "9vmUqGdS": [
+      "SELL"
+     ],
+     "GL84Cfuy": [
+      "SELL"
+     ],
+     "GsgnLc84": [
+      "SELL"
+     ]
+    },
+    "FRENS:459816297": {
+     "9vmUqGdS": [
+      "BUY"
+     ],
+     "GL84Cfuy": [
+      "BUY"
+     ],
+     "GsgnLc84": [
+      "BUY"
+     ]
+    },
+    "FRENS:459817025": {
+     "9vmUqGdS": [
+      "BUY"
+     ],
+     "GL84Cfuy": [
+      "BUY"
+     ],
+     "GsgnLc84": [
+      "BUY"
+     ]
+    },
+    "FRENS:459817026": {
+     "9vmUqGdS": [
+      "BUY"
+     ],
+     "GsgnLc84": [
+      "BUY"
+     ]
+    },
+    "FRENS:459817048": {
+     "9vmUqGdS": [
+      "BUY"
+     ],
+     "GL84Cfuy": [
+      "BUY"
+     ],
+     "GsgnLc84": [
+      "BUY"
+     ]
+    },
+    "FRENS:459817436": {
+     "9vmUqGdS": [
+      "SELL"
+     ],
+     "GL84Cfuy": [
+      "SELL"
+     ],
+     "GsgnLc84": [
+      "SELL"
+     ]
+    },
+    "FRENS:459817451": {
+     "9vmUqGdS": [
+      "BUY"
+     ],
+     "GL84Cfuy": [
+      "BUY"
+     ],
+     "GsgnLc84": [
+      "BUY"
+     ]
+    },
+    "FRENS:459819795": {
+     "9vmUqGdS": [
+      "SELL"
+     ],
+     "GL84Cfuy": [
+      "SELL"
+     ],
+     "GsgnLc84": [
+      "SELL"
+     ]
+    },
+    "FRENS:459820476": {
+     "9vmUqGdS": [
+      "SELL"
+     ],
+     "GL84Cfuy": [
+      "SELL"
+     ],
+     "GsgnLc84": [
+      "SELL"
+     ]
+    }
+   }
+  },
+  {
+   "id": "C011",
+   "wallets": [
+    "6ZNfif3k6pPmVBjgUd4CjbDHPSEEcCKUne5sMPeQxJKH",
+    "As64sBiHX2mbXWgUdfvQhzmBqvK2rcTXNhfpLNipD8Qu",
+    "DAer3AW9k6iobqumJ5hRTDKhZ59eN7Nkvbm4GSQodEZA"
+   ],
+   "shared_slots": 8,
+   "coins": [
+    "FRENS"
+   ],
+   "slots": [
+    "FRENS:459809063",
+    "FRENS:459817048",
+    "FRENS:459821197",
+    "FRENS:459821655",
+    "FRENS:459824925",
+    "FRENS:459825907",
+    "FRENS:459828662",
+    "FRENS:459838711"
+   ],
+   "typical_fee_lamports": {
+    "6ZNfif3k6pPmVBjgUd4CjbDHPSEEcCKUne5sMPeQxJKH": 189515,
+    "As64sBiHX2mbXWgUdfvQhzmBqvK2rcTXNhfpLNipD8Qu": 187205,
+    "DAer3AW9k6iobqumJ5hRTDKhZ59eN7Nkvbm4GSQodEZA": 188360
+   },
+   "same_fee_share": 0.33,
+   "own_fee_payer": true,
+   "kinds_per_slot": {
+    "FRENS:459809063": {
+     "6ZNfif3k": [
+      "BUY"
+     ],
+     "As64sBiH": [
+      "BUY"
+     ],
+     "DAer3AW9": [
+      "BUY"
+     ]
+    },
+    "FRENS:459817048": {
+     "6ZNfif3k": [
+      "BUY"
+     ],
+     "As64sBiH": [
+      "BUY"
+     ],
+     "DAer3AW9": [
+      "BUY"
+     ]
+    },
+    "FRENS:459821197": {
+     "6ZNfif3k": [
+      "SELL"
+     ],
+     "As64sBiH": [
+      "SELL"
+     ],
+     "DAer3AW9": [
+      "SELL"
+     ]
+    },
+    "FRENS:459821655": {
+     "6ZNfif3k": [
+      "SELL"
+     ],
+     "As64sBiH": [
+      "SELL"
+     ],
+     "DAer3AW9": [
+      "SELL"
+     ]
+    },
+    "FRENS:459824925": {
+     "6ZNfif3k": [
+      "SELL"
+     ],
+     "As64sBiH": [
+      "SELL"
+     ],
+     "DAer3AW9": [
+      "SELL"
+     ]
+    },
+    "FRENS:459825907": {
+     "6ZNfif3k": [
+      "SELL"
+     ],
+     "As64sBiH": [
+      "SELL"
+     ],
+     "DAer3AW9": [
+      "SELL"
+     ]
+    },
+    "FRENS:459828662": {
+     "6ZNfif3k": [
+      "SELL"
+     ],
+     "As64sBiH": [
+      "SELL"
+     ],
+     "DAer3AW9": [
+      "SELL"
+     ]
+    },
+    "FRENS:459838711": {
+     "6ZNfif3k": [
+      "SELL"
+     ],
+     "As64sBiH": [
+      "SELL"
+     ],
+     "DAer3AW9": [
+      "SELL"
+     ]
+    }
+   }
+  },
+  {
+   "id": "C012",
+   "wallets": [
+    "BLPpkoLxEwxzcLXNyRMkPDdNc6vwu1vNeUrKXMHnMTTj",
+    "CHvWpTWTZXUMvWfX7jmy8vhHbAqn6YvLc8wBxXYi4KiW",
+    "GHJFdDSYx1kGg7nLTDZ7B468SqHsqySZwHRSxs4DgEVk"
+   ],
+   "shared_slots": 18,
+   "coins": [
+    "FRENS"
+   ],
+   "slots": [
+    "FRENS:459809085",
+    "FRENS:459810300",
+    "FRENS:459816297",
+    "FRENS:459816331",
+    "FRENS:459819531",
+    "FRENS:459819534",
+    "FRENS:459819538",
+    "FRENS:459819546",
+    "FRENS:459819571",
+    "FRENS:459819761",
+    "FRENS:459820091",
+    "FRENS:459820295",
+    "FRENS:459820563",
+    "FRENS:459820576",
+    "FRENS:459820607",
+    "FRENS:459820615",
+    "FRENS:459821635",
+    "FRENS:459823562"
+   ],
+   "typical_fee_lamports": {
+    "BLPpkoLxEwxzcLXNyRMkPDdNc6vwu1vNeUrKXMHnMTTj": 112206,
+    "CHvWpTWTZXUMvWfX7jmy8vhHbAqn6YvLc8wBxXYi4KiW": 112206,
+    "GHJFdDSYx1kGg7nLTDZ7B468SqHsqySZwHRSxs4DgEVk": 112206
+   },
+   "same_fee_share": 1.0,
+   "own_fee_payer": true,
+   "kinds_per_slot": {
+    "FRENS:459809085": {
+     "BLPpkoLx": [
+      "BUY"
+     ],
+     "CHvWpTWT": [
+      "BUY"
+     ],
+     "GHJFdDSY": [
+      "BUY"
+     ]
+    },
+    "FRENS:459810300": {
+     "BLPpkoLx": [
+      "SELL"
+     ],
+     "CHvWpTWT": [
+      "SELL"
+     ],
+     "GHJFdDSY": [
+      "SELL"
+     ]
+    },
+    "FRENS:459816297": {
+     "BLPpkoLx": [
+      "BUY"
+     ],
+     "CHvWpTWT": [
+      "BUY"
+     ],
+     "GHJFdDSY": [
+      "BUY"
+     ]
+    },
+    "FRENS:459816331": {
+     "BLPpkoLx": [
+      "BUY"
+     ],
+     "CHvWpTWT": [
+      "BUY"
+     ],
+     "GHJFdDSY": [
+      "BUY"
+     ]
+    },
+    "FRENS:459819531": {
+     "BLPpkoLx": [
+      "SELL"
+     ],
+     "CHvWpTWT": [
+      "SELL"
+     ],
+     "GHJFdDSY": [
+      "SELL"
+     ]
+    },
+    "FRENS:459819534": {
+     "BLPpkoLx": [
+      "SELL"
+     ],
+     "CHvWpTWT": [
+      "SELL"
+     ],
+     "GHJFdDSY": [
+      "SELL"
+     ]
+    },
+    "FRENS:459819538": {
+     "BLPpkoLx": [
+      "SELL"
+     ],
+     "CHvWpTWT": [
+      "SELL"
+     ],
+     "GHJFdDSY": [
+      "SELL"
+     ]
+    },
+    "FRENS:459819546": {
+     "BLPpkoLx": [
+      "SELL"
+     ],
+     "CHvWpTWT": [
+      "SELL"
+     ],
+     "GHJFdDSY": [
+      "SELL"
+     ]
+    },
+    "FRENS:459819571": {
+     "BLPpkoLx": [
+      "SELL"
+     ],
+     "CHvWpTWT": [
+      "SELL"
+     ],
+     "GHJFdDSY": [
+      "SELL"
+     ]
+    },
+    "FRENS:459819761": {
+     "BLPpkoLx": [
+      "SELL"
+     ],
+     "CHvWpTWT": [
+      "SELL"
+     ],
+     "GHJFdDSY": [
+      "SELL"
+     ]
+    },
+    "FRENS:459820091": {
+     "BLPpkoLx": [
+      "SELL"
+     ],
+     "CHvWpTWT": [
+      "SELL"
+     ],
+     "GHJFdDSY": [
+      "SELL"
+     ]
+    },
+    "FRENS:459820295": {
+     "BLPpkoLx": [
+      "SELL"
+     ],
+     "CHvWpTWT": [
+      "SELL"
+     ],
+     "GHJFdDSY": [
+      "SELL"
+     ]
+    }
+   }
+  },
+  {
+   "id": "C013",
+   "wallets": [
+    "6r33XFSAG4dyeoL1waaitMZfepVrXd8PVJduXbGL38vM",
+    "7aKLmogJpkiHkKnReJU9A8aZNbAS26wrmQp2AYVmrPUv",
+    "EExAWnH6PRDLB5fjnf3fmpGJwABHGRmutomdjmg3WoAJ"
+   ],
+   "shared_slots": 16,
+   "coins": [
+    "FRENS",
+    "STANK"
+   ],
+   "slots": [
+    "FRENS:459816311",
+    "FRENS:459816350",
+    "FRENS:459817025",
+    "FRENS:459817072",
+    "FRENS:459817073",
+    "FRENS:459817075",
+    "FRENS:459817086",
+    "FRENS:459817386",
+    "FRENS:459817442",
+    "FRENS:459817451",
+    "FRENS:459817459",
+    "FRENS:459817512",
+    "STANK:462905885",
+    "STANK:462906027",
+    "STANK:462906127",
+    "STANK:462906625"
+   ],
+   "typical_fee_lamports": {
+    "6r33XFSAG4dyeoL1waaitMZfepVrXd8PVJduXbGL38vM": 34694,
+    "7aKLmogJpkiHkKnReJU9A8aZNbAS26wrmQp2AYVmrPUv": 34694,
+    "EExAWnH6PRDLB5fjnf3fmpGJwABHGRmutomdjmg3WoAJ": 14668
+   },
+   "same_fee_share": 0.67,
+   "own_fee_payer": true,
+   "kinds_per_slot": {
+    "FRENS:459816311": {
+     "6r33XFSA": [
+      "BUY"
+     ],
+     "7aKLmogJ": [
+      "BUY"
+     ]
+    },
+    "FRENS:459816350": {
+     "6r33XFSA": [
+      "SELL"
+     ],
+     "7aKLmogJ": [
+      "SELL"
+     ]
+    },
+    "FRENS:459817025": {
+     "6r33XFSA": [
+      "BUY"
+     ],
+     "7aKLmogJ": [
+      "BUY"
+     ]
+    },
+    "FRENS:459817072": {
+     "6r33XFSA": [
+      "SELL"
+     ],
+     "7aKLmogJ": [
+      "SELL"
+     ]
+    },
+    "FRENS:459817073": {
+     "6r33XFSA": [
+      "SELL"
+     ],
+     "7aKLmogJ": [
+      "SELL"
+     ]
+    },
+    "FRENS:459817075": {
+     "6r33XFSA": [
+      "SELL"
+     ],
+     "7aKLmogJ": [
+      "SELL"
+     ]
+    },
+    "FRENS:459817086": {
+     "6r33XFSA": [
+      "SELL"
+     ],
+     "7aKLmogJ": [
+      "SELL"
+     ]
+    },
+    "FRENS:459817386": {
+     "6r33XFSA": [
+      "SELL"
+     ],
+     "7aKLmogJ": [
+      "SELL"
+     ]
+    },
+    "FRENS:459817442": {
+     "6r33XFSA": [
+      "BUY"
+     ],
+     "7aKLmogJ": [
+      "BUY"
+     ]
+    },
+    "FRENS:459817451": {
+     "6r33XFSA": [
+      "SELL"
+     ],
+     "7aKLmogJ": [
+      "SELL"
+     ]
+    },
+    "FRENS:459817459": {
+     "6r33XFSA": [
+      "BUY"
+     ],
+     "7aKLmogJ": [
+      "BUY"
+     ]
+    },
+    "FRENS:459817512": {
+     "6r33XFSA": [
+      "SELL"
+     ],
+     "7aKLmogJ": [
+      "SELL"
+     ]
+    }
+   }
+  },
+  {
+   "id": "C014",
+   "wallets": [
+    "3S3epvLdGhutRs6AnqPLiiGwbVf2Hz3cGfLqb59Sm3Sf",
+    "GQZ1iwf7DVf6jXt7inkxE76P2yqGL9PSCcTht351Umoa",
+    "MtAxuG1Hja9VCmStJyNKkVfvxGruX4KsEJcV58gpHiR"
+   ],
+   "shared_slots": 12,
+   "coins": [
+    "FRENS"
+   ],
+   "slots": [
+    "FRENS:459816321",
+    "FRENS:459816344",
+    "FRENS:459816413",
+    "FRENS:459817042",
+    "FRENS:459817433",
+    "FRENS:459822902",
+    "FRENS:459827353",
+    "FRENS:459827590",
+    "FRENS:459829598",
+    "FRENS:459831309",
+    "FRENS:459833666",
+    "FRENS:459837077"
+   ],
+   "typical_fee_lamports": {
+    "3S3epvLdGhutRs6AnqPLiiGwbVf2Hz3cGfLqb59Sm3Sf": 905000,
+    "GQZ1iwf7DVf6jXt7inkxE76P2yqGL9PSCcTht351Umoa": 905000,
+    "MtAxuG1Hja9VCmStJyNKkVfvxGruX4KsEJcV58gpHiR": 905000
+   },
+   "same_fee_share": 1.0,
+   "own_fee_payer": true,
+   "kinds_per_slot": {
+    "FRENS:459816321": {
+     "3S3epvLd": [
+      "RECEIVE/USDC"
+     ],
+     "GQZ1iwf7": [
+      "RECEIVE/USDC"
+     ],
+     "MtAxuG1H": [
+      "RECEIVE/USDC"
+     ]
+    },
+    "FRENS:459816344": {
+     "3S3epvLd": [
+      "SEND/USDC"
+     ],
+     "GQZ1iwf7": [
+      "SEND/USDC"
+     ],
+     "MtAxuG1H": [
+      "SEND/USDC"
+     ]
+    },
+    "FRENS:459816413": {
+     "3S3epvLd": [
+      "SEND/USDC"
+     ],
+     "GQZ1iwf7": [
+      "SEND/USDC"
+     ],
+     "MtAxuG1H": [
+      "SEND/USDC"
+     ]
+    },
+    "FRENS:459817042": {
+     "3S3epvLd": [
+      "RECEIVE/USDC"
+     ],
+     "MtAxuG1H": [
+      "RECEIVE/USDC"
+     ]
+    },
+    "FRENS:459817433": {
+     "3S3epvLd": [
+      "RECEIVE/USDC"
+     ],
+     "GQZ1iwf7": [
+      "RECEIVE/USDC"
+     ],
+     "MtAxuG1H": [
+      "RECEIVE/USDC"
+     ]
+    },
+    "FRENS:459822902": {
+     "3S3epvLd": [
+      "SEND/USDC"
+     ],
+     "GQZ1iwf7": [
+      "SEND/USDC"
+     ],
+     "MtAxuG1H": [
+      "SEND/USDC"
+     ]
+    },
+    "FRENS:459827353": {
+     "3S3epvLd": [
+      "SEND/USDC"
+     ],
+     "GQZ1iwf7": [
+      "SEND/USDC"
+     ],
+     "MtAxuG1H": [
+      "SEND/USDC"
+     ]
+    },
+    "FRENS:459827590": {
+     "3S3epvLd": [
+      "SEND/USDC"
+     ],
+     "GQZ1iwf7": [
+      "SEND/USDC"
+     ],
+     "MtAxuG1H": [
+      "SEND/USDC"
+     ]
+    },
+    "FRENS:459829598": {
+     "3S3epvLd": [
+      "SEND/USDC"
+     ],
+     "GQZ1iwf7": [
+      "SEND/USDC"
+     ],
+     "MtAxuG1H": [
+      "SEND/USDC"
+     ]
+    },
+    "FRENS:459831309": {
+     "3S3epvLd": [
+      "SEND/USDC"
+     ],
+     "GQZ1iwf7": [
+      "SEND/USDC"
+     ],
+     "MtAxuG1H": [
+      "SEND/USDC"
+     ]
+    },
+    "FRENS:459833666": {
+     "3S3epvLd": [
+      "SEND/USDC"
+     ],
+     "GQZ1iwf7": [
+      "SEND/USDC"
+     ],
+     "MtAxuG1H": [
+      "SEND/USDC"
+     ]
+    },
+    "FRENS:459837077": {
+     "3S3epvLd": [
+      "SEND/USDC"
+     ],
+     "GQZ1iwf7": [
+      "SEND/USDC"
+     ],
+     "MtAxuG1H": [
+      "SEND/USDC"
+     ]
+    }
+   }
+  },
+  {
+   "id": "C015",
+   "wallets": [
+    "89WaZ9nXgUaQn2QFhCxefHhzUmD69vkDtG4tyRQuvcuv",
+    "9QgNx9g1THpBwfX7Lts9z2roL5KLy7UvXgZ2a9KRHZ2M",
+    "CdeW1CSRn65JtwxtpVxsYKmEqoxDX2evVWzuV1PNxjBY"
+   ],
+   "shared_slots": 3,
+   "coins": [
+    "FRENS"
+   ],
+   "slots": [
+    "FRENS:459816336",
+    "FRENS:459817062",
+    "FRENS:459817405"
+   ],
+   "typical_fee_lamports": {
+    "89WaZ9nXgUaQn2QFhCxefHhzUmD69vkDtG4tyRQuvcuv": 1005000,
+    "9QgNx9g1THpBwfX7Lts9z2roL5KLy7UvXgZ2a9KRHZ2M": 1005000,
+    "CdeW1CSRn65JtwxtpVxsYKmEqoxDX2evVWzuV1PNxjBY": 1005000
+   },
+   "same_fee_share": 1.0,
+   "own_fee_payer": true,
+   "kinds_per_slot": {
+    "FRENS:459816336": {
+     "89WaZ9nX": [
+      "BUY"
+     ],
+     "9QgNx9g1": [
+      "BUY"
+     ],
+     "CdeW1CSR": [
+      "BUY"
+     ]
+    },
+    "FRENS:459817062": {
+     "89WaZ9nX": [
+      "SELL"
+     ],
+     "9QgNx9g1": [
+      "SELL"
+     ],
+     "CdeW1CSR": [
+      "SELL"
+     ]
+    },
+    "FRENS:459817405": {
+     "89WaZ9nX": [
+      "SELL"
+     ],
+     "9QgNx9g1": [
+      "SELL"
+     ],
+     "CdeW1CSR": [
+      "SELL"
+     ]
+    }
+   }
+  },
+  {
+   "id": "C016",
+   "wallets": [
+    "9mk6gUP4yPj8fCgEBfmiRbP431SmCV7BpYDA9DrgGomk",
+    "EALWAgdC7hD5DNubt8ht2cYoZiXTZjKit9rTbP3mJbnP",
+    "HiEnEnduwUPWqKVwdbA4vjSYuThGkv4Kfdj39zHE8Vif"
+   ],
+   "shared_slots": 6,
+   "coins": [
+    "FRENS"
+   ],
+   "slots": [
+    "FRENS:459817091",
+    "FRENS:459819354",
+    "FRENS:459819503",
+    "FRENS:459819784",
+    "FRENS:459820622",
+    "FRENS:459824974"
+   ],
+   "typical_fee_lamports": {
+    "9mk6gUP4yPj8fCgEBfmiRbP431SmCV7BpYDA9DrgGomk": 1270000,
+    "EALWAgdC7hD5DNubt8ht2cYoZiXTZjKit9rTbP3mJbnP": 31802,
+    "HiEnEnduwUPWqKVwdbA4vjSYuThGkv4Kfdj39zHE8Vif": 31802
+   },
+   "same_fee_share": 0.67,
+   "own_fee_payer": true,
+   "kinds_per_slot": {
+    "FRENS:459817091": {
+     "9mk6gUP4": [
+      "BUY"
+     ],
+     "EALWAgdC": [
+      "BUY"
+     ],
+     "HiEnEndu": [
+      "BUY"
+     ]
+    },
+    "FRENS:459819354": {
+     "EALWAgdC": [
+      "BUY"
+     ],
+     "HiEnEndu": [
+      "BUY"
+     ]
+    },
+    "FRENS:459819503": {
+     "9mk6gUP4": [
+      "SELL"
+     ],
+     "EALWAgdC": [
+      "SELL"
+     ],
+     "HiEnEndu": [
+      "SELL"
+     ]
+    },
+    "FRENS:459819784": {
+     "9mk6gUP4": [
+      "SELL"
+     ],
+     "EALWAgdC": [
+      "SELL"
+     ],
+     "HiEnEndu": [
+      "SELL"
+     ]
+    },
+    "FRENS:459820622": {
+     "9mk6gUP4": [
+      "SELL"
+     ],
+     "EALWAgdC": [
+      "SELL"
+     ],
+     "HiEnEndu": [
+      "SELL"
+     ]
+    },
+    "FRENS:459824974": {
+     "EALWAgdC": [
+      "SELL"
+     ],
+     "HiEnEndu": [
+      "SELL"
+     ]
+    }
+   }
+  },
+  {
+   "id": "MACCA",
+   "wallets": [
+    "XiaXWYZypBLhFtpXSpFmUWqfYKnvofo5ATX4XNZPxdf",
+    "HoRkp7NEHi82FyXV3YjZ3JbAtq9CMWFVxtynFBADns6z",
+    "HULjZfSZmF5V7vvDNNKuRueBzv1YSdKhHkvK1N6PuVHB",
+    "8EvuG3ojxVTP2a3u346PT8GiZkc4BS2dEhdvAGWC571R",
+    "JAKWRzjGNrdXjvxnBqKVr1XURJKvVAHP6YM5mjbpCyCo",
+    "BCMrFqAqwrvQD1es5FAfjHeESSCGAjz6jFNxg3zMhFiF",
+    "5oGts5VkQiPjRzXtqctuZ7ZyzccZvMsnfgcg9kp2xgJ2",
+    "HBpfHiG8DReGdQQV3SucJ4aNCBwdLH7yyAs3r2X1YEfj",
+    "Bgmss51VYFfynMMeFyHBEjNBackVCMRHmtSW8JJptkwR",
+    "Dy7Qqc2cai6juaLtoHvxaMGA7hKscDwBobrAqUTmJKE1",
+    "Hbg97yNjeCNrfc9QqUE9oFo9tTcp2xzhNn9xsL4Gza2F",
+    "5TtPLjtcKMBZpjJtwqTkdmzTk6XWrLLEVEFUjzHvcnAM",
+    "yrLYabFTtZ41Rtzyr4dcZdrBt5Yet5Zrrd188ZSddLR",
+    "Fy4pGEG7E7gGJfNFuV9r9TsbL4j7CJnMbAVHNt5vUSka",
+    "3mNewoqNdwLLUinwhUKd7XNMe6nxHE7yi3MrqFp4GPux",
+    "4BD2ZaRPAFxQ3Fey5DnL4zSNfgGgF6FiB4pNBPNKG7D7",
+    "9KmEPLcVnnDeV5QxjuSXMi5mGSwmLu4TfE72pudppCLR",
+    "G6WuWnp33QoyHv8AXyBcpb33BgZRLHBeMurqpS2kxy97",
+    "FbpkhCJVgXzp1worD3xv4XnHXXQqryK571VBdofGGAog",
+    "GvDWxdXK37Q9ibgRp7Cj8gBUKWQXn73zMjdaHXLskZwY",
+    "5YrRRnHev6hA6NYbhFSPji8RUv2JxSC3tzJMVBVnsWHB",
+    "4xCUydpGcxGB6HYL6R3tkT8HL8SCs68hRnpb86jkhpEB",
+    "EAGJynz3neSjjBYiUSVsRpahq6TGhL8n48Xyc1jn8xP1",
+    "BTZZSfjtqr2wzgj7pi2Uxr8SYLf6951T7Zf1gkvssE7W",
+    "Ay2MF5V212eAb4Z3yTER88wfbACssa4FPcRfMV4Sm2ki",
+    "Cvos273CHDmxZqpQZTSrsytw6YPqncBzjFy3po8BjbMd",
+    "D11TBgRFHe7QcRZ8xH6CWnMTdWFyvxYf9AXK7W1HLZxq",
+    "5F8DRHYYPaK7AJfn2BnEpjKdksyKWxEFkuzcJXuMau1n",
+    "2euZPg7wN7JZR6Axk7fMRfpU2u6qZy9UrFwzp3sgEnuT",
+    "57TckL6zBUenyqyEZRhuYkGjk7uX3dPoQrufzXY4GDZx",
+    "BKpR4s8mVKyDZaGVnrDVN2Z7ucHBPRqBD3A3xVp1GSYF",
+    "DminqR8fmAnfkJQKsSmtNc8VGrWmRKDjV6pDBKUEZzN7",
+    "C21XeJmgSS879JNfpu1kRodvkc7kkBPAukimkdLdsppo",
+    "9rSr6Hv89xuqvryQXtrDBGtLY5b8KhpitkWxbbbkq8XB",
+    "CpUirBYse82x8swLytErN8Zgyc381tv1irVNku3SoVEj",
+    "BMoVwwCm7y2cXWBkow6JaJi23usaXEAJszUW6mE9efWA",
+    "2JzLJnrv4VAwEhYmJEQr5WtqsqE7KJx516XrpCaV8ocD",
+    "GXzhfiJUuZiv3hTMqzReNrrAbnPXieNzZNRPWxVxHzJK",
+    "3Y9PqFcu9yxd49qou5S1aDZfL84rX1wJt87UVapGNAuT",
+    "HYu1ac7GSiVf94orRuCZHd95MvBokzaPjiDdTbhLXLic",
+    "7NzZdpp1Py6Q1s9cnSNYkRkjX3eNYLXpaFdgWZFj9wYr",
+    "D1C1kZQJQsgmyHkns5gSxCfFc42H4wzGhRwpzJYb6DxR",
+    "9xPYKT6rz5vAn2DWXjhk2HNq3WpA77kmzF8K9X1Wwdfs",
+    "G8xt9AXY4upUxCppbwm4i99XJehtrP4Hqmk2tNAxwXv",
+    "HoULHVkArTRw2Uq5NrCuJKdQfgmT2DUC8q51rKBQ7ou7",
+    "HmC2h6yQ2oaUHKHCSyZHvvWA9VNv79uBmuiCm6d2F14T",
+    "Do7dxhddAx7bnVafpfwLDcTF7yVUpCVPqQHDtLRsgBvj",
+    "3159xZ6ekDizcHJtn3b19NuePSecH1ZuM3AvkSCdUDXi",
+    "Ce1xTXuZxGoFiunoroPeLqzGDKzBvBuLhMJNicpKfxZn",
+    "9G7yDn2kZMoxeqZgUeWUoGT5nEToaERkuZDk45aSTm9j",
+    "3Yp2Pnvuwsq2TNgVXCEqdy6WDX5YuuzyDErqspnNPbMm"
+   ],
+   "coins": [
+    "MACCA"
+   ],
+   "evidence": {
+    "all_buys_cosigned_by": [
+     "2LvnZWgRx5Qw3oK5iD19M7qy19wDbHFmktCvDXrKfgnr"
+    ],
+    "buy_interval_s": {
+     "median": 145.0,
+     "min": 120,
+     "max": 146
+    },
+    "supply_bought_pct": 38.03,
+    "usdc_in_total": 459.0,
+    "same_funder": "8DfHuYFv7VQ6wgcGtVDN2vtFn5ezF52hHNtPWYcqm8hU",
+    "same_funder_wallets": 35,
+    "same_funder_busy_hub": true
+   }
+  }
+ ]
+}

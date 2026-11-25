@@ -1,0 +1,1348 @@
+{
+ "coin": {
+  "symbol": "SCINU",
+  "mint": "GHWEB3FsfqDbNBt9QxVU7kXkUh1cX7kFk5NVDkgApump",
+  "t_create": 1795448770,
+  "t_create_utc": "2026-11-23 15:46:10",
+  "creation_sig": "5rFMBfETtRDiu4BQTJ7uTC2Cnezw1zxwpHLkowxsDM7CdyFFwWWWJkJSwQoRqoUvB58xo8Zo47C7VrQzrJr6ij11",
+  "creator": "951e3tf9bNCuY2nrN54fq3BPEZC2ejc8DWQ1iwqFDP6W",
+  "p0": 4.1269447835725406e-08,
+  "p_15m": 3.7841143253052844e-08,
+  "p_60m": 3.460217745498264e-08,
+  "p_120m": 3.460217745498264e-08,
+  "x_15m": 0.917,
+  "x_60m": 0.838,
+  "x_120m": 0.838,
+  "peak_x": 1.141,
+  "peak_min": 2.0,
+  "priced_trades": 66
+ },
+ "coverage": {
+  "window_signatures": 968,
+  "window_successful": 92,
+  "decoded": 92,
+  "not_served": 0,
+  "decode_errors": 0,
+  "unread": 0
+ },
+ "buckets": {
+  "0-15": {
+   "buyers": 31,
+   "sol_in": 17.125
+  },
+  "15-60": {
+   "buyers": 0,
+   "sol_in": 0
+  },
+  "60-120": {
+   "buyers": 0,
+   "sol_in": 0
+  }
+ },
+ "wallets": [
+  {
+   "wallet": "951e3tf9bNCuY2nrN54fq3BPEZC2ejc8DWQ1iwqFDP6W",
+   "is_creator": true,
+   "first_buy_min": 0.0,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 4,
+   "sol_in": 2.979,
+   "sol_per_buy": 2.979,
+   "sol_out": 1.25,
+   "avg_cost_sol_per_token": 3.0886649599238204e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 96449438144093,
+   "tokens_sold": 33676558870572,
+   "tokens_held_120m": 62772879273521,
+   "realized_sol_window": 0.2098,
+   "mtm_sol_120m_estimate": 0.2332,
+   "window_result_sol": 0.4431,
+   "window_result_pct": 0.149,
+   "roles": [
+    "HOLD"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.0
+   ],
+   "buy_sol": [
+    2.979
+   ],
+   "first_buy_sig": "5rFMBfETtRDiu4BQTJ7uTC2Cnezw1zxwpHLkowxsDM7CdyFFwWWWJkJSwQoRqoUvB58xo8Zo47C7VrQzrJr6ij11",
+   "first_buy_slot": 472997795,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 1
+  },
+  {
+   "wallet": "FbmomB2sZgwfR8ySKaUEY37XUjb9p3SUDQdBCvLqgEeg",
+   "is_creator": false,
+   "first_buy_min": 0.0,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.275,
+   "sol_per_buy": 0.275,
+   "sol_out": 0.336,
+   "avg_cost_sol_per_token": 3.509091794836571e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 7836785586648,
+   "tokens_sold": 7836785586648,
+   "tokens_held_120m": 0,
+   "realized_sol_window": 0.061,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": 0.061,
+   "window_result_pct": 0.222,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.0
+   ],
+   "buy_sol": [
+    0.275
+   ],
+   "first_buy_sig": "461zpJiM9NfLADfgDbb8hoUhqEMvctDVnxMRuJXDzoZnofXWQDWhUTQ1UXZHb7b46QtzycriBXG148H3DiHZ8e38",
+   "first_buy_slot": 472997795,
+   "payers": [
+    "CvN7hJE1evEjRDEcUPUFabyAjSqoZ8G1JRKBFJ5EVZtK"
+   ],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 2
+  },
+  {
+   "wallet": "H9kuqGKNYgPFYCA17uUTkaqXGum7MK8y1GwbS7cxsjDg",
+   "is_creator": false,
+   "first_buy_min": 0.0,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.605,
+   "sol_per_buy": 0.605,
+   "sol_out": 0.745,
+   "avg_cost_sol_per_token": 3.5736610875344586e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 16929417344872,
+   "tokens_sold": 16929417344872,
+   "tokens_held_120m": 0,
+   "realized_sol_window": 0.14,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": 0.14,
+   "window_result_pct": 0.231,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.0
+   ],
+   "buy_sol": [
+    0.605
+   ],
+   "first_buy_sig": "e8x5o4E9MeJi1GRDLkH5GVB2fr8U3EnBXP4aVBBFc3A9J1zAgBcQEdzUyddsVzhL7D9YkrJXvnPrTbPSfbwib6R",
+   "first_buy_slot": 472997795,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 3
+  },
+  {
+   "wallet": "8q3TPQb5mLfCUVJyvnJFVUWoAfWeSVDJ1WsU85WNQgtm",
+   "is_creator": false,
+   "first_buy_min": 0.0,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 2,
+   "sol_in": 0.082,
+   "sol_per_buy": 0.082,
+   "sol_out": 0.09,
+   "avg_cost_sol_per_token": 3.696376349632183e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 2218388828512,
+   "tokens_sold": 2218388828512,
+   "tokens_held_120m": 0,
+   "realized_sol_window": 0.008,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": 0.008,
+   "window_result_pct": 0.098,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.0
+   ],
+   "buy_sol": [
+    0.082
+   ],
+   "first_buy_sig": "4XbR7uxvbg4WbeHZ19X4Qmn5jZwYGNA6AnJHJHdA8d1uXChpUcpFqu9mefWQ8akXHvjyK6CRgHdQDJGG2PgBSNve",
+   "first_buy_slot": 472997795,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 4
+  },
+  {
+   "wallet": "44qBXYTzocP3vEHFkWnX65tbN3baTC2cdJ1nPJVpKkyE",
+   "is_creator": false,
+   "first_buy_min": 0.0,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.206,
+   "sol_per_buy": 0.206,
+   "sol_out": 0.237,
+   "avg_cost_sol_per_token": 3.744779139866824e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 5500991975920,
+   "tokens_sold": 5500991975920,
+   "tokens_held_120m": 0,
+   "realized_sol_window": 0.031,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": 0.031,
+   "window_result_pct": 0.15,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.0
+   ],
+   "buy_sol": [
+    0.206
+   ],
+   "first_buy_sig": "5cp8thXRJvwtJSF9gDxv6M5fdpzsdFspzcGvPEZ7LqdHQqM7j1UaMaMAHQF8gHssmvvtLeXcJxPA4dGCjypiSvpT",
+   "first_buy_slot": 472997795,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 5
+  },
+  {
+   "wallet": "Ca9uop1Qmobv8wizP5aM9ampmpGciEpikQ3NpBPcrFS5",
+   "is_creator": false,
+   "first_buy_min": 0.0,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 1.018,
+   "sol_per_buy": 1.018,
+   "sol_out": 1.092,
+   "avg_cost_sol_per_token": 3.830548484067846e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 26575828611336,
+   "tokens_sold": 26575828611336,
+   "tokens_held_120m": 0,
+   "realized_sol_window": 0.074,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": 0.074,
+   "window_result_pct": 0.073,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.0
+   ],
+   "buy_sol": [
+    1.018
+   ],
+   "first_buy_sig": "58sXMF3ibPyNZJ7DhUph2ihnLiVvXJtWRieQYKD139sFTKEHYaLEBdXwNLA7V3uKmJJqpgjh28cZiGgKcsk28zgZ",
+   "first_buy_slot": 472997796,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 6
+  },
+  {
+   "wallet": "AZ1eJ671AL1Rp1YPWBdBCVNFrRaGG26XNMZC2AP3wK18",
+   "is_creator": false,
+   "first_buy_min": 0.0,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 1.575,
+   "sol_per_buy": 1.575,
+   "sol_out": 1.669,
+   "avg_cost_sol_per_token": 4.0491842887058145e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 38896723085513,
+   "tokens_sold": 38896723085513,
+   "tokens_held_120m": 0,
+   "realized_sol_window": 0.094,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": 0.094,
+   "window_result_pct": 0.06,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.0
+   ],
+   "buy_sol": [
+    1.575
+   ],
+   "first_buy_sig": "54bfajoA7p7qH5TdCN3XQgcFnsTwZJoPj3m93Zf9VArzUrhqnMtagSMgh7i3rGstxNTtwNqrjkTYdDT75qc7zsyh",
+   "first_buy_slot": 472997797,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 7
+  },
+  {
+   "wallet": "4Yy3xBZnJfhkmFAcV6hgdjWgkkc9oCoWEtcUiXNq5AeY",
+   "is_creator": false,
+   "first_buy_min": 0.0,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.698,
+   "sol_per_buy": 0.698,
+   "sol_out": 0.653,
+   "avg_cost_sol_per_token": 4.319424884639029e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 16159558706120,
+   "tokens_sold": 16159558706120,
+   "tokens_held_120m": 0,
+   "realized_sol_window": -0.045,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": -0.045,
+   "window_result_pct": -0.064,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.0
+   ],
+   "buy_sol": [
+    0.698
+   ],
+   "first_buy_sig": "3Azv7NvXtEUYkoAt1omv75Zf3mynZ8LLqXgv7JCGRq275VB9H9GzPWoQgx6utxXAYgt9qbZWZs3CSpvoppi3Kuke",
+   "first_buy_slot": 472997797,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 8
+  },
+  {
+   "wallet": "3Vggwn3LPougvnGa8zpYJMEN9L38tSRa45gv9odiSVF1",
+   "is_creator": false,
+   "first_buy_min": 0.02,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.062,
+   "sol_per_buy": 0.062,
+   "sol_out": 0.063,
+   "avg_cost_sol_per_token": 4.442613592654315e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 1395574895429,
+   "tokens_sold": 1395574895429,
+   "tokens_held_120m": 0,
+   "realized_sol_window": 0.001,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": 0.001,
+   "window_result_pct": 0.016,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.02
+   ],
+   "buy_sol": [
+    0.062
+   ],
+   "first_buy_sig": "5RWsAmUkRpJgAs4dJZhxBV2dxRhABneBnKMsEzXTsma5CcHSPVnj522ZnZSiJX8i7yfdXosJfa5dGWXmiueimoiz",
+   "first_buy_slot": 472997802,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 9
+  },
+  {
+   "wallet": "7Bs1TEsfB7zvMJ5Wej3gS8Xq8x1ABEv498FG8QM9MHa8",
+   "is_creator": false,
+   "first_buy_min": 0.03,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.152,
+   "sol_per_buy": 0.152,
+   "sol_out": 0.108,
+   "avg_cost_sol_per_token": 4.381087734183036e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 3469458025550,
+   "tokens_sold": 3469458025550,
+   "tokens_held_120m": 0,
+   "realized_sol_window": -0.044,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": -0.044,
+   "window_result_pct": -0.289,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.03
+   ],
+   "buy_sol": [
+    0.152
+   ],
+   "first_buy_sig": "2hzypYpauAfwaCuuiNhf6gdpMZY1bvxxQcFpg9xuxpW72rLgi8X7Cd7xAGqrFjDXcXSFYCTxpzJiZTMG6eZQ2X7T",
+   "first_buy_slot": 472997804,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 10
+  },
+  {
+   "wallet": "4dbKnVgJhagHYkagvAfPJQoK7amNpzPPdCAGR1m2n8o9",
+   "is_creator": false,
+   "first_buy_min": 0.52,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.228,
+   "sol_per_buy": 0.228,
+   "sol_out": 0.0,
+   "avg_cost_sol_per_token": 4.079070918527675e-08,
+   "stable_buys": 0,
+   "stable_sells": 1,
+   "stable_in": 0,
+   "stable_out": 16.66,
+   "tokens_bought": 5589508114811,
+   "tokens_sold": 5589508114811,
+   "tokens_held_120m": 0,
+   "realized_sol_window": 0.0,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": null,
+   "window_result_pct": null,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.52
+   ],
+   "buy_sol": [
+    0.228
+   ],
+   "first_buy_sig": "mdsY5mUrHvYrwUo4c78JSJhXmJFq1St2ZCmykRqfPVvqkMufbhCoZD4Q84yybqzCwgTvj1xkVDQPcq843KeQE1J",
+   "first_buy_slot": 472997941,
+   "payers": [],
+   "status": "INSUFFICIENT_DATA",
+   "insufficient": [
+    "giao dịch định giá bằng USDC (0 mua, 1 bán): không có giá SOL",
+    "không định giá được phần còn giữ"
+   ],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 11
+  },
+  {
+   "wallet": "HnNG8q3Uuz9yGzcTT6WamSeJiauobC5Anbjvxevjq6r9",
+   "is_creator": false,
+   "first_buy_min": 0.52,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.261,
+   "sol_per_buy": 0.261,
+   "sol_out": 0.0,
+   "avg_cost_sol_per_token": 4.1448925685182754e-08,
+   "stable_buys": 0,
+   "stable_sells": 1,
+   "stable_in": 0,
+   "stable_out": 17.81,
+   "tokens_bought": 6296906269233,
+   "tokens_sold": 6296906269233,
+   "tokens_held_120m": 0,
+   "realized_sol_window": 0.0,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": null,
+   "window_result_pct": null,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.52
+   ],
+   "buy_sol": [
+    0.261
+   ],
+   "first_buy_sig": "5AnM5fkDtkCi8neZXperSx34cyYVdamNgotnnEof7YofDFe5NKPHayGYrUHY8shMks2YfzgAYmAgGr5ReuzTVaYz",
+   "first_buy_slot": 472997941,
+   "payers": [],
+   "status": "INSUFFICIENT_DATA",
+   "insufficient": [
+    "giao dịch định giá bằng USDC (0 mua, 1 bán): không có giá SOL",
+    "không định giá được phần còn giữ"
+   ],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 12
+  },
+  {
+   "wallet": "5DsVcXWvsT11B2WSQ1UqdZWtHideRFvBVpDpZqn3GMVK",
+   "is_creator": false,
+   "first_buy_min": 0.52,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.294,
+   "sol_per_buy": 0.294,
+   "sol_out": 0.0,
+   "avg_cost_sol_per_token": 4.201613990597664e-08,
+   "stable_buys": 0,
+   "stable_sells": 1,
+   "stable_in": 0,
+   "stable_out": 20.56,
+   "tokens_bought": 6997311048990,
+   "tokens_sold": 6997311048990,
+   "tokens_held_120m": 0,
+   "realized_sol_window": 0.0,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": null,
+   "window_result_pct": null,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.52
+   ],
+   "buy_sol": [
+    0.294
+   ],
+   "first_buy_sig": "2hmJDyMNMQzXYbtGupwqenXfbQv6GXoi9ymtLV8oQZYHYyuvMYYzRAtHwE9Cqe9bRUcSiXSjRqZgMp2v3Sq1mft3",
+   "first_buy_slot": 472997941,
+   "payers": [],
+   "status": "INSUFFICIENT_DATA",
+   "insufficient": [
+    "giao dịch định giá bằng USDC (0 mua, 1 bán): không có giá SOL",
+    "không định giá được phần còn giữ"
+   ],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 13
+  },
+  {
+   "wallet": "66kfSxWV6CrZiuBxRe5oL2ty9pJQ8dFnPw65fGoC3miM",
+   "is_creator": false,
+   "first_buy_min": 0.52,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.29,
+   "sol_per_buy": 0.29,
+   "sol_out": 0.0,
+   "avg_cost_sol_per_token": 4.2674118857182606e-08,
+   "stable_buys": 0,
+   "stable_sells": 1,
+   "stable_in": 0,
+   "stable_out": 19.66,
+   "tokens_bought": 6795688060263,
+   "tokens_sold": 6795688060263,
+   "tokens_held_120m": 0,
+   "realized_sol_window": 0.0,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": null,
+   "window_result_pct": null,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.52
+   ],
+   "buy_sol": [
+    0.29
+   ],
+   "first_buy_sig": "3W11YBXsiLrfr4B7gbLc8DWiJHiHVrk8vk7eerZ7jk5kJKaqJkdV6qLbYsum6NpX4Sn9QhbqSJNomGZcHE6DWuqj",
+   "first_buy_slot": 472997941,
+   "payers": [],
+   "status": "INSUFFICIENT_DATA",
+   "insufficient": [
+    "giao dịch định giá bằng USDC (0 mua, 1 bán): không có giá SOL",
+    "không định giá được phần còn giữ"
+   ],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 14
+  },
+  {
+   "wallet": "FLMgVECVhyNTUZ48qyy6TakcR7RgRBVRgNrQPZrgRNif",
+   "is_creator": false,
+   "first_buy_min": 0.52,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.244,
+   "sol_per_buy": 0.244,
+   "sol_out": 0.0,
+   "avg_cost_sol_per_token": 4.330954035150257e-08,
+   "stable_buys": 0,
+   "stable_sells": 1,
+   "stable_in": 0,
+   "stable_out": 16.14,
+   "tokens_bought": 5633862609016,
+   "tokens_sold": 5633862609016,
+   "tokens_held_120m": 0,
+   "realized_sol_window": 0.0,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": null,
+   "window_result_pct": null,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.52
+   ],
+   "buy_sol": [
+    0.244
+   ],
+   "first_buy_sig": "am2niUkguHjLCvyC3dyseFuRMKyFEQzG638o3tpt1evELsHotNhwGVaHkBQSnsmkY5XwSXDkBwbJitUCSJojBu9",
+   "first_buy_slot": 472997941,
+   "payers": [],
+   "status": "INSUFFICIENT_DATA",
+   "insufficient": [
+    "giao dịch định giá bằng USDC (0 mua, 1 bán): không có giá SOL",
+    "không định giá được phần còn giữ"
+   ],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 15
+  },
+  {
+   "wallet": "G3A4eyKyhAyAFro3r8LsoPaBprMstUJYeWtjnjsDhcRL",
+   "is_creator": false,
+   "first_buy_min": 0.52,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 2,
+   "sells": 2,
+   "sol_in": 1.594,
+   "sol_per_buy": 0.797,
+   "sol_out": 1.636,
+   "avg_cost_sol_per_token": 4.368929045738813e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 36484913884209,
+   "tokens_sold": 36484913884209,
+   "tokens_held_120m": 0,
+   "realized_sol_window": 0.042,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": 0.042,
+   "window_result_pct": 0.026,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.52,
+    5.58
+   ],
+   "buy_sol": [
+    0.727,
+    0.867
+   ],
+   "first_buy_sig": "2mVwR51HWiHNH1Zheh6t1QVfxCg7KeFv9mLyLyWuHyeJyuNdyytR5JcxCKarow6ENMXkLpeyMrN6JkF8iqcEhiSi",
+   "first_buy_slot": 472997941,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 16
+  },
+  {
+   "wallet": "7Cw6tHJ2noenomUQZbJdxHrXGqFwqxaiafRXCES1TffN",
+   "is_creator": false,
+   "first_buy_min": 0.52,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.693,
+   "sol_per_buy": 0.693,
+   "sol_out": 0.626,
+   "avg_cost_sol_per_token": 4.647321643822389e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 14911814871286,
+   "tokens_sold": 14911814871286,
+   "tokens_held_120m": 0,
+   "realized_sol_window": -0.067,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": -0.067,
+   "window_result_pct": -0.097,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.52
+   ],
+   "buy_sol": [
+    0.693
+   ],
+   "first_buy_sig": "2SBXB6BLzMCRGdxZHcYA42EM2gH7vei2R93Pgxvbe73bGR8j4sFtAcPek1rn5bDn79zsYALUcwdJ7bn858nUbKtF",
+   "first_buy_slot": 472997941,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 17
+  },
+  {
+   "wallet": "6eWNpvPGavLtcr9NzL4ms6UToZvAyi7wEhKjCvAfvtrC",
+   "is_creator": false,
+   "first_buy_min": 0.52,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.06,
+   "sol_per_buy": 0.06,
+   "sol_out": 0.046,
+   "avg_cost_sol_per_token": 4.9392443157452674e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 1214760723796,
+   "tokens_sold": 1214760723796,
+   "tokens_held_120m": 0,
+   "realized_sol_window": -0.014,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": -0.014,
+   "window_result_pct": -0.233,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.52
+   ],
+   "buy_sol": [
+    0.06
+   ],
+   "first_buy_sig": "5hyj7vTWFsw4Zr9iM55NC95s4VrjxWk3ZTEk6wD16koaLwU4Dn8yULsmut43Z6Sbck86GodViSz6iu24KJ1xLH63",
+   "first_buy_slot": 472997941,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 18
+  },
+  {
+   "wallet": "AcysJyF3VVkS6pUU2AgMYNaNrkjXAuTW4Q2LPkPp6TCT",
+   "is_creator": false,
+   "first_buy_min": 0.52,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.304,
+   "sol_per_buy": 0.304,
+   "sol_out": 0.235,
+   "avg_cost_sol_per_token": 4.873266665203196e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 6238115434369,
+   "tokens_sold": 6238115434369,
+   "tokens_held_120m": 0,
+   "realized_sol_window": -0.069,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": -0.069,
+   "window_result_pct": -0.227,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.52
+   ],
+   "buy_sol": [
+    0.304
+   ],
+   "first_buy_sig": "4zSxrVaXpD1LnXdMgx6eWAHFxSn5aFJ8zSjbYgq5BJxPpLzcofQge2cQ9cyvSUNK2tHQApZjd5h7LMLTxxiQExz8",
+   "first_buy_slot": 472997941,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 19
+  },
+  {
+   "wallet": "F5CYW9mFWTgCWXuJyVNFWqS36MQozaZNtdsocr7hq5uF",
+   "is_creator": false,
+   "first_buy_min": 0.52,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.603,
+   "sol_per_buy": 0.603,
+   "sol_out": 0.588,
+   "avg_cost_sol_per_token": 4.894226279855998e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 12320639985157,
+   "tokens_sold": 12320639985157,
+   "tokens_held_120m": 0,
+   "realized_sol_window": -0.015,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": -0.015,
+   "window_result_pct": -0.025,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.52
+   ],
+   "buy_sol": [
+    0.603
+   ],
+   "first_buy_sig": "mj9x62ZoWxikkZaMFTmsq48pXyv13pzWR1Laffw5PudjatLVgFvp5Ac5yA6yRXTEe1j2jg16AkvGwLnBoFkjGns",
+   "first_buy_slot": 472997941,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 20
+  },
+  {
+   "wallet": "9dJ2ttUmCehXuJam6r3jUMo34Q1AEiG2HjLJYreyCWY2",
+   "is_creator": false,
+   "first_buy_min": 0.92,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.036,
+   "sol_per_buy": 0.036,
+   "sol_out": 0.022,
+   "avg_cost_sol_per_token": 5.98540777633251e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 601462779902,
+   "tokens_sold": 601462779902,
+   "tokens_held_120m": 0,
+   "realized_sol_window": -0.014,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": -0.014,
+   "window_result_pct": -0.389,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.92
+   ],
+   "buy_sol": [
+    0.036
+   ],
+   "first_buy_sig": "AmjEfR6YxcfeGSpRwhyVir1MN3RrrGzHbqu7Vnn4AcrcDnXC8rRJVRdFkzow2KNqyKXSqXCSJf7k2hRLDQiqMrh",
+   "first_buy_slot": 472998058,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 21
+  },
+  {
+   "wallet": "5vAZuhc9XwzwTdDehLsoLYS2EwfxnaPgktzMsKK1U1te",
+   "is_creator": false,
+   "first_buy_min": 5.58,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.522,
+   "sol_per_buy": 0.522,
+   "sol_out": 0.412,
+   "avg_cost_sol_per_token": 4.145542156384871e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 12591839144514,
+   "tokens_sold": 12591839144514,
+   "tokens_held_120m": 0,
+   "realized_sol_window": -0.11,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": -0.11,
+   "window_result_pct": -0.211,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    5.58
+   ],
+   "buy_sol": [
+    0.522
+   ],
+   "first_buy_sig": "3cTSobb4Rp841hqKwQEQEBApDimSr7vWMzUZXpQfBvwwybwBd5TTQVDuiCJVBRwHFssW9z5ZXDnhj6yT4huHANp6",
+   "first_buy_slot": 472999350,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 22
+  },
+  {
+   "wallet": "Grozoe2Lk9yu7kWPcCMuWEbrnuBYseBExkYAuHPRJUdJ",
+   "is_creator": false,
+   "first_buy_min": 5.58,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.653,
+   "sol_per_buy": 0.653,
+   "sol_out": 0.49,
+   "avg_cost_sol_per_token": 4.476224494608833e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 14588187004170,
+   "tokens_sold": 14588187004170,
+   "tokens_held_120m": 0,
+   "realized_sol_window": -0.163,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": -0.163,
+   "window_result_pct": -0.25,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    5.58
+   ],
+   "buy_sol": [
+    0.653
+   ],
+   "first_buy_sig": "2Kw1PkthHsCCYa1wf4NK54eWNTubiNVk8sQVS3JfBkGBQY7r5KXdddqtwGgTvDT9r4NngRtgTgqjbR7KyCH1sjM8",
+   "first_buy_slot": 472999350,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 23
+  },
+  {
+   "wallet": "59C19uWBHqxjUsEX9uTioK1RAqZLz4UstZbbJLfG6JW1",
+   "is_creator": false,
+   "first_buy_min": 5.58,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.504,
+   "sol_per_buy": 0.504,
+   "sol_out": 0.519,
+   "avg_cost_sol_per_token": 4.6280025816436085e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 10890227287233,
+   "tokens_sold": 10890227287233,
+   "tokens_held_120m": 10890227287233,
+   "realized_sol_window": 0.0,
+   "mtm_sol_120m_estimate": -0.1272,
+   "window_result_sol": -0.1272,
+   "window_result_pct": -0.252,
+   "roles": [
+    "EARLY_SELL",
+    "HOLD"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    5.58
+   ],
+   "buy_sol": [
+    0.504
+   ],
+   "first_buy_sig": "8aZUsSAfoyo9XxspLDV2YEmkmEsrwpLMgKLRTve7heJDGnViWgnF4epese6dvVkty5Q2XsP7urR1JjBZbH7DRXc",
+   "first_buy_slot": 472999350,
+   "payers": [],
+   "status": "INSUFFICIENT_DATA",
+   "insufficient": [
+    "bán nhiều hơn lượng đã mua thấy được"
+   ],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 24
+  },
+  {
+   "wallet": "13bEQbWhZsrTmiY9Gg6jbasoyXNq1LxCoysraVcrKK6",
+   "is_creator": false,
+   "first_buy_min": 5.58,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.253,
+   "sol_per_buy": 0.253,
+   "sol_out": 0.244,
+   "avg_cost_sol_per_token": 4.7370363104027445e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 5340892140607,
+   "tokens_sold": 5340892140607,
+   "tokens_held_120m": 0,
+   "realized_sol_window": -0.009,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": -0.009,
+   "window_result_pct": -0.036,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    5.58
+   ],
+   "buy_sol": [
+    0.253
+   ],
+   "first_buy_sig": "2ebpEMhTbzf35oZFfLTPYZ5wsZ5GkB3MVYiStpEN3FZMum4McGpmypYHbxf7dxKZnGJzvdZtvV1dP4VKBcsmTpxj",
+   "first_buy_slot": 472999350,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 25
+  },
+  {
+   "wallet": "nnnLxEzVBJNaC7ZFCDeQTjFv4gCVGq1sS9Q6u6oPSUA",
+   "is_creator": false,
+   "first_buy_min": 5.58,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 2,
+   "sells": 2,
+   "sol_in": 0.684,
+   "sol_per_buy": 0.342,
+   "sol_out": 0.636,
+   "avg_cost_sol_per_token": 4.666925010703146e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 14656331490892,
+   "tokens_sold": 14656331490892,
+   "tokens_held_120m": 0,
+   "realized_sol_window": -0.048,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": -0.048,
+   "window_result_pct": -0.07,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    5.58,
+    7.58
+   ],
+   "buy_sol": [
+    0.346,
+    0.338
+   ],
+   "first_buy_sig": "TBr5fYVo8bkn9MvcJzPHpYkaaUnKBqFocD6eyqZkrxGsHzoqF4vDXVtrL9mSoEKuE7NB32DboM82zhPUUB9UUmB",
+   "first_buy_slot": 472999350,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 26
+  },
+  {
+   "wallet": "8d1YSS1uVDWg6SdpGudUAMzHzp569ksrYFtvFzixMwgL",
+   "is_creator": false,
+   "first_buy_min": 5.58,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.112,
+   "sol_per_buy": 0.112,
+   "sol_out": 0.107,
+   "avg_cost_sol_per_token": 4.89468718417352e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 2288195257138,
+   "tokens_sold": 2288195257138,
+   "tokens_held_120m": 0,
+   "realized_sol_window": -0.005,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": -0.005,
+   "window_result_pct": -0.045,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    5.58
+   ],
+   "buy_sol": [
+    0.112
+   ],
+   "first_buy_sig": "4WBiuE33246w2RFekbwLsUw9c5CyKJB3Gy6t91Gvb9TT6WavF33bTahw3eGLiH9aqmoW14LxFxzaiNLJhrwDNJjQ",
+   "first_buy_slot": 472999351,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 27
+  },
+  {
+   "wallet": "EB4vT45vzSXfHTFUzcujBGFpPwPq5VZSiMMgJ3WuDMF3",
+   "is_creator": false,
+   "first_buy_min": 5.58,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 2,
+   "sells": 1,
+   "sol_in": 0.754,
+   "sol_per_buy": 0.377,
+   "sol_out": 0.591,
+   "avg_cost_sol_per_token": 4.7954082603826707e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 15723374508677,
+   "tokens_sold": 15723374508677,
+   "tokens_held_120m": 0,
+   "realized_sol_window": -0.163,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": -0.163,
+   "window_result_pct": -0.216,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    5.58,
+    7.58
+   ],
+   "buy_sol": [
+    0.453,
+    0.301
+   ],
+   "first_buy_sig": "35kktbc2Xra2aT9GWmnPWjFBNLjtEBkgMGWqrXGorxWDr97kmWVcSk5nNuvaswmuAbphLzPLZKCSSRwhwvZJbzwg",
+   "first_buy_slot": 472999351,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 28
+  },
+  {
+   "wallet": "nnnPeUdKo9Sp2L29cn3hNDgCFutijnVMhuCRdEjiU9p",
+   "is_creator": false,
+   "first_buy_min": 7.58,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.378,
+   "sol_per_buy": 0.378,
+   "sol_out": 0.289,
+   "avg_cost_sol_per_token": 4.4866330574279496e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 8425025964051,
+   "tokens_sold": 8425025964051,
+   "tokens_held_120m": 0,
+   "realized_sol_window": -0.089,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": -0.089,
+   "window_result_pct": -0.235,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    7.58
+   ],
+   "buy_sol": [
+    0.378
+   ],
+   "first_buy_sig": "3v2AN5NRmt9bjrTGwLgz1aSGwEMgkMBYFsgJSZdxXgMSWVkJ2np7MG3MzPeJiiKnePcwHk1TMr3kniBdmTHaKqbo",
+   "first_buy_slot": 472999905,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 29
+  },
+  {
+   "wallet": "E2x1ewwXUwxABtFcssgxQLY6PrcRQuhLJRWPCR3WyeJb",
+   "is_creator": false,
+   "first_buy_min": 9.42,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.504,
+   "sol_per_buy": 0.504,
+   "sol_out": 0.407,
+   "avg_cost_sol_per_token": 3.945504698528051e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 12774031169904,
+   "tokens_sold": 12774031169904,
+   "tokens_held_120m": 0,
+   "realized_sol_window": -0.097,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": -0.097,
+   "window_result_pct": -0.192,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    9.42
+   ],
+   "buy_sol": [
+    0.504
+   ],
+   "first_buy_sig": "4yhZaaLANziPZQzmWjVC73poxEkSMcom7WLYZh4BjAAqpQ6hCXNwDLdRtS8R2Qv43FaA9K5oqW9wSwVTBBkF3uvb",
+   "first_buy_slot": 473000416,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 30
+  },
+  {
+   "wallet": "5tztZwcg3z3Cdri7AA63tFR2XNBt9UwBtY6CCmMW68vz",
+   "is_creator": false,
+   "first_buy_min": 13.12,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 1,
+   "sol_in": 0.502,
+   "sol_per_buy": 0.502,
+   "sol_out": 0.478,
+   "avg_cost_sol_per_token": 3.7814746752058633e-08,
+   "stable_buys": 0,
+   "stable_sells": 0,
+   "stable_in": 0,
+   "stable_out": 0,
+   "tokens_bought": 13275244266251,
+   "tokens_sold": 13275244266251,
+   "tokens_held_120m": 0,
+   "realized_sol_window": -0.024,
+   "mtm_sol_120m_estimate": null,
+   "window_result_sol": -0.024,
+   "window_result_pct": -0.048,
+   "roles": [
+    "EARLY_SELL"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    13.12
+   ],
+   "buy_sol": [
+    0.502
+   ],
+   "first_buy_sig": "2XWdbbkmvWCMjhzNNZiXvznk9NRBAxHK6zxSE4ZrADuFW6cCjqzjUB4zG3cm2bC2LZJVmqErM94aeYqJN9TWkLA3",
+   "first_buy_slot": 473001443,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 31
+  }
+ ],
+ "roles": {
+  "ACCUMULATE": 0,
+  "EARLY_SELL": 30,
+  "HOLD": 2,
+  "GOOD": 0
+ },
+ "insufficient": 6
+}

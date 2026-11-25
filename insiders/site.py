@@ -10,10 +10,12 @@ The watch (public RPC, every 2 min) and its $500 paper book keep their state in 
 directory of KOL_DB, i.e. the persistent disk /var/data on Render)."""
 from __future__ import annotations
 
+import gzip
 import hmac
 import json
 import os
 import re
+import socket
 import subprocess
 import time
 import traceback
@@ -30,7 +32,12 @@ STATIC = {"/": ("index.html", "text/html; charset=utf-8"), "/index.html": ("inde
           "/legacy/": ("legacy/index.html", "text/html; charset=utf-8"),
           "/legacy/index.html": ("legacy/index.html", "text/html; charset=utf-8"),
           "/legacy/app.js": ("legacy/app.js", "application/javascript; charset=utf-8"),
-          "/legacy/styles.css": ("legacy/styles.css", "text/css; charset=utf-8")}
+          "/legacy/styles.css": ("legacy/styles.css", "text/css; charset=utf-8"),
+          # Early Smart Money (120-minute window): read-only, data from the v5 esm_* tables
+          "/early/": ("early/index.html", "text/html; charset=utf-8"),
+          "/early/index.html": ("early/index.html", "text/html; charset=utf-8"),
+          "/early/early.js": ("early/early.js", "application/javascript; charset=utf-8"),
+          "/early/early.css": ("early/early.css", "text/css; charset=utf-8")}
 
 
 def asset_version() -> str:
@@ -65,15 +72,35 @@ def git_commit() -> str | None:
         return None
 
 
-def make_handler(svc: InsiderService, access_code: str | None, health: dict, callers=None):
+def make_handler(svc: InsiderService, access_code: str | None, health: dict, callers=None, esm=None):
     class H(BaseHTTPRequestHandler):
         server_version = "insiders"
+        protocol_version = "HTTP/1.1"                       # keep-alive: every response sets Content-Length
 
         def log_message(self, fmt, *args):                  # quiet access log (no headers, no codes)
             pass
 
+        def finish(self):
+            """Graceful close: half-close then drain what the client still sends. Closing a socket with unread input
+            makes Windows send an RST that can wipe a response already written (seen locally: CSS / JSON cut off)."""
+            super().finish()
+            try:
+                self.connection.shutdown(socket.SHUT_WR)
+                self.connection.settimeout(0.5)
+                while self.connection.recv(65536):
+                    pass
+            except OSError:
+                pass
+
         def _send(self, code: int, ctype: str, body: bytes):
+            gz = len(body) > 2048 and "gzip" in (self.headers.get("accept-encoding") or "") and \
+                ctype.split(";")[0] in ("application/json", "application/javascript", "text/css", "text/html")
+            if gz:                                            # large tables (Early Smart Money: ~0.7 MB) go out ~10x smaller
+                body = gzip.compress(body, 5)
             self.send_response(code)
+            if gz:
+                self.send_header("Content-Encoding", "gzip")
+                self.send_header("Vary", "Accept-Encoding")
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
@@ -165,6 +192,18 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                                                      for x in sg if (x.get("paper") or {}).get("exit"))),
                                        "kinds": dict(__import__("collections").Counter(x["kind"] + "/" + x["tier"] for x in sg)),
                                        "ticks": sh.stat.get("ticks"), "error": sh.stat.get("error")}
+                tr = getattr(svc, "tracker", None)
+                if tr is not None:                            # coin watchlist: counts only
+                    st = tr.status()
+                    h["track"] = {k: st.get(k) for k in ("mints", "by_status", "queue", "funding_todo", "events", "edges",
+                                                         "signals", "calls", "paused", "shadow_on", "schema", "last_error",
+                                                         "gaps_open", "rpc_today")}
+                wh = getattr(svc, "wallet_history", None)
+                if wh is not None:                            # B3: on / off and the calls spent today, counts only
+                    h["wallet_history"] = {"enabled": wh.enabled, "calls_today": wh._used(
+                        time.strftime("%Y-%m-%d", time.gmtime())), "safe_stop": wh.stat.get("safe_stop")}
+                if getattr(svc, "last_backup", None) is not None or getattr(svc, "backup_error", None):
+                    h["backup"] = {"last": getattr(svc.last_backup, "name", None), "error": svc.backup_error}
                 if callers is not None:                       # Smart Caller Hunter: counts only
                     h["callers"] = callers.health()
                 return self._json(200, h)
@@ -180,6 +219,12 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                     name, ctype = CSTATIC[path]
                     return self._send(200, ctype, (CPAGE / name).read_bytes())
                 return self._send(404, "text/plain", b"")
+            if path == "/early":
+                self.send_response(301)
+                self.send_header("Location", "/early/")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return None
             if path == "/legacy":
                 self.send_response(301)
                 self.send_header("Location", "/legacy/")
@@ -189,7 +234,7 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
             if path in STATIC:
                 name, ctype = STATIC[path]
                 body = (PAGE / name).read_bytes()
-                if name == "index.html":
+                if name.endswith("index.html"):
                     body = body.replace(b"__V__", asset_version().encode())
                 return self._send(200, ctype, body)
             if path.startswith("/api/") and not self._authed():
@@ -198,6 +243,9 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                 from urllib.parse import urlsplit
                 res = callers.get(path, urlsplit(self.path).query)
                 return self._json(*res) if res else self._json(404, {"error": "route"})
+            if path.startswith("/api/insiders/esm/"):
+                from urllib.parse import urlsplit
+                return self._json(*esm_get(esm, path, self.path, svc))
             if path == "/api/insiders":
                 return self._json(200, svc.status())
             if path == "/api/insiders/chart":
@@ -222,6 +270,9 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                 w = getattr(svc, "watcher", None)
                 d = w.wallet_view(addr) if w else None
                 return self._json(200, d) if d else self._json(404, {"error": "wallet"})
+            if path.startswith("/api/insiders/track/"):    # coin watchlist, events, graph, ranking, paper metrics
+                res = track_get(svc, path, self.path)
+                return self._json(*res)
             if path == "/api/insiders/watch":
                 w = getattr(svc, "watcher", None)
                 return self._json(200, {"watch": w.status() if w else None,
@@ -238,6 +289,8 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
             path = self.path.split("?", 1)[0]
             n = int(self.headers.get("content-length") or 0)
             body = self.rfile.read(min(n, 262144)) if n else b""
+            if n > 262144:
+                self.close_connection = True                   # unread rest of the body: never parse it as a request
             if not path.startswith("/api/") or not self._authed():
                 return None if path.startswith("/api/") else self._json(404, {"error": "route"})
             if callers is not None and path.startswith("/api/callers/"):
@@ -259,12 +312,196 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                 on = (parse_qs(urlsplit(self.path).query).get("on") or ["0"])[0] == "1"
                 until = v.set_turbo(on)
                 return self._json(200, {"turbo": v.turbo(), "turbo_until": until})
+            if path.startswith("/api/insiders/track/"):
+                res = track_post(svc, path, self.path, body)
+                return self._json(*res)
             if path == "/api/insiders/run":
                 if not svc.key:
                     return self._json(503, {"error": "helius_key_missing"})
                 return self._json(200, {"started": svc.start(), "running": svc.running})
             return self._json(404, {"error": "route"})
     return H
+
+
+_ADDR = re.compile(r"[1-9A-HJ-NP-Za-km-z]{32,44}")
+
+
+def _qs(raw: str) -> dict:
+    from urllib.parse import parse_qs, urlsplit
+    return {k: v[0] for k, v in parse_qs(urlsplit(raw).query).items()}
+
+
+def esm_get(store, path: str, raw: str, svc=None) -> tuple[int, object]:
+    """GET /api/insiders/esm/{summary|wallets|wallet|entities|entity|coins|coin}: Early Smart Money, read only."""
+    from insiders import esm_view as V
+    if store is None:
+        return 503, {"error": "esm_off"}
+    q = _qs(raw)
+    for k in ("mint", "wallet"):
+        if q.get(k) and not _ADDR.fullmatch(q[k]):
+            return 400, {"error": k}
+    if q.get("id") and not re.fullmatch(r"E\d{1,5}", q["id"]):
+        return 400, {"error": "id"}
+    name = path.rsplit("/", 1)[-1]
+    if name == "summary":
+        return 200, V.summary(store)
+    if name == "radar":
+        t = getattr(svc, "tracker", None)
+        on = t is not None and not t.paused()
+        note = None if on else ("tracker tắt (chạy với --no-watch hoặc INSIDER_TRACK=0)" if t is None else "tracker đang tạm dừng")
+        try:
+            ms = max(1, min(6, int(q.get("min_score") or 4)))
+        except ValueError:
+            return 400, {"error": "min_score"}
+        return 200, V.radar(store, on, note, ms)
+    if name == "wallets":
+        return 200, {"wallets": V.wallet_table(store)}
+    if name == "entities":
+        return 200, {"entities": V.entity_table(store)}
+    if name == "coins":
+        return 200, V.coins(store)
+    if name == "wallet" and q.get("wallet"):
+        d = V.wallet_detail(store, q["wallet"])
+        return (200, d) if d else (404, {"error": "wallet"})
+    if name == "entity" and q.get("id"):
+        d = V.entity_detail(store, q["id"])
+        return (200, d) if d else (404, {"error": "entity"})
+    if name == "coin" and q.get("mint"):
+        d = V.coin_detail(store, q["mint"])
+        return (200, d) if d else (404, {"error": "coin"})
+    return 404, {"error": "route"}
+
+
+def open_esm(sdir: Path):
+    """The Early Smart Money store (same SQLite file as the tracker; migration v5 = new tables only, backup first).
+    When its tables are empty and the research folder exists locally, the 5 verified coins are imported once
+    (idempotent). Nothing here calls the network."""
+    from insiders import esm as E
+    from insiders.track import Store
+    if (os.environ.get("INSIDER_ESM_PAGE") or "1") == "0":
+        return None
+    st = Store(sdir / "insiders_track.db")
+    src = Path(os.environ.get("ESM_RESEARCH_DIR") or Path(__file__).resolve().parents[1] / "research" / "seven_coins")
+    if not (src / "early_smart_money.json").exists():
+        src = Path(__file__).with_name("esm_seed")           # the committed results of the 5 verified coins (server)
+    if not st.q("SELECT COUNT(*) AS n FROM esm_coin")[0]["n"] and (src / "early_smart_money.json").exists():
+        n = E.import_research(st, src)
+        print(f"[insiders] Early Smart Money: đã nạp dữ liệu nghiên cứu {n}", flush=True)
+    return st
+
+
+def track_get(svc, path: str, raw: str) -> tuple[int, object]:
+    """GET /api/insiders/track/{status|coins|coin|events|graph|wallets|paper}; every input validated here."""
+    t = getattr(svc, "tracker", None)
+    if t is None:
+        return 503, {"error": "tracker_off"}
+    q = _qs(raw)
+    for k in ("mint", "wallet"):
+        if q.get(k) and not _ADDR.fullmatch(q[k]):
+            return 400, {"error": k}
+    name = path.rsplit("/", 1)[-1]
+    if name == "status":
+        return 200, t.status()
+    if name == "coins":
+        return 200, {"coins": t.coins(), "pending": t.pending()}
+    if name == "coin":
+        if not q.get("mint"):
+            return 400, {"error": "mint"}
+        d = t.coin_detail(q["mint"])
+        return (200, d) if d else (404, {"error": "coin"})
+    if name == "events":
+        kind = q.get("kind")
+        if kind and not re.fullmatch(r"[A-Z_]{2,12}", kind):
+            return 400, {"error": "kind"}
+        try:
+            since = float(q["since"]) if q.get("since") else None
+            limit = max(1, min(1000, int(q.get("limit") or 300)))
+        except ValueError:
+            return 400, {"error": "number"}
+        return 200, {"events": t.events(q.get("mint"), kind, q.get("wallet"), since, limit)}
+    if name == "graph":
+        return 200, t.graph(mint=q.get("mint"), wallet=q.get("wallet"))
+    if name == "radar":
+        win = {"5m": 300, "1h": 3600, "6h": 21600, "24h": 86400, "7d": 604800}.get(q.get("win") or "24h")
+        if win is None:
+            return 400, {"error": "win"}
+        return 200, t.radar(window_s=win)
+    if name in ("history", "cohorts"):                       # B3/B4: wallet history / PnL (read-only)
+        wh = getattr(svc, "wallet_history", None)
+        if wh is None:
+            return 503, {"error": "wallet_history_off"}
+        if name == "cohorts":
+            return 200, wh.status()
+        if not q.get("wallet"):
+            return 400, {"error": "wallet"}
+        sm = wh.summary(q["wallet"])
+        if sm is None:
+            return 404, {"error": "wallet"}
+        return 200, {**sm, "pnl": t.s.q("SELECT * FROM wallet_pnl WHERE wallet=? ORDER BY last_ts DESC LIMIT 500",
+                                         (q["wallet"],))}
+    if name == "wallets":
+        w = getattr(svc, "watcher", None)
+        vip = getattr(w, "vip", None) if w else None
+        rank = t.rank_cache or (t.rank_children(vip) if vip is not None else {})
+        top = sorted(rank.items(), key=lambda kv: -kv[1]["score"])[:300]
+        bots = t.bot_labels([a for a, _ in top[:150]])
+        followed = set(vip.wallets()) if vip is not None else set()
+        return 200, {"wallets": [{"wallet": a, **r, "bot": bots.get(a), "followed": a in followed,
+                                  "group": vip.group(a) if vip is not None else None} for a, r in top],
+                     "rank_version": __import__("insiders.track", fromlist=["RANK_VERSION"]).RANK_VERSION,
+                     "weights": __import__("insiders.track", fromlist=["RANK_W"]).RANK_W}
+    if name == "paper":
+        return 200, t.metrics()
+    return 404, {"error": "route"}
+
+
+def track_post(svc, path: str, raw: str, body: bytes) -> tuple[int, object]:
+    """POST /api/insiders/track/{coins|coin|paper|edge}: add / bulk add, pause / resume / remove / retry, measurement
+    on / off, hide / show a wrong edge. Read-only towards the chain: nothing here signs or sends anything."""
+    t = getattr(svc, "tracker", None)
+    if t is None:
+        return 503, {"error": "tracker_off"}
+    q = _qs(raw)
+    name = path.rsplit("/", 1)[-1]
+    if name == "coins":
+        try:
+            data = json.loads(body or b"{}")
+        except ValueError:
+            return 400, {"error": "json"}
+        if not isinstance(data, dict):
+            return 400, {"error": "json"}
+        from insiders.track import BULK_MAX, parse_bulk
+        items = data.get("items")
+        if items is None:
+            from insiders.track import valid_mint
+            items = parse_bulk(str(data.get("text") or ""))
+            good = [x for x in items if valid_mint(x["mint"])]
+            for x in items:
+                x.update({k: data[k] for k in ("history", "live", "tags") if k in data})
+                if len(good) == 1 and x is good[0]:          # name / note typed in the form: the one valid address
+                    x["name"] = x.get("name") or data.get("name") or ""
+                    x["note"] = x.get("note") or data.get("note") or ""
+        if not isinstance(items, list) or not items:
+            return 400, {"error": "empty"}
+        if len(items) > BULK_MAX:
+            return 413, {"error": "too_many", "max": BULK_MAX}
+        items = [x for x in items if isinstance(x, dict)]
+        return 200, {"results": t.add(items)}
+    if name == "coin":
+        mint, op = q.get("mint") or "", q.get("op") or ""
+        if not _ADDR.fullmatch(mint) or op not in ("pause", "resume", "remove", "retry"):
+            return 400, {"error": "args"}
+        m = t.action(mint, op)
+        return (200, {"coin": m}) if m else (404, {"error": "coin"})
+    if name == "paper":
+        return 200, {"on": t.set_shadow(q.get("on") == "1")}
+    if name == "edge":
+        try:
+            eid = int(q.get("id") or "")
+        except ValueError:
+            return 400, {"error": "id"}
+        return (200, {"ok": True}) if t.hide_edge(eid, q.get("hidden") == "1") else (404, {"error": "edge"})
+    return 404, {"error": "route"}
 
 
 def removed_counts(removed: dict) -> dict:
@@ -312,7 +549,9 @@ def serve(host: str = "127.0.0.1", port: int = 8780, watch: bool = True, svc: In
     callers = None
     if callers_app is not False and (os.environ.get("CALLERS") or "1") != "0":
         callers = callers_app or _callers_app(svc, sdir, start=watch)
-    httpd = ThreadingHTTPServer((host, port), make_handler(svc, code, health, callers))
+    esm = open_esm(sdir)
+    health["esm"] = esm is not None
+    httpd = ThreadingHTTPServer((host, port), make_handler(svc, code, health, callers, esm))
     print(f"[insiders] http://{host}:{port} · state {sdir} (durable {durable}) · watch {bool(started)}", flush=True)
     return httpd
 

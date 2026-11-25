@@ -177,3 +177,35 @@ details.bots > summary { cursor: pointer; color: var(--muted); padding: 6px 0; }
 .turbo { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 8px 0; padding: 8px 10px; border: 1px solid var(--line2); border-radius: 8px; }
 .turbo.on { border-color: var(--good); }
 .turbo.paused { border-color: var(--bad, #c0392b); }
+
+/* ---------- Radar + Coins (track) */
+:root { --vio: #a48cf2; --vio-bg: rgba(164, 140, 242, .14); }
+.pill.vio { background: var(--vio-bg); color: var(--vio); }
+tr.cand td:first-child { box-shadow: inset 3px 0 0 var(--vio); }
+tr.strong td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.banner { margin: 8px 0; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line2); background: var(--panel2); }
+.banner.warn { border-color: rgba(241, 184, 75, .45); background: var(--warn-bg); }
+.banner.bad { border-color: rgba(242, 100, 90, .45); background: var(--bad-bg); }
+.note.cov { border-left: 3px solid var(--warn); padding-left: 10px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin: 10px 0; }
+.tile { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.tile b { font-size: 20px; display: block; }
+.btn.small { padding: 2px 8px; font-size: 12px; }
+.btn.danger { color: var(--bad); }
+.acts { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.unk { color: var(--dim); }
+.modal { position: fixed; inset: 0; z-index: 50; background: rgba(5, 9, 13, .72); display: flex; align-items: flex-start; justify-content: center;
+  padding: 6vh 16px 16px; overflow-y: auto; }
+.mbox { width: 100%; max-width: 560px; background: var(--panel); border: 1px solid var(--line2); border-radius: 14px; padding: 16px 18px;
+  display: flex; flex-direction: column; gap: 6px; box-shadow: 0 18px 60px rgba(0, 0, 0, .5); }
+.mbox header, .mbox footer { display: flex; align-items: center; gap: 8px; }
+.mbox footer { justify-content: flex-end; margin-top: 8px; }
+.mbox label { font-size: 13px; color: var(--muted); margin-top: 6px; }
+.mbox input:not([type=checkbox]), .mbox textarea { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line2);
+  border-radius: 8px; padding: 8px 10px; font: 13px/1.4 var(--mono); }
+.mbox textarea { resize: vertical; min-height: 80px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mres { margin: 6px 0 0; padding-left: 18px; font-size: 13px; max-height: 160px; overflow-y: auto; }
+@media (max-width: 560px) { .row2 { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .pill.good .dot, tr.flash { animation: none !important; } }
+.btn:disabled { opacity: .45; cursor: not-allowed; }

@@ -1,0 +1,88 @@
+{
+ "coin": {
+  "symbol": "MACCA",
+  "mint": "C5eGEXJZYvXEbKdyvPtasksjGNV4xvMowpKM92bVv47f",
+  "t_create": 1795105425,
+  "t_create_utc": "2026-11-19 16:23:45",
+  "creation_sig": "4waqp98GHDmXebfbkdcDWGMPqmeMAo2Rsnz6vNFGDRF4XGUQhGZxEGaa93x9eqrkNGamEhJ1uSHTx6LUhMYRyHhU",
+  "creator": "HZjrrSvhET8WLutYoKAdR91bf48opXiGqKHkgLKVz48m",
+  "p0": null,
+  "p_15m": 1.8e-11,
+  "p_60m": 1.8e-11,
+  "p_120m": 1.8e-11,
+  "x_15m": null,
+  "x_60m": null,
+  "x_120m": null,
+  "peak_x": null,
+  "peak_min": 0.0,
+  "priced_trades": 1
+ },
+ "coverage": {
+  "window_signatures": 53,
+  "window_successful": 53,
+  "decoded": 53,
+  "not_served": 0,
+  "decode_errors": 0,
+  "unread": 0
+ },
+ "buckets": {
+  "0-15": {
+   "buyers": 1,
+   "sol_in": 0.018
+  },
+  "15-60": {
+   "buyers": 0,
+   "sol_in": 0
+  },
+  "60-120": {
+   "buyers": 0,
+   "sol_in": 0
+  }
+ },
+ "wallets": [
+  {
+   "wallet": "HZjrrSvhET8WLutYoKAdR91bf48opXiGqKHkgLKVz48m",
+   "is_creator": true,
+   "first_buy_min": 0.0,
+   "bucket": "0-15",
+   "early_tier": 1,
+   "buys": 1,
+   "sells": 0,
+   "sol_in": 0.018,
+   "sol_per_buy": 0.018,
+   "sol_out": 0.0,
+   "avg_cost_sol_per_token": 1.8e-11,
+   "tokens_bought": 1000000000000000,
+   "tokens_sold": 0,
+   "tokens_held_120m": 1000000000000000,
+   "realized_sol_window": 0.0,
+   "mtm_sol_120m_estimate": 0.0,
+   "window_result_sol": 0.0,
+   "window_result_pct": 0.0,
+   "roles": [
+    "HOLD"
+   ],
+   "bot_flag": false,
+   "buy_times_min": [
+    0.0
+   ],
+   "buy_sol": [
+    0.018
+   ],
+   "first_buy_sig": "4waqp98GHDmXebfbkdcDWGMPqmeMAo2Rsnz6vNFGDRF4XGUQhGZxEGaa93x9eqrkNGamEhJ1uSHTx6LUhMYRyHhU",
+   "first_buy_slot": 471401465,
+   "payers": [],
+   "status": "OK",
+   "insufficient": [],
+   "final_pnl": "INSUFFICIENT_DATA (quy tắc: không đọc sau phút 120)",
+   "buy_rank": 1
+  }
+ ],
+ "roles": {
+  "ACCUMULATE": 0,
+  "EARLY_SELL": 0,
+  "HOLD": 1,
+  "GOOD": 0
+ },
+ "insufficient": 0
+}

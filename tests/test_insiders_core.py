@@ -892,7 +892,7 @@ def test_websocket_survives_bad_messages_and_slow_transactions(tmp_path):
             return False
     vs = VP.VipStream(w, r, connect=lambda: Ctx(), now=lambda: 2_000.0)
 
-    def handle(addr, sig):
+    def handle(addr, sig, *_):
         time.sleep(0.4 if sig == "slow" else 0)
         done.append(sig)
     vs.handle = handle
@@ -1261,7 +1261,7 @@ def test_poller_baselines_then_handles_new_signatures_oldest_first(tmp_path):
     def rpc(m, p):
         return pages[p[0]][-1]
     vs = VP.VipStream(w, r, rpc=rpc, now=lambda: 2_000.0)
-    vs.handle = lambda a, s: handled.append((a, s))
+    vs.handle = lambda a, s, *_: handled.append((a, s))
     vs.subs = {7: BOSS}                                               # BOSS is live on the socket: not polled
     assert vs.poll_once() == 0 and handled == []                      # first round: positions only
     pages[WALLET].append([{"signature": "s4", "err": None}, {"signature": "s3", "err": {"x": 1}},

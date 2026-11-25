@@ -1,0 +1,1001 @@
+{
+ "28vWTtEwxoWp5MpHutAMSK5DeVf8xXk8jEEtbrtppump": {
+  "ticker": "MOONX",
+  "mint": "28vWTtEwxoWp5MpHutAMSK5DeVf8xXk8jEEtbrtppump",
+  "name": "SOON MOON",
+  "pairs": [
+   {
+    "dex": "pumpswap",
+    "quote": "SOL",
+    "created": 1793115353000,
+    "liq": 4605.05,
+    "fdv": 6270
+   }
+  ],
+  "info": {
+   "imageUrl": "https://cdn.dexscreener.com/cms/images/dxkCuyEgf2S09lN3?width=800&height=800&quality=95&format=auto",
+   "header": "https://cdn.dexscreener.com/cms/images/DHVoPVbGaaaPog0n?width=1500&height=500&quality=95&format=auto",
+   "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/28vWTtEwxoWp5MpHutAMSK5DeVf8xXk8jEEtbrtppump?timestamp=1795587300000",
+   "websites": [],
+   "socials": [
+    {
+     "url": "https://x.com/SoonMoonX",
+     "type": "twitter"
+    }
+   ]
+  },
+  "sig_count": 26263,
+  "history_complete": true,
+  "t_create_utc": "2026-10-27 15:35:53",
+  "creator": "2edvicT7mHrGbjeQh6Vjpoub5bn6MTqRz37CtP6VqzTT",
+  "first15_tx_read": 150,
+  "first15_buyers": 47,
+  "overlap_verified_early": {
+   "27HFmP7ccLadGswvQfvea4o3juLw75cPF4V6jWpHM3MX": [
+    "CHUCHU"
+   ],
+   "mwamTohZTS8VVDXhJBwEFzmWbbaax5sSYY8e8Vxu6HG": [
+    "CHUCHU"
+   ],
+   "BiBgmyKKLJMSpniQBPiQEB5jVyKxgYbUSCtjHaVqRyJ7": [
+    "CHUCHU"
+   ],
+   "3SkBCx49BsK64h6tssBBJZ1WNvpiLdnhnXNmJtP46d7b": [
+    "CHUCHU"
+   ],
+   "H9kuqGKNYgPFYCA17uUTkaqXGum7MK8y1GwbS7cxsjDg": [
+    "CHUCHU",
+    "SCINU"
+   ],
+   "J6YEG5cmN3jbDy2BhMmvE59h9Ar8t84A9uYa5R5icKix": [
+    "CHUCHU"
+   ],
+   "2z2q5gk8TDgqCidzkXkyevXH1aDaVjWL8cQwoRbMF1Jq": [
+    "STANK"
+   ],
+   "Fs9RN3wAsuJKPbTmtX5eek1bhW5krNH8RkQxkFAtgNfR": [
+    "CHUCHU"
+   ],
+   "7FPqg7MpJwvGneBPvkBrCDjAvZhFnAvoiUw9LF91nsN": [
+    "CHUCHU",
+    "FRENS"
+   ],
+   "7NNzakXLFv2VfhUuoZ9i4Uy4f63BDJcR96tMCucXa6KL": [
+    "CHUCHU"
+   ],
+   "M3rrormwkUUHAKdviFPqniRrva4h3d5xw8j1uo31ZpH": [
+    "CHUCHU"
+   ],
+   "Fn9n3ftUzjhcmoLwXbTqJdATzamCp3xPEu4LmLSS8ELr": [
+    "CHUCHU"
+   ],
+   "6r33XFSAG4dyeoL1waaitMZfepVrXd8PVJduXbGL38vM": [
+    "FRENS",
+    "STANK"
+   ]
+  },
+  "overlap_cohort": {
+   "mwamTohZTS8VVDXhJBwEFzmWbbaax5sSYY8e8Vxu6HG": "STANK"
+  },
+  "creator_in_verified": null,
+  "creator_cohort": null
+ },
+ "BRf3SXRk8BdXmBZDJfKyEhbYmqBVf8843ctEMcD4pump": {
+  "ticker": "COGE",
+  "mint": "BRf3SXRk8BdXmBZDJfKyEhbYmqBVf8843ctEMcD4pump",
+  "name": "COGE",
+  "pairs": [
+   {
+    "dex": "pumpswap",
+    "quote": "SOL",
+    "created": 1794851537000,
+    "liq": 9268.61,
+    "fdv": 20787
+   }
+  ],
+  "info": {
+   "imageUrl": "https://cdn.dexscreener.com/cms/images/9a8dSwsN7oIf80si?width=800&height=800&quality=95&format=auto",
+   "header": "https://cdn.dexscreener.com/cms/images/YiIWhFdGzQfh5yUm?width=1500&height=500&quality=95&format=auto",
+   "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/BRf3SXRk8BdXmBZDJfKyEhbYmqBVf8843ctEMcD4pump?timestamp=1795587300000",
+   "websites": [],
+   "socials": [
+    {
+     "url": "https://x.com/CogeToken",
+     "type": "twitter"
+    }
+   ]
+  },
+  "sig_count": 37651,
+  "history_complete": true,
+  "t_create_utc": "2026-11-16 17:52:17",
+  "creator": "HceTsPi84Q6Rv6fbJrFQRt4kAiKtiYfbs92oBs6Wew8x",
+  "first15_tx_read": 150,
+  "first15_buyers": 90,
+  "overlap_verified_early": {
+   "H9kuqGKNYgPFYCA17uUTkaqXGum7MK8y1GwbS7cxsjDg": [
+    "CHUCHU",
+    "SCINU"
+   ],
+   "mwamTohZTS8VVDXhJBwEFzmWbbaax5sSYY8e8Vxu6HG": [
+    "CHUCHU"
+   ],
+   "CAjVPz2C9CnAQwHYqCxD58VvaKny2Z8dAx4tVJxvf56q": [
+    "CHUCHU"
+   ],
+   "D2rcDMoWyayhMAPUdoHKoJz3syY6MHKm4hz4564jhetE": [
+    "CHUCHU"
+   ],
+   "haqq6qnVBCZt97amh9VUFZRFCkD6NJxoYifacCuqqqq": [
+    "CHUCHU"
+   ],
+   "CWNYbhtaJh21kxJ9CyrgvFC7dzHMqwENdGvmMqEx33SH": [
+    "CHUCHU"
+   ],
+   "27HFmP7ccLadGswvQfvea4o3juLw75cPF4V6jWpHM3MX": [
+    "CHUCHU"
+   ],
+   "Fs9RN3wAsuJKPbTmtX5eek1bhW5krNH8RkQxkFAtgNfR": [
+    "CHUCHU"
+   ],
+   "3SkBCx49BsK64h6tssBBJZ1WNvpiLdnhnXNmJtP46d7b": [
+    "CHUCHU"
+   ],
+   "5tztZwcg3z3Cdri7AA63tFR2XNBt9UwBtY6CCmMW68vz": [
+    "CHUCHU",
+    "SCINU"
+   ],
+   "7NNzakXLFv2VfhUuoZ9i4Uy4f63BDJcR96tMCucXa6KL": [
+    "CHUCHU"
+   ],
+   "J6YEG5cmN3jbDy2BhMmvE59h9Ar8t84A9uYa5R5icKix": [
+    "CHUCHU"
+   ],
+   "7FPqg7MpJwvGneBPvkBrCDjAvZhFnAvoiUw9LF91nsN": [
+    "CHUCHU",
+    "FRENS"
+   ],
+   "B9jfRGabKEudhz9s6mvrVYY2o9rimYdLfknL3fuKKhAv": [
+    "CHUCHU"
+   ],
+   "4n1cuKwPPKStuDkmHKwCeiyk6aCKNyJPmNybjdRq7tJw": [
+    "CHUCHU"
+   ],
+   "Fn9n3ftUzjhcmoLwXbTqJdATzamCp3xPEu4LmLSS8ELr": [
+    "CHUCHU"
+   ],
+   "H9SaZazTkfFYgqXoEYDzfQNVLnDLph7C65BB4vX9c9Sw": [
+    "CHUCHU"
+   ],
+   "EExAWnH6PRDLB5fjnf3fmpGJwABHGRmutomdjmg3WoAJ": [
+    "STANK"
+   ],
+   "6r33XFSAG4dyeoL1waaitMZfepVrXd8PVJduXbGL38vM": [
+    "FRENS",
+    "STANK"
+   ],
+   "7aKLmogJpkiHkKnReJU9A8aZNbAS26wrmQp2AYVmrPUv": [
+    "FRENS",
+    "STANK"
+   ],
+   "WbTbjcUiiwNRHVXMxq12fs6Z5mwEiK73C8aFTpv9kSP": [
+    "FRENS"
+   ],
+   "66ynbLyVTUeKWsbHEZu1fGQWym2yvZHi19RnT1F8NJL": [
+    "FRENS",
+    "STANK"
+   ],
+   "FvsXYejoiTtrpxALmdzUGwmeacvvtVzRUxtpfYkYNx57": [
+    "CHUCHU"
+   ],
+   "6BQoEMyDmGrR7TGWz8eA98VJGqEyHwHDj5oLXWUQZWmJ": [
+    "STANK"
+   ]
+  },
+  "overlap_cohort": {
+   "mwamTohZTS8VVDXhJBwEFzmWbbaax5sSYY8e8Vxu6HG": "STANK",
+   "66ynbLyVTUeKWsbHEZu1fGQWym2yvZHi19RnT1F8NJL": "STANK"
+  },
+  "creator_in_verified": null,
+  "creator_cohort": null
+ },
+ "8UQdy5sHMVWUWSHeA5B3ZuuAVNumjSLPXdf19MXcpump": {
+  "ticker": "COGE",
+  "mint": "8UQdy5sHMVWUWSHeA5B3ZuuAVNumjSLPXdf19MXcpump",
+  "name": "COGE COIN",
+  "pairs": [
+   {
+    "dex": "pumpswap",
+    "quote": "SOL",
+    "created": 1793908132000,
+    "liq": 3795.21,
+    "fdv": 3912
+   }
+  ],
+  "info": {
+   "imageUrl": "https://cdn.dexscreener.com/cms/images/-6EI1kGGjCY5cZXZ?width=800&height=800&quality=95&format=auto",
+   "header": "https://cdn.dexscreener.com/cms/images/CYOqU2G0e_hr3K8f?width=1500&height=500&quality=95&format=auto",
+   "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/8UQdy5sHMVWUWSHeA5B3ZuuAVNumjSLPXdf19MXcpump?timestamp=1795587300000",
+   "websites": [
+    {
+     "url": "https://cogecoinsol.site",
+     "label": "Website"
+    }
+   ],
+   "socials": [
+    {
+     "url": "https://x.com/COGECOINMeme",
+     "type": "twitter"
+    }
+   ]
+  },
+  "sig_count": 60000,
+  "history_complete": false,
+  "note": "lịch sử dài hơn trần trang: chưa tới giao dịch tạo (INSUFFICIENT_DATA)"
+ },
+ "L4Ai4VBse3KaP9C44RRvWA1RAw13N3oJ9jf2vPkqydd": {
+  "ticker": "COGE",
+  "mint": "L4Ai4VBse3KaP9C44RRvWA1RAw13N3oJ9jf2vPkqydd",
+  "name": "COGE",
+  "pairs": [
+   {
+    "dex": "meteoradbc",
+    "quote": "Amend",
+    "created": 1795578898000,
+    "liq": null,
+    "fdv": 1210.79
+   }
+  ],
+  "info": {},
+  "sig_count": 146,
+  "history_complete": true,
+  "t_create_utc": "2026-11-25 03:54:58",
+  "creator": "HfuZ4EvaPvCGqTNxTZaS2bhSZbRF4gzKGH7PhDbDuaKw",
+  "first15_tx_read": 125,
+  "first15_buyers": 39,
+  "overlap_verified_early": {},
+  "overlap_cohort": {},
+  "creator_in_verified": null,
+  "creator_cohort": null
+ },
+ "AvecKFxn8ihToR7gwgAVjfqV56N1rWhN7hv8joXQpump": {
+  "ticker": "COGE",
+  "mint": "AvecKFxn8ihToR7gwgAVjfqV56N1rWhN7hv8joXQpump",
+  "name": "Cogecoin",
+  "pairs": [
+   {
+    "dex": "pumpswap",
+    "quote": "SOL",
+    "created": 1786505209000,
+    "liq": 4547.67,
+    "fdv": 4004
+   },
+   {
+    "dex": "pumpswap",
+    "quote": "SOL",
+    "created": 1786505209000,
+    "liq": 4547.67,
+    "fdv": 4004
+   }
+  ],
+  "info": {
+   "imageUrl": "https://cdn.dexscreener.com/cms/images/hD9_T26zRyjJQTVB?width=800&height=800&quality=95&format=auto",
+   "header": "https://cdn.dexscreener.com/cms/images/WjKVrghWT3nWiBYM?width=1500&height=500&quality=95&format=auto",
+   "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/AvecKFxn8ihToR7gwgAVjfqV56N1rWhN7hv8joXQpump?timestamp=1795587300000",
+   "websites": [
+    {
+     "url": "https://coge.meme/",
+     "label": "Website"
+    },
+    {
+     "url": "https://www.reddit.com/r/COGE/s/qXh9iDjzsO",
+     "label": ""
+    }
+   ],
+   "socials": [
+    {
+     "url": "https://x.com/Cogearmy",
+     "type": "twitter"
+    },
+    {
+     "url": "https://discord.gg/dojiscabal",
+     "type": "discord"
+    },
+    {
+     "url": "https://www.tiktok.com/@cogecoinsol?_r=1&_t=ZT-98s5uMlHw46",
+     "type": "tiktok"
+    }
+   ]
+  },
+  "sig_count": 60000,
+  "history_complete": false,
+  "note": "lịch sử dài hơn trần trang: chưa tới giao dịch tạo (INSUFFICIENT_DATA)"
+ },
+ "DWdBJoNezK9itTwmPDYrScYpBxvWySxeWWV8N9RcmdrT": {
+  "ticker": "COGE",
+  "mint": "DWdBJoNezK9itTwmPDYrScYpBxvWySxeWWV8N9RcmdrT",
+  "name": "CommissionOnGovernmentEfficiency",
+  "pairs": [
+   {
+    "dex": "pumpswap",
+    "quote": "SOL",
+    "created": 1793904234000,
+    "liq": 3750.56,
+    "fdv": 3296
+   }
+  ],
+  "info": {
+   "imageUrl": "https://cdn.dexscreener.com/cms/images/jjqZ9emr6eqkq8yX?width=800&height=800&quality=95&format=auto",
+   "header": "https://cdn.dexscreener.com/cms/images/sPQ2BLJ5wVmOtCzC?width=1500&height=500&quality=95&format=auto",
+   "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/DWdBJoNezK9itTwmPDYrScYpBxvWySxeWWV8N9RcmdrT?timestamp=1795587300000",
+   "websites": [],
+   "socials": [
+    {
+     "url": "https://x.com/NYCMayor/status/2118413834356457724",
+     "type": "twitter"
+    }
+   ]
+  },
+  "sig_count": 60000,
+  "history_complete": false,
+  "note": "lịch sử dài hơn trần trang: chưa tới giao dịch tạo (INSUFFICIENT_DATA)"
+ },
+ "GQjTPFGvSwJbLc3Qc5iW7aFbQhhxZicqWJWno46spump": {
+  "ticker": "COGE",
+  "mint": "GQjTPFGvSwJbLc3Qc5iW7aFbQhhxZicqWJWno46spump",
+  "name": "Cogecoin",
+  "pairs": [
+   {
+    "dex": "pumpswap",
+    "quote": "SOL",
+    "created": 1794851392000,
+    "liq": 2391.28,
+    "fdv": 2284
+   },
+   {
+    "dex": "pumpswap",
+    "quote": "SOL",
+    "created": 1794851392000,
+    "liq": 2391.28,
+    "fdv": 2284
+   }
+  ],
+  "info": {
+   "imageUrl": "https://cdn.dexscreener.com/cms/images/oGu_wK2q-PNhWqFU?width=800&height=800&quality=95&format=auto",
+   "header": "https://cdn.dexscreener.com/cms/images/YUwslePaa9oxH1Ih?width=1500&height=500&quality=95&format=auto",
+   "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/GQjTPFGvSwJbLc3Qc5iW7aFbQhhxZicqWJWno46spump?timestamp=1795587300000",
+   "websites": [],
+   "socials": [
+    {
+     "url": "https://x.com/Trencherbill77/status/2122386057077391510",
+     "type": "twitter"
+    }
+   ]
+  },
+  "sig_count": 60000,
+  "history_complete": false,
+  "note": "lịch sử dài hơn trần trang: chưa tới giao dịch tạo (INSUFFICIENT_DATA)"
+ },
+ "GZoTNWDs77uPdj5xm6K4CVGJZ6g6BoCHawY1RMfhpump": {
+  "ticker": "COGE",
+  "mint": "GZoTNWDs77uPdj5xm6K4CVGJZ6g6BoCHawY1RMfhpump",
+  "name": "Cogecoin",
+  "pairs": [
+   {
+    "dex": "pumpswap",
+    "quote": "SOL",
+    "created": 1781784490000,
+    "liq": 2597.32,
+    "fdv": 1337
+   },
+   {
+    "dex": "pumpswap",
+    "quote": "SOL",
+    "created": 1781784490000,
+    "liq": 2597.32,
+    "fdv": 1337
+   }
+  ],
+  "info": {
+   "imageUrl": "https://cdn.dexscreener.com/cms/images/DNUUmu3I6QlOG0M4?width=800&height=800&quality=95&format=auto",
+   "header": "https://cdn.dexscreener.com/cms/images/-y2I-2gpFce-UbzW?width=1500&height=500&quality=95&format=auto",
+   "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/GZoTNWDs77uPdj5xm6K4CVGJZ6g6BoCHawY1RMfhpump?timestamp=1795587300000",
+   "websites": [
+    {
+     "url": "https://x.com/DenroyJnr/status/2067584227474833684?s=20",
+     "label": "Website"
+    }
+   ],
+   "socials": [
+    {
+     "url": "https://x.com/i/communities/2025868628227199035",
+     "type": "twitter"
+    }
+   ]
+  },
+  "sig_count": 17123,
+  "history_complete": true,
+  "t_create_utc": "2026-06-18 12:06:02",
+  "creator": "2xpKBkzBoAretBBsJYmhzouZR1WZuZFuT6jwoRSFz8Ed",
+  "first15_tx_read": 150,
+  "first15_buyers": 76,
+  "overlap_verified_early": {},
+  "overlap_cohort": {},
+  "creator_in_verified": null,
+  "creator_cohort": null
+ },
+ "23GBezAJzK8fJNZzgA5LWLyz2WxDNTBfMKtgTQNPpump": {
+  "ticker": "COGE",
+  "mint": "23GBezAJzK8fJNZzgA5LWLyz2WxDNTBfMKtgTQNPpump",
+  "name": "Coge Coin ",
+  "pairs": [
+   {
+    "dex": "pumpswap",
+    "quote": "SOL",
+    "created": 1794852076000,
+    "liq": 1697.75,
+    "fdv": 1504
+   }
+  ],
+  "info": {
+   "imageUrl": "https://cdn.dexscreener.com/cms/images/je3peYkWnbH6WcXy?width=800&height=800&quality=95&format=auto",
+   "header": "https://cdn.dexscreener.com/cms/images/c-v1T94ejCMZNNVI?width=1500&height=500&quality=95&format=auto",
+   "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/23GBezAJzK8fJNZzgA5LWLyz2WxDNTBfMKtgTQNPpump?timestamp=1795587300000",
+   "websites": [],
+   "socials": [
+    {
+     "url": "https://x.com/humanevolvd/status/2122388939608564022?a=I1Rvr65aOGQfxKQkpJk&s=46",
+     "type": "twitter"
+    }
+   ]
+  },
+  "sig_count": 60000,
+  "history_complete": false,
+  "note": "lịch sử dài hơn trần trang: chưa tới giao dịch tạo (INSUFFICIENT_DATA)"
+ },
+ "M5gr5LtdPHNS3SsKx7qeC4cqznxFbJNVqEkUyxqpump": {
+  "ticker": "COGE",
+  "mint": "M5gr5LtdPHNS3SsKx7qeC4cqznxFbJNVqEkUyxqpump",
+  "name": "COGE COIN",
+  "pairs": [
+   {
+    "dex": "pumpswap",
+    "quote": "SOL",
+    "created": 1793905331000,
+    "liq": 1551.43,
+    "fdv": 1407
+   }
+  ],
+  "info": {
+   "imageUrl": "https://cdn.dexscreener.com/cms/images/l5wxV7CFUR23LLmV?width=800&height=800&quality=95&format=auto",
+   "header": "https://cdn.dexscreener.com/cms/images/Jdz3sZClDuw3NaEH?width=1500&height=500&quality=95&format=auto",
+   "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/M5gr5LtdPHNS3SsKx7qeC4cqznxFbJNVqEkUyxqpump?timestamp=1795587300000",
+   "websites": [],
+   "socials": [
+    {
+     "url": "https://x.com/Humanevolvd/status/2118441066454270029?a=Q27Z9o9bImzN5DWGCIE&s=20",
+     "type": "twitter"
+    }
+   ]
+  },
+  "sig_count": 60000,
+  "history_complete": false,
+  "note": "lịch sử dài hơn trần trang: chưa tới giao dịch tạo (INSUFFICIENT_DATA)"
+ },
+ "fDAeRE3bkFAK2KxK9btry4oDgU8NcxeWzW6n59mpump": {
+  "ticker": "COGE",
+  "mint": "fDAeRE3bkFAK2KxK9btry4oDgU8NcxeWzW6n59mpump",
+  "name": "Coge Coin ",
+  "pairs": [
+   {
+    "dex": "pumpswap",
+    "quote": "SOL",
+    "created": 1795146375000,
+    "liq": 1413.23,
+    "fdv": 1339
+   }
+  ],
+  "info": {
+   "imageUrl": "https://cdn.dexscreener.com/cms/images/XgGDE5g_K8rQABMt?width=800&height=800&quality=95&format=auto",
+   "openGraph": "https://cdn.dexscreener.com/token-images/og/solana/fDAeRE3bkFAK2KxK9btry4oDgU8NcxeWzW6n59mpump?timestamp=1795587300000",
+   "websites": [],
+   "socials": [
+    {
+     "url": "https://x.com/humanevolvd/status/2123618997962973251?a=d_bsSC29Jjlf_qAJB4I&s=46",
+     "type": "twitter"
+    }
+   ]
+  },
+  "sig_count": 60000,
+  "history_complete": false,
+  "note": "lịch sử dài hơn trần trang: chưa tới giao dịch tạo (INSUFFICIENT_DATA)"
+ },
+ "BkZUhyn6xppGA2pkePJmsxH5dEMF9e8aDeM5G4Capump": {
+  "ticker": "COGE",
+  "mint": "BkZUhyn6xppGA2pkePJmsxH5dEMF9e8aDeM5G4Capump",
+  "name": "COGECOIN",
+  "pairs": [
+   {
+    "dex": "pumpfun",
+    "quote": "SOL",
+    "created": 1795393671000,
+    "liq": null,
+    "fdv": 2202.75
+   },
+   {
+    "dex": "pumpfun",
+    "quote": "SOL",
+    "created": 1795393671000,
+    "liq": null,
+    "fdv": 2202.75
+   }
+  ],
+  "info": {},
+  "sig_count": 13830,
+  "history_complete": true,
+  "t_create_utc": "2026-11-23 00:27:51",
+  "creator": "5ZuV8eqkvzYFVEKbLvGBdexL2tFv7E5BCd2HZpjqbdg",
+  "first15_tx_read": 150,
+  "first15_buyers": 77,
+  "overlap_verified_early": {
+   "H9kuqGKNYgPFYCA17uUTkaqXGum7MK8y1GwbS7cxsjDg": [
+    "CHUCHU",
+    "SCINU"
+   ],
+   "3qvuM3U5UZPVagL1spxmgVgUvzT3h49gyJZyagxRtqKr": [
+    "CHUCHU"
+   ],
+   "haqq6qnVBCZt97amh9VUFZRFCkD6NJxoYifacCuqqqq": [
+    "CHUCHU"
+   ],
+   "5tztZwcg3z3Cdri7AA63tFR2XNBt9UwBtY6CCmMW68vz": [
+    "CHUCHU",
+    "SCINU"
+   ],
+   "J6YEG5cmN3jbDy2BhMmvE59h9Ar8t84A9uYa5R5icKix": [
+    "CHUCHU"
+   ],
+   "3vKC1m1CgNL3AU27NTYZ93zfpPeFV9JSAV9k9oMuD4HW": [
+    "CHUCHU"
+   ]
+  },
+  "overlap_cohort": {},
+  "creator_in_verified": null,
+  "creator_cohort": null
+ },
+ "CQomyf9MJWenmjCCwDQX7jdLG5pmMV1h85RKrrthK6si": {
+  "ticker": "COGE",
+  "mint": "CQomyf9MJWenmjCCwDQX7jdLG5pmMV1h85RKrrthK6si",
+  "name": "COGECOIN",
+  "pairs": [
+   {
+    "dex": "meteora",
+    "quote": "SOL",
+    "created": 1795572461000,
+    "liq": 0.87,
+    "fdv": 497489
+   },
+   {
+    "dex": "meteora",
+    "quote": "SOL",
+    "created": 1795393707000,
+    "liq": 0.07,
+    "fdv": 259951
+   },
+   {
+    "dex": "meteora",
+    "quote": "SOL",
+    "created": 1795572461000,
+    "liq": 0.87,
+    "fdv": 497489
+   },
+   {
+    "dex": "meteora",
+    "quote": "SOL",
+    "created": 1795393707000,
+    "liq": 0.07,
+    "fdv": 259951
+   }
+  ],
+  "info": {},
+  "sig_count": 6827,
+  "history_complete": true,
+  "t_create_utc": "2026-11-23 00:28:27",
+  "creator": "AQUbC6tTvXsuRc8t473T89HU8iMbNdMZGvKnFh3w91Fc",
+  "first15_tx_read": 150,
+  "first15_buyers": 62,
+  "overlap_verified_early": {
+   "Fs9RN3wAsuJKPbTmtX5eek1bhW5krNH8RkQxkFAtgNfR": [
+    "CHUCHU"
+   ],
+   "7NNzakXLFv2VfhUuoZ9i4Uy4f63BDJcR96tMCucXa6KL": [
+    "CHUCHU"
+   ],
+   "Fn9n3ftUzjhcmoLwXbTqJdATzamCp3xPEu4LmLSS8ELr": [
+    "CHUCHU"
+   ],
+   "27HFmP7ccLadGswvQfvea4o3juLw75cPF4V6jWpHM3MX": [
+    "CHUCHU"
+   ]
+  },
+  "overlap_cohort": {},
+  "creator_in_verified": null,
+  "creator_cohort": null
+ },
+ "ATWR4SqMvGaj1tz94DuK2fWDtdf4nEHS6XPkxDmpump": {
+  "ticker": "COGE",
+  "mint": "ATWR4SqMvGaj1tz94DuK2fWDtdf4nEHS6XPkxDmpump",
+  "name": "COGE",
+  "pairs": [
+   {
+    "dex": "pumpswap",
+    "quote": "SOL",
+    "created": 1794913084000,
+    "liq": 1317.42,
+    "fdv": 1285
+   }
+  ],
+  "info": {},
+  "sig_count": 6538,
+  "history_complete": true,
+  "t_create_utc": "2026-11-17 10:58:04",
+  "creator": "pyrGirKyp6g6HSsK3wECjTJNoYXYnkRwPXvceM4tCAi",
+  "first15_tx_read": 70,
+  "first15_buyers": 20,
+  "overlap_verified_early": {
+   "27HFmP7ccLadGswvQfvea4o3juLw75cPF4V6jWpHM3MX": [
+    "CHUCHU"
+   ],
+   "Fs9RN3wAsuJKPbTmtX5eek1bhW5krNH8RkQxkFAtgNfR": [
+    "CHUCHU"
+   ],
+   "H9SaZazTkfFYgqXoEYDzfQNVLnDLph7C65BB4vX9c9Sw": [
+    "CHUCHU"
+   ],
+   "7NNzakXLFv2VfhUuoZ9i4Uy4f63BDJcR96tMCucXa6KL": [
+    "CHUCHU"
+   ],
+   "Fn9n3ftUzjhcmoLwXbTqJdATzamCp3xPEu4LmLSS8ELr": [
+    "CHUCHU"
+   ]
+  },
+  "overlap_cohort": {},
+  "creator_in_verified": null,
+  "creator_cohort": null
+ },
+ "146ie6JCvKS2Hb9aYaGD2DiGPbykr7yec7Mxw3nkpump": {
+  "ticker": "COGE",
+  "mint": "146ie6JCvKS2Hb9aYaGD2DiGPbykr7yec7Mxw3nkpump",
+  "name": "COGE",
+  "pairs": [
+   {
+    "dex": "pumpswap",
+    "quote": "SOL",
+    "created": 1795021447000,
+    "liq": 1238.95,
+    "fdv": 1222
+   }
+  ],
+  "info": {},
+  "sig_count": 21292,
+  "history_complete": true,
+  "t_create_utc": "2026-11-18 17:04:07",
+  "creator": "7uHD3VHubkBvPg8FRdxQvbQYWpK3HdpwHpRrpnqPKwYP",
+  "first15_tx_read": 150,
+  "first15_buyers": 14,
+  "overlap_verified_early": {
+   "27HFmP7ccLadGswvQfvea4o3juLw75cPF4V6jWpHM3MX": [
+    "CHUCHU"
+   ],
+   "Fs9RN3wAsuJKPbTmtX5eek1bhW5krNH8RkQxkFAtgNfR": [
+    "CHUCHU"
+   ],
+   "H9SaZazTkfFYgqXoEYDzfQNVLnDLph7C65BB4vX9c9Sw": [
+    "CHUCHU"
+   ],
+   "7NNzakXLFv2VfhUuoZ9i4Uy4f63BDJcR96tMCucXa6KL": [
+    "CHUCHU"
+   ],
+   "Fn9n3ftUzjhcmoLwXbTqJdATzamCp3xPEu4LmLSS8ELr": [
+    "CHUCHU"
+   ]
+  },
+  "overlap_cohort": {},
+  "creator_in_verified": null,
+  "creator_cohort": null
+ },
+ "4hZC1T5G2GrTkgEvsZLcG9vNimoyfVYDCokuQazD8UCm": {
+  "ticker": "COGE",
+  "mint": "4hZC1T5G2GrTkgEvsZLcG9vNimoyfVYDCokuQazD8UCm",
+  "name": "CommissionOnGovernmentEfficiency",
+  "pairs": [
+   {
+    "dex": "meteora",
+    "quote": "SOL",
+    "created": 1792842573000,
+    "liq": 0.01,
+    "fdv": 14613
+   }
+  ],
+  "info": {},
+  "sig_count": 2883,
+  "history_complete": true,
+  "t_create_utc": "2026-10-24 11:49:33",
+  "creator": "56cSXu9a7UERtttF2aQk69uMyEpbLsMzcQvpTMNtUWbq",
+  "first15_tx_read": 150,
+  "first15_buyers": 83,
+  "overlap_verified_early": {
+   "27HFmP7ccLadGswvQfvea4o3juLw75cPF4V6jWpHM3MX": [
+    "CHUCHU"
+   ],
+   "Fn9n3ftUzjhcmoLwXbTqJdATzamCp3xPEu4LmLSS8ELr": [
+    "CHUCHU"
+   ],
+   "Fs9RN3wAsuJKPbTmtX5eek1bhW5krNH8RkQxkFAtgNfR": [
+    "CHUCHU"
+   ],
+   "7NNzakXLFv2VfhUuoZ9i4Uy4f63BDJcR96tMCucXa6KL": [
+    "CHUCHU"
+   ]
+  },
+  "overlap_cohort": {},
+  "creator_in_verified": null,
+  "creator_cohort": null
+ },
+ "dUXLnf3QpVMQ8jjjz7KqTqAAPaNYryUL5Ejwxhupump": {
+  "ticker": "COGE",
+  "mint": "dUXLnf3QpVMQ8jjjz7KqTqAAPaNYryUL5Ejwxhupump",
+  "name": "CatDoge",
+  "pairs": [
+   {
+    "dex": "pumpfun",
+    "quote": "SOL",
+    "created": 1792614842000,
+    "liq": null,
+    "fdv": 1968.41
+   }
+  ],
+  "info": {},
+  "sig_count": 12728,
+  "history_complete": true,
+  "t_create_utc": "2026-10-21 20:34:02",
+  "creator": "29yFzeBZgxf5zqrAkKXwgZtQehRf4pL8WbV2nRJikbw8",
+  "first15_tx_read": 150,
+  "first15_buyers": 48,
+  "overlap_verified_early": {
+   "DnEMSgdt5X8M6AHbC658gxFBJRCBz29ZghhFHHCZ9ZGC": [
+    "CHUCHU"
+   ]
+  },
+  "overlap_cohort": {},
+  "creator_in_verified": null,
+  "creator_cohort": null
+ },
+ "3dhfX48PvygEhpuAvGre1ioYEzEWEaryK3agPv2xpump": {
+  "ticker": "COGE",
+  "mint": "3dhfX48PvygEhpuAvGre1ioYEzEWEaryK3agPv2xpump",
+  "name": "COGECOIN",
+  "pairs": [
+   {
+    "dex": "pumpfun",
+    "quote": "SOL",
+    "created": 1794985607000,
+    "liq": null,
+    "fdv": 2016.48
+   },
+   {
+    "dex": "pumpfun",
+    "quote": "SOL",
+    "created": 1794985607000,
+    "liq": null,
+    "fdv": 2016.48
+   }
+  ],
+  "info": {},
+  "sig_count": 15930,
+  "history_complete": true,
+  "t_create_utc": "2026-11-18 07:06:47",
+  "creator": "5ZuV8eqkvzYFVEKbLvGBdexL2tFv7E5BCd2HZpjqbdg",
+  "first15_tx_read": 150,
+  "first15_buyers": 28,
+  "overlap_verified_early": {
+   "H9kuqGKNYgPFYCA17uUTkaqXGum7MK8y1GwbS7cxsjDg": [
+    "CHUCHU",
+    "SCINU"
+   ],
+   "haqq6qnVBCZt97amh9VUFZRFCkD6NJxoYifacCuqqqq": [
+    "CHUCHU"
+   ],
+   "9FQnf1QFTg8TZ6AJEffsfa7CNQJGALecmPtkYoTYUPFj": [
+    "CHUCHU"
+   ]
+  },
+  "overlap_cohort": {},
+  "creator_in_verified": null,
+  "creator_cohort": null
+ },
+ "F8pYvkP9nudhEodnZYJyYGSNeDnYTReGxYxmeSP4VhLP": {
+  "ticker": "COGE",
+  "mint": "F8pYvkP9nudhEodnZYJyYGSNeDnYTReGxYxmeSP4VhLP",
+  "name": "COGECOIN",
+  "pairs": [
+   {
+    "dex": "meteora",
+    "quote": "SOL",
+    "created": 1795517956000,
+    "liq": 0.22,
+    "fdv": null
+   },
+   {
+    "dex": "meteoradbc",
+    "quote": "SOL",
+    "created": 1795517629000,
+    "liq": null,
+    "fdv": 1405322.34
+   },
+   {
+    "dex": "meteora",
+    "quote": "SOL",
+    "created": 1795517956000,
+    "liq": 0.22,
+    "fdv": null
+   },
+   {
+    "dex": "meteoradbc",
+    "quote": "SOL",
+    "created": 1795517629000,
+    "liq": null,
+    "fdv": 1405322.34
+   }
+  ],
+  "info": {},
+  "sig_count": 470,
+  "history_complete": true,
+  "t_create_utc": "2026-11-24 10:53:49",
+  "creator": "28dD1s8NVsn7EUwwinEZjtTRpM2FEvbrFdk8tTbGDEtZ",
+  "first15_tx_read": 150,
+  "first15_buyers": 103,
+  "overlap_verified_early": {},
+  "overlap_cohort": {},
+  "creator_in_verified": null,
+  "creator_cohort": null
+ },
+ "9XTuqjWTTUKwfzkx2dyzXkDTzFJ792GzBNheJxBUpump": {
+  "ticker": "COGE",
+  "mint": "9XTuqjWTTUKwfzkx2dyzXkDTzFJ792GzBNheJxBUpump",
+  "name": "COGE COIN",
+  "pairs": [
+   {
+    "dex": "pumpfun",
+    "quote": "SOL",
+    "created": 1795058632000,
+    "liq": null,
+    "fdv": 1951.54
+   }
+  ],
+  "info": {},
+  "sig_count": 488,
+  "history_complete": true,
+  "t_create_utc": "2026-11-19 03:23:52",
+  "creator": "SuhxMbaAEYzVMAmLG4ncn99KzcMryQRPz5Zq8aeifeN",
+  "first15_tx_read": 149,
+  "first15_buyers": 64,
+  "overlap_verified_early": {
+   "AZ1eJ671AL1Rp1YPWBdBCVNFrRaGG26XNMZC2AP3wK18": [
+    "SCINU"
+   ],
+   "5tztZwcg3z3Cdri7AA63tFR2XNBt9UwBtY6CCmMW68vz": [
+    "CHUCHU",
+    "SCINU"
+   ],
+   "3Vggwn3LPougvnGa8zpYJMEN9L38tSRa45gv9odiSVF1": [
+    "SCINU"
+   ],
+   "3qvuM3U5UZPVagL1spxmgVgUvzT3h49gyJZyagxRtqKr": [
+    "CHUCHU"
+   ],
+   "J6YEG5cmN3jbDy2BhMmvE59h9Ar8t84A9uYa5R5icKix": [
+    "CHUCHU"
+   ],
+   "G3A4eyKyhAyAFro3r8LsoPaBprMstUJYeWtjnjsDhcRL": [
+    "SCINU"
+   ],
+   "nnnLxEzVBJNaC7ZFCDeQTjFv4gCVGq1sS9Q6u6oPSUA": [
+    "SCINU"
+   ],
+   "E2x1ewwXUwxABtFcssgxQLY6PrcRQuhLJRWPCR3WyeJb": [
+    "SCINU"
+   ],
+   "13bEQbWhZsrTmiY9Gg6jbasoyXNq1LxCoysraVcrKK6": [
+    "SCINU"
+   ],
+   "Grozoe2Lk9yu7kWPcCMuWEbrnuBYseBExkYAuHPRJUdJ": [
+    "SCINU"
+   ]
+  },
+  "overlap_cohort": {},
+  "creator_in_verified": null,
+  "creator_cohort": null
+ },
+ "GXe4mbvTmS94oo54QSEouCgiAdoWiaGuKKkfnq9ppump": {
+  "ticker": "COGE",
+  "mint": "GXe4mbvTmS94oo54QSEouCgiAdoWiaGuKKkfnq9ppump",
+  "name": "CogeCoin",
+  "pairs": [
+   {
+    "dex": "pumpfun",
+    "quote": "SOL",
+    "created": 1795419244000,
+    "liq": null,
+    "fdv": 2004.14
+   },
+   {
+    "dex": "pumpfun",
+    "quote": "SOL",
+    "created": 1795419244000,
+    "liq": null,
+    "fdv": 2004.14
+   }
+  ],
+  "info": {},
+  "sig_count": 18193,
+  "history_complete": true,
+  "t_create_utc": "2026-11-23 07:34:04",
+  "creator": "DhQgrgabU9FuiEHZc2xVZ8X8s26mBcUs1ME8cytYGtvc",
+  "first15_tx_read": 150,
+  "first15_buyers": 22,
+  "overlap_verified_early": {
+   "H9kuqGKNYgPFYCA17uUTkaqXGum7MK8y1GwbS7cxsjDg": [
+    "CHUCHU",
+    "SCINU"
+   ],
+   "3qvuM3U5UZPVagL1spxmgVgUvzT3h49gyJZyagxRtqKr": [
+    "CHUCHU"
+   ],
+   "9FQnf1QFTg8TZ6AJEffsfa7CNQJGALecmPtkYoTYUPFj": [
+    "CHUCHU"
+   ]
+  },
+  "overlap_cohort": {},
+  "creator_in_verified": null,
+  "creator_cohort": null
+ },
+ "AWMafjfB9TrafHh5T9je4XWXRy4n63R36aSY5LqWAr4z": {
+  "ticker": "COGE",
+  "mint": "AWMafjfB9TrafHh5T9je4XWXRy4n63R36aSY5LqWAr4z",
+  "name": "COGECOIN",
+  "pairs": [
+   {
+    "dex": "raydium",
+    "quote": "SOL",
+    "created": 1795398302000,
+    "liq": 0.02,
+    "fdv": 24
+   },
+   {
+    "dex": "raydium",
+    "quote": "SOL",
+    "created": 1795398302000,
+    "liq": 0.02,
+    "fdv": 24
+   }
+  ],
+  "info": {},
+  "sig_count": 52,
+  "history_complete": true,
+  "t_create_utc": "2026-11-23 01:31:29",
+  "creator": "4CkqRcUDsKp7XXVjxw612XBQxFrn2QBFJfRLoEdSBqVS",
+  "first15_tx_read": 17,
+  "first15_buyers": 14,
+  "overlap_verified_early": {
+   "Fs9RN3wAsuJKPbTmtX5eek1bhW5krNH8RkQxkFAtgNfR": [
+    "CHUCHU"
+   ],
+   "Fn9n3ftUzjhcmoLwXbTqJdATzamCp3xPEu4LmLSS8ELr": [
+    "CHUCHU"
+   ]
+  },
+  "overlap_cohort": {},
+  "creator_in_verified": null,
+  "creator_cohort": null
+ }
+}

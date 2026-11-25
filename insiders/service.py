@@ -61,6 +61,12 @@ class InsiderService:
         tok, chat = os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
         levels = tuple(x for x in (os.environ.get("INSIDER_ALERT_LEVELS") or "hold,vip,vipstrong").split(",") if x)
         from insiders.paper import jupiter_quote
+        from insiders import backup as B
+        try:                                                  # B1: a verified copy of the state before it is loaded
+            self.last_backup = B.backup(Path(state_path).parent, reason="start")
+            self.backup_error = None
+        except Exception as e:                                # never blocks the start; shown on /healthz
+            self.last_backup, self.backup_error = None, f"{type(e).__name__}: {str(e)[:120]}"
         self.watcher = Watcher(self.result, state_path, notify=telegram_sender(tok, chat) if tok and chat else None,
                                notify_levels=levels,
                                paper_quote=jupiter_quote if (os.environ.get("INSIDER_PAPER") or "0") == "1" else None,   # off: trace only
@@ -84,6 +90,8 @@ class InsiderService:
             self.watcher.devstats = DevStats(os.environ.get("HELIUS_API_KEY"), self.watcher.vip.rpc, self.watcher.pump,
                                              state=self.watcher.state)
             self.watcher.devstats.paused = self.watcher.vip.paused
+            if (os.environ.get("INSIDER_TRACK") or "1") != "0":    # coin watchlist + funding graph + signal outcomes
+                self.start_track(Path(state_path).parent / "insiders_track.db")
             threading.Thread(target=self.watcher.devstats.run_forever, args=(self.watch_stop,), daemon=True).start()
             # tracing only by default (2026-10-14): balances, shadow paper and the paper book are off unless asked for
             if (os.environ.get("INSIDER_SHADOW") or "0") == "1":     # live measurement of every signal (paper)
@@ -99,6 +107,55 @@ class InsiderService:
                 self.watcher.portfolio = Portfolio(self.watcher.vip.wallets, Rpc(gap_s=0.25))
                 threading.Thread(target=self.watcher.portfolio.run_forever, args=(self.watch_stop,), daemon=True).start()
         return True
+
+    def start_track(self, db_path: Path, rpc=None, stop: threading.Event | None = None):
+        """The tracking worker (track.Tracker) next to the stream: read-only, one Helius budget, pauses with it."""
+        from insiders import track as T
+        from insiders.watch import coin_meta
+        w = getattr(self, "watcher", None)
+        vip = getattr(w, "vip", None) if w else None
+        if rpc is None:
+            from insiders.vip import _rpc
+            rpc = _rpc(0.1)
+
+        def known():
+            if vip is None:
+                return {}
+            return {**{a: 1 for a in vip.base}, **{a: 1 for a in (vip.state.get("children") or {})}}
+        self.tracker = T.Tracker(T.Store(db_path), rpc, known=known, group=(vip.group if vip else (lambda a: None)),
+                                 meta=coin_meta, paused=(vip.paused if vip else (lambda: False)))
+        if vip is not None:
+            vip.track = self.tracker
+            self.tracker.sol_usd = lambda: vip.sol_usd
+
+            def facts(mint):
+                meta = ((w.state.get("meta") or {}).get(mint) or {})
+                sup = ((w.state.get("supply") or {}).get(mint) or {})
+                return {"symbol": meta.get("symbol"), "name": meta.get("name"),
+                        "supply_ui": sup.get("ui"), "decimals": sup.get("decimals")}
+            self.tracker.coin_facts = facts
+        stop = stop or getattr(self, "watch_stop", None) or threading.Event()
+        threading.Thread(target=self.tracker.run_forever, args=(stop,), kwargs={"vip": vip}, daemon=True).start()
+        if vip is not None:                                   # the stream's getTransaction calls are metered too
+            raw, store = vip.rpc, self.tracker.s
+
+            def metered(method, params):
+                try:
+                    res = raw(method, params)
+                except Exception:
+                    store.usage("stream", method, None, err=True)
+                    raise
+                store.usage("stream", method, res)
+                return res
+            vip.rpc = metered
+        # B3/B4: wallet history + PnL per cohort. The cohorts are written locally (no RPC); the worker that reads
+        # the chain runs only with INSIDER_WALLET_HISTORY=1 (default off), on its own budget and daily / monthly caps
+        from insiders import wallets as WH
+        self.wallet_history = WH.WalletHistory(self.tracker.s, rpc, paused=(vip.paused if vip else (lambda: False)))
+        self.wallet_history.seed(self.result or {})
+        if self.wallet_history.enabled:
+            threading.Thread(target=self.wallet_history.run_forever, args=(stop,), daemon=True).start()
+        return self.tracker
 
     def start(self, runner=None) -> bool:
         """Start a scan unless one is running. Returns False when it cannot start."""
