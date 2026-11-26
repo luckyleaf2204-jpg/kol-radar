@@ -25,7 +25,11 @@ def _read(folder: Path, name: str):
 
 
 def import_research(store, folder: str | Path, verified: dict | None = None, now=time.time) -> dict:
-    """Load the research files into esm_*. Idempotent (same files -> same rows). Touches no other table."""
+    """Load the research files into esm_*. Idempotent (same files -> same rows).
+    V2 network trace (network_trace.json / tierA_review.json, when present): its SOL / token edges go into the
+    existing graph table `edges` with kind research_sol / research_token (the rows of those two kinds are replaced
+    on every import; live tracker edges are never touched), the PASS_THROUGH / BATCH_SPLIT flags (entities.json)
+    and the tier-A independence level (INDEPENDENCE) into esm_flag. No other table is touched."""
     folder, ts, n = Path(folder), now(), {}
     verified = verified if verified is not None else (_read(folder, "verified.json") or {})
     ent = _read(folder, "entities.json") or {"classes": {}, "entity_of": {}, "pairs": []}
@@ -113,7 +117,31 @@ def import_research(store, folder: str | Path, verified: dict | None = None, now
                     db.execute("INSERT OR REPLACE INTO esm_flag VALUES (?,?,?,?,?)",
                                (w, "COORDINATED_PATTERN", g["id"], _j({k: v for k, v in g.items() if k != "wallets"}), ts))
                     flagged += 1
+            db.execute("DELETE FROM esm_flag WHERE flag IN ('PASS_THROUGH', 'BATCH_SPLIT', 'INDEPENDENCE')")
+            for w, fl in (ent.get("flags") or {}).items():
+                for f in fl:
+                    ref = f.get("dst") if f["flag"] == "PASS_THROUGH" else f.get("source")
+                    db.execute("INSERT OR REPLACE INTO esm_flag VALUES (?,?,?,?,?)", (w, f["flag"], ref, _j(f), ts))
+                    flagged += 1
+            review = _read(folder, "tierA_review.json")
+            for r in (review or {}).get("wallets") or []:
+                db.execute("INSERT OR REPLACE INTO esm_flag VALUES (?,?,?,?,?)",
+                           (r["wallet"], "INDEPENDENCE", r["independence"],
+                            _j({"group": r["group"], "group_size": r["group_size"], "funders_hop1": r.get("funders_hop1"),
+                                "funders_exchange": r.get("funders_exchange"), "first_buy_notes": r.get("first_buy_notes"),
+                                "note": "mức độc lập (bằng chứng), không phải kết luận danh tính"}), ts))
+                flagged += 1
             n["flags"] = flagged
+            trace = _read(folder, "network_trace.json")
+            if trace:
+                db.execute("DELETE FROM edges WHERE kind IN ('research_sol', 'research_token')")
+                ne = 0
+                for e in trace["edges"]:
+                    if e["src"] and e["dst"] and e["src"] != e["dst"]:
+                        ne += db.execute("INSERT OR IGNORE INTO edges (src, dst, asset, amount, ts, sig, kind) VALUES (?,?,?,?,?,?,?)",
+                                         (e["src"], e["dst"], e["asset"], e["amount"], e["ts"], e["sig"],
+                                          "research_sol" if e["asset"] == "SOL" else "research_token")).rowcount
+                n["edges"] = ne
             for sym, o in outc["coins"].items():
                 mint = coins.get(sym)
                 for h in ("6h", "24h"):
@@ -129,7 +157,10 @@ def import_research(store, folder: str | Path, verified: dict | None = None, now
                            (RULES_VERSION, r["wallet"], r["score"], _j(r["coins"]), _j(r["early_coins"]), r["avg_entry_min"], r["class"],
                             r.get("entity"), _j(r.get("flags") or []), _j(r.get("insufficient") or []), ts))
             n["ranked"] = len(esm["wallets"])
-            for tk in sorted({c["ticker"] for c in cand.values()}):
+            for tk in sorted({c["ticker"] for c in cand.values()} & set(coins)):   # its mint is verified now: the row is kept,
+                db.execute("UPDATE esm_pending_mint SET status='VERIFIED', note=?, updated=? WHERE symbol=?",   # marked resolved
+                           (f"mint đã xác minh: {coins[tk]} (cửa sổ 120 phút đã nạp)", ts, tk))
+            for tk in sorted({c["ticker"] for c in cand.values()} - set(coins)):
                 cs = [{"mint": c["mint"], "name": c.get("name"), "t_create_utc": c.get("t_create_utc"),
                        "overlap_early": len(c.get("overlap_verified_early") or {}), "first15_buyers": c.get("first15_buyers")}
                       for c in cand.values() if c["ticker"] == tk]
@@ -178,7 +209,7 @@ def flags(store, flag: str) -> list[dict]:
 
 
 def pending_mints(store) -> list[dict]:
-    rows = store.q("SELECT * FROM esm_pending_mint ORDER BY symbol")
+    rows = store.q("SELECT * FROM esm_pending_mint WHERE status='NEEDS_MINT_VERIFICATION' ORDER BY symbol")
     for r in rows:
         r["candidates"] = json.loads(r["candidates"] or "[]")
     return rows

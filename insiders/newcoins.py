@@ -63,8 +63,6 @@ class SmartBook:
             if not self.s.q("SELECT 1 FROM esm_coin LIMIT 1"):
                 return
             r = V.radar(self.s, False, min_score=4)
-            self.smart = {x["wallet"]: {"rank": x["rank"], "multi": x["multi"], "why": x["why"][:3], "creator_of": x["creator_of"]}
-                          for x in r["smart"] if not x["creator_of"]}
             info = {}
             for e in self.s.q("SELECT wallet, entity, class FROM esm_wallet_entity"):
                 info[e["wallet"]] = {"class": e["class"], "entity": e["entity"], "flags": []}
@@ -72,11 +70,34 @@ class SmartBook:
                 info.setdefault(f["wallet"], {"class": None, "entity": None, "flags": []})["flags"].append(
                     f["flag"] if f["flag"] == "CREATOR_GROUP" else f"{f['flag']}:{f['ref']}")
             self.info = info
+            # independence of a Smart Money wallet (tier-A review, V2 network trace): shown with every signal, never
+            # used to raise one; a wallet linked by evidence keeps its rank but is not counted as independent
+            self.smart = {x["wallet"]: {"rank": x["rank"], "multi": x["multi"], "why": x["why"][:3], "creator_of": x["creator_of"],
+                                        "independence": self.independence(x["wallet"]),
+                                        "network": [f for f in (info.get(x["wallet"]) or {}).get("flags", [])
+                                                    if f.split(":")[0] in ("PASS_THROUGH", "BATCH_SPLIT")]}
+                          for x in r["smart"] if not x["creator_of"]}
         except Exception as e:                                   # never stop the stream for the watchlist
             print(f"[newcoins] smart list: {type(e).__name__}: {e}", flush=True)
 
+    def v2_counts(self) -> dict:
+        """Counts only (for /healthz): what the book read from the V2 network trace."""
+        import collections
+        fl = collections.Counter(f.split(":")[0] for i in self.info.values() for f in i.get("flags", [])
+                                 if f.split(":")[0] in ("INDEPENDENCE", "PASS_THROUGH", "BATCH_SPLIT"))
+        return {"flags": dict(fl), "smart_independence": dict(collections.Counter(v.get("independence") for v in self.smart.values())),
+                "smart_with_network_flag": sum(1 for v in self.smart.values() if v.get("network"))}
+
+    def independence(self, w: str) -> str:
+        """INDEPENDENT / POSSIBLE_LINK / LIKELY_SAME_ENTITY / INSUFFICIENT_DATA: the tier-A review level when there is
+        one, else the owner-group class; unknown = INSUFFICIENT_DATA (never assumed independent)."""
+        i = self.info.get(w) or {}
+        lv = [f.split(":", 1)[1] for f in i.get("flags", []) if f.startswith("INDEPENDENCE:")]
+        return lv[0] if lv else i.get("class") or "INSUFFICIENT_DATA"
+
     def group(self, w: str) -> str:
-        """Owner / bot group id when known, else the wallet itself (independence check for MULTI_WALLET)."""
+        """Owner / bot group id when known, else the wallet itself (independence check for MULTI_WALLET). Unchanged
+        by V2: the network flags (PASS_THROUGH, BATCH_SPLIT) and the independence level are shown, never counted."""
         i = self.info.get(w) or {}
         if i.get("entity"):
             return "E:" + i["entity"]
@@ -448,6 +469,7 @@ class Engine:
         day = self.now() - 86400
         q1 = lambda sql, a=(): self.s.q(sql, a)[0]["n"]          # noqa: E731
         return {**self.stat, "sol_usd": self.sol_usd, "active_coins": len(self.coins), "late_coins": len(self.late), "queue": self.q.qsize(), "smart_watchlist": len(self.book.smart),
+                "smart_v2": self.book.v2_counts(),
                 "discovery_latency_s": {"p50": pct(self.disc_lat, .5), "p90": pct(self.disc_lat, .9)},
                 "signal_latency_s": {"p50": pct(self.sig_lat, .5), "p90": pct(self.sig_lat, .9)},
                 "coins_24h": q1("SELECT COUNT(*) AS n FROM nc_coin WHERE t_create >= ?", (day,)),

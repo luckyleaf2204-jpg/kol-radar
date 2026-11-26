@@ -1,0 +1,236 @@
+"""V2 network trace: token owners, relays (near 1:1), batch splits, shared counterparties, import into the existing
+tables, independence in the Smart Money book. Fixtures are the real V2 cases (E007, 9Y2, HHLz, 2phTY, 2rbMg) cut down
+to the edges that matter; the regression part reads the research folder when it is there (no network)."""
+import json
+from pathlib import Path
+
+import pytest
+
+from insiders import esm as E
+from insiders import track as T
+from insiders.scan import on_curve
+
+ARU, Y2, MTZ, RAQ, MUH = ("ARu4n5mFdZogZAravu7CcizaojWnS6oqka37gdLT5SZn", "9Y2Es2V6QN4H637kTNd1LVZTthkRsint3WubyXEJzV7E",
+                         "9mTZH73WW9ZTSEH2EJuhcdNWdPUQ2QPVhWkj4v2vrk6y", "4raqd4tCEnm2yGeUocVqPgN2MPB1W6A3EZfC8LoMChvf",
+                         "9MUhLmpKm5Ut5cd6Q7yDjqVZYvtxwLFFL4qtw92aFtrM")
+SIX, HXM = "6pNndy8sewtG7QVfJohKRnpTwdWSdHMi6YQgVNKithNh", "HxmwX3xRFxPE2LsnC9aRXQqh96fkyCSKnpXH9BLm3n47"
+HHL, DYR, HNB = ("HHLzvoz1A95eKAQu3qs5i6qLC7VEm8R9qhQmqpRDFSjZ", "DyrKfa9unX9T5u3HvTbhfkpPVYwDuUrnBwFNf3uM37rH",
+                 "HNbZoQEosLMZJ4uuhoWBmLQq8neNqh3mjZaqL1HMyBRv")
+D23, CKZ, ER9 = ("2351du6dyERkj1YBu6D4s8Jc4SpmY17AqzSmeH4JgkpZ", "CKz4sXenERmvMHWPGGF94to7C98R8cZtuiQQUcELhUCd",
+                 "7ER9dTZLgz28euwCRhwUAaG2EHvSAdL8LU4rh5zqwhUE")
+PHT = "2phTYhFT1BtCGx3c6xpxQb4bxuP1aFRrDbpmxSM9weLE"             # off curve: a program account (fee vault), not a person
+MINT = "6nQCcuXypcAjncXK7gzvJcdwvqitgJRdG3k1no4Jpump"
+RESEARCH = Path(__file__).resolve().parents[1] / "research" / "seven_coins"
+ARCHIVE = Path(__file__).resolve().parents[1] / "research" / "archive_7coins_2026-11-26"
+
+
+def e(src, dst, amount, ts, sig, asset="SOL"):
+    return {"src": src, "dst": dst, "asset": asset, "amount": amount, "ts": ts, "sig": sig}
+
+
+# the 9Y2 relay: two near 1:1 relays (18 s / 70 s, the loss is fees) and one funding that is NOT relayed 1:1
+Y2_EDGES = [e(RAQ, Y2, 1.61944204, 1795456212, "yiKG"), e(Y2, MUH, 2.741547872, 1795457268, "relayNot1to1"),
+            e(ARU, Y2, 3.621169905, 1795457640, "2KVd"), e(Y2, MTZ, 3.61765255 + 0.00148844, 1795457658, "AtYo"),
+            e(ARU, Y2, 1.663028838, 1795466938, "3LAf"), e(Y2, MTZ, 1.659487298 + 0.00148844, 1795467008, "N6fv")]
+HHL_EDGES = [e(HHL, DYR, 0.5, 1793241382, "3G46"), e(HHL, HNB, 0.495, 1793241382, "3G46"),
+             e(HHL, DYR, 0.5, 1793241141, "365M"), e(HHL, HNB, 0.495, 1793241141, "365M"),
+             e(HHL, DYR, 0.3, 1793241116, "2WZo"), e(HHL, HNB, 0.297, 1793241116, "2WZo"),
+             e(HHL, DYR, 0.775887756, 1793241209, "52C2")]
+
+
+def test_relay_found_only_for_near_one_to_one_flows():
+    rows = T.pass_through(Y2_EDGES)
+    assert [(r["relay"], r["src"], r["dst"], r["in_sig"], r["out_sig"]) for r in rows] == \
+        [(Y2, ARU, MTZ, "2KVd", "AtYo"), (Y2, ARU, MTZ, "3LAf", "N6fv")]
+    assert all(r["loss_sol"] < 0.01 and r["gap_s"] <= 70 for r in rows)
+    assert not T.pass_through(Y2_EDGES, max_gap_s=10)                   # 18 s and 70 s: outside a 10 s window
+    assert not T.pass_through(Y2_EDGES, busy={Y2})                      # a busy hub is never a relay
+
+
+def test_recurring_batch_split_into_program_accounts_links_nobody():
+    rows = T.batch_splits(HHL_EDGES)
+    assert len(rows) == 1 and rows[0]["source"] == HHL and rows[0]["recipients"] == sorted([DYR, HNB])
+    assert rows[0]["n_tx"] == 3 and rows[0]["recurring"]                # 52C2 paid DYR alone: not part of the split
+    assert not rows[0]["persons"] and set(rows[0]["program_recipients"]) == {DYR, HNB}   # HHLz pays two program accounts
+    people = [dict(x, dst={DYR: SIX, HNB: HXM}[x["dst"]]) for x in HHL_EDGES]
+    assert T.batch_splits(people)[0]["persons"]
+
+
+def test_relay_sides_say_when_they_are_program_accounts():
+    r = T.pass_through(Y2_EDGES)[0]
+    assert r["src_program"] and r["dst_program"]                          # 9Y2 moves its own SOL between two services
+
+
+def test_shared_recipient_skips_program_accounts_and_direct_transfers():
+    assert not on_curve(PHT)
+    edges = [e(ER9, PHT, 0.158, 1, "a"), e(CKZ, PHT, 0.138, 2, "b"),     # the "shared recipient" of V2 is a program account
+             e(D23, CKZ, 1.5, 3, "QVs6"), e(D23, ER9, 1.5, 3, "5ZgW"),   # E007 funding: a direct transfer, not "shared"
+             e(ER9, SIX, 0.2, 4, "c"), e(CKZ, SIX, 0.3, 5, "d"), e(ER9, MUH, 0.2, 6, "e"), e(CKZ, MUH, 0.3, 7, "f")]
+    wallets = {D23, CKZ, ER9}
+    assert not on_curve(MUH)                                             # 9Y2's 2.74 SOL went to a program account too
+    assert T.shared_counterparties(edges, wallets, "out") == {SIX: {"wallets": sorted([CKZ, ER9]), "sol": 0.5, "sigs": ["c", "d"]}}
+    assert T.shared_counterparties(edges, wallets, "in") == {}
+    assert T.shared_counterparties(edges, wallets, "out", busy={SIX}) == {}
+
+
+def _tx(balances_pre, balances_post, keys, signers):
+    return {"slot": 1, "blockTime": 10, "meta": {"err": None, "preTokenBalances": balances_pre, "postTokenBalances": balances_post},
+            "transaction": {"message": {"accountKeys": [{"pubkey": k, "signer": k in signers} for k in keys]}}}
+
+
+def _bal(i, owner, amount, mint=MINT):
+    return {"accountIndex": i, "mint": mint, "owner": owner, "uiTokenAmount": {"amount": str(amount), "decimals": 6}}
+
+
+def test_token_transfer_sides_come_from_the_token_account_owner_not_the_fee_payer():
+    keys = [D23, "AtaOfCkz111111111111111111111111111111111111", "AtaOfEr9111111111111111111111111111111111111"]
+    tx = _tx([_bal(1, CKZ, 500), _bal(2, ER9, 0)], [_bal(1, CKZ, 200), _bal(2, ER9, 300)], keys, {D23})
+    mv = T.token_moves(tx)
+    assert mv == [{"src": CKZ, "dst": ER9, "mint": MINT, "raw": 300, "decimals": 6, "src_account": keys[1], "dst_account": keys[2],
+                   "verified": "owner"}]                                 # D23 paid the fee: never taken as the sender
+
+
+def test_token_from_a_pool_is_a_swap_and_two_by_two_is_ambiguous():
+    swap = _tx([_bal(1, PHT, 900), _bal(2, CKZ, 0)], [_bal(1, PHT, 600), _bal(2, CKZ, 300)], [D23, "a", "b"], {D23})
+    assert T.token_moves(swap) == []                                     # 2rbMg case: tokens came from a pool, bought by another signer
+    multi = _tx([_bal(1, CKZ, 10), _bal(2, ER9, 10), _bal(3, D23, 0), _bal(4, SIX, 0)],
+                [_bal(1, CKZ, 0), _bal(2, ER9, 0), _bal(3, D23, 10), _bal(4, SIX, 10)], [HHL, "a", "b", "c", "d"], {HHL})
+    assert [(m["src"], m["dst"], m["verified"]) for m in T.token_moves(multi)] == [(None, None, "ambiguous")]
+    failed = dict(swap, meta=dict(swap["meta"], err={"x": 1}))
+    assert T.token_moves(failed) == []
+
+
+# ------------------------------------------------------------------------------------------------ import + book
+def _folder(tmp_path):
+    from test_insiders_esm import research
+    d = research(tmp_path)
+    ent = json.loads((d / "entities.json").read_text())
+    ent["flags"] = {Y2: [{"flag": "PASS_THROUGH", "src": ARU, "dst": MTZ, "sol_in": 3.62, "sol_out": 3.619, "gap_s": 18, "sigs": ["2KVd", "AtYo"]}],
+                    DYR: [{"flag": "BATCH_SPLIT", "source": HHL, "with": [HNB], "n_tx": 3, "sigs": ["3G46"]}],
+                    HNB: [{"flag": "BATCH_SPLIT", "source": HHL, "with": [DYR], "n_tx": 3, "sigs": ["3G46"]}]}
+    (d / "entities.json").write_text(json.dumps(ent))
+    (d / "network_trace.json").write_text(json.dumps({"edges": [dict(x, dir="out", hop=1, source="cache") for x in Y2_EDGES]
+                                                      + [dict(e(CKZ, ER9, 300.0, 9, "tok1", MINT), dir="out_token", hop=1, source="detail")]}))
+    (d / "tierA_review.json").write_text(json.dumps({"wallets": [{"wallet": DYR, "independence": "POSSIBLE_LINK", "group": DYR, "group_size": 1}]}))
+    return d
+
+
+def test_import_puts_v2_edges_in_the_existing_graph_table_and_keeps_live_edges(tmp_path):
+    st = T.Store(tmp_path / "db.sqlite")
+    st.add_edge("LiveSrc", "LiveDst", "SOL", 1.0, 5, "liveSig", "fund")
+    d = _folder(tmp_path)
+    n1 = E.import_research(st, d)
+    rows = st.q("SELECT kind, COUNT(*) n FROM edges GROUP BY kind ORDER BY kind")
+    assert rows == [{"kind": "fund", "n": 1}, {"kind": "research_sol", "n": 6}, {"kind": "research_token", "n": 1}]
+    n2 = E.import_research(st, d)                                        # idempotent
+    assert n1 == n2 and st.q("SELECT COUNT(*) n FROM edges")[0]["n"] == 8
+    assert {r["flag"] for r in st.q("SELECT flag FROM esm_flag WHERE wallet IN (?,?,?)", (Y2, DYR, HNB))} == \
+        {"PASS_THROUGH", "BATCH_SPLIT", "INDEPENDENCE"}
+    assert T.pass_through(st.edges(research=True))[0]["relay"] == Y2     # the graph functions read them when asked
+    assert [e["kind"] for e in st.edges()] == ["fund"]                   # the live tracker's view is unchanged
+
+
+def test_book_reports_independence_and_keeps_the_multi_wallet_grouping(tmp_path):
+    from insiders.newcoins import SmartBook
+    st = T.Store(tmp_path / "db.sqlite")
+    E.import_research(st, _folder(tmp_path))
+    b = SmartBook(st)
+    b.refresh(1e9)
+    assert b.independence(DYR) == "POSSIBLE_LINK"                        # the tier-A review level
+    assert b.independence("Unknown11111111111111111111111111111111111") == "INSUFFICIENT_DATA"   # never assumed independent
+    assert b.group(DYR) == DYR and b.group(HNB) == HNB                   # MULTI_WALLET grouping unchanged by V2 flags
+    assert b.group(Y2) == Y2
+    assert any(f.startswith("BATCH_SPLIT:") for f in b.info[DYR]["flags"])    # the flag is read, only shown
+
+
+# ------------------------------------------------------------------------------------- regression on the research
+need = pytest.mark.skipif(not (RESEARCH / "network_trace.json").exists() or not (ARCHIVE / "entities.json").exists(),
+                          reason="research folder (not in the repo) not present")
+
+
+@need
+def test_old_owner_groups_and_strong_classes_are_kept():
+    old = json.loads((ARCHIVE / "entities.json").read_text(encoding="utf-8"))
+    new = json.loads((RESEARCH / "entities.json").read_text(encoding="utf-8"))
+    for g in old["entities"]:                                            # every old group still sits in ONE group
+        assert len({new["entity_of"].get(w) for w in g["members"]}) == 1, g["id"]
+    weaker = [w for w, c in old["classes"].items() if c == "LIKELY_SAME_ENTITY" and new["classes"].get(w) != "LIKELY_SAME_ENTITY"]
+    assert weaker == []
+    old_pairs = {(p["a"], p["b"], k) for p in old["pairs"] for k in p["signals"]}
+    new_pairs = {(p["a"], p["b"], k) for p in new["pairs"] for k in p["signals"]}
+    lost = old_pairs - new_pairs
+    assert not lost, sorted(lost)[:5]
+
+
+@need
+def test_v2_cases_in_the_research_outputs():
+    tr = json.loads((RESEARCH / "network_trace.json").read_text(encoding="utf-8"))
+    ent = json.loads((RESEARCH / "entities.json").read_text(encoding="utf-8"))
+    assert ent["entity_of"][D23] == ent["entity_of"][CKZ] == ent["entity_of"][ER9]         # E007
+    assert any(r["relay"] == Y2 and r["src"] == ARU and r["dst"] == MTZ for r in tr["pass_through"])
+    assert any(f["flag"] == "PASS_THROUGH" for f in ent["flags"].get(Y2, []))
+    assert any(r["source"] == HHL and r["recurring"] and not r["persons"] for r in tr["batch_splits"])
+    assert not ent["flags"].get(DYR) and not ent["flags"].get(HNB)        # paying two program accounts links nobody
+    assert PHT not in tr["shared_recipients"]
+    six = "6pNndy8sewtG7QVfJohKRnpTwdWSdHMi6YQgVNKithNh"                 # the MOONX funding missed by the single anchor
+    assert any(x["src"] == "HxmwX3xRFxPE2LsnC9aRXQqh96fkyCSKnpXH9BLm3n47" and x["dst"] == six and x["amount"] == 1.0 for x in tr["edges"])
+    m = {x["coin"]: x for x in tr["mismatch"]}
+    assert set(m) == {"CHUCHU", "MOONX"} and all(x["wallet"] not in (x["signers"] or []) for x in m.values())
+
+
+# ------------------------------------------------------------------------------- production path: seed re-import
+def test_changed_seed_is_imported_once_and_other_tables_are_kept(tmp_path, monkeypatch):
+    from insiders import site as S
+    d = _folder(tmp_path)
+    (d / "candidates_MOONX_COGE.json").write_text(json.dumps({"x": {"ticker": "AAA", "mint": "MintA"}, "y": {"ticker": "ZZZ", "mint": "MintZ"}}))
+    st = T.Store(tmp_path / "insiders_track.db")
+    st.add_edge("LiveSrc", "LiveDst", "SOL", 1.0, 5, "liveSig", "fund")
+    st.x("INSERT INTO nc_coin (mint, symbol) VALUES ('NcMint', 'NC')")
+    st.x("INSERT INTO esm_pending_mint VALUES ('AAA', 'NEEDS_MINT_VERIFICATION', '[]', 'old', 1)")
+    monkeypatch.setenv("ESM_RESEARCH_DIR", str(d))
+    a = S.open_esm(tmp_path)
+    assert a.seed_info["imported"] and a.get("esm_seed_version") == S.seed_version(d)
+    b = S.open_esm(tmp_path)                                             # same seed: not imported again
+    assert b.seed_info["imported"] is None and b.seed_info["version"] == a.seed_info["version"]
+    assert b.q("SELECT COUNT(*) n FROM nc_coin")[0]["n"] == 1 and b.q("SELECT COUNT(*) n FROM edges WHERE kind='fund'")[0]["n"] == 1
+    assert {r["symbol"]: r["status"] for r in b.q("SELECT symbol, status FROM esm_pending_mint")} == \
+        {"AAA": "VERIFIED", "ZZZ": "NEEDS_MINT_VERIFICATION"}                # a verified coin is kept and marked, never deleted
+    assert [p["symbol"] for p in E.pending_mints(b)] == ["ZZZ"]
+    (d / "verified.json").write_text(json.dumps({"AAA": "x"}))           # the seed changed: imported again
+    assert S.open_esm(tmp_path).seed_info["imported"]
+
+
+def test_backup_refuses_when_the_disk_is_too_full_and_leaves_nothing_behind(tmp_path, monkeypatch):
+    import shutil
+    from insiders import backup as B
+    st = T.Store(tmp_path / "insiders_track.db")
+    st.put("k", "v")
+    real = shutil.disk_usage
+    monkeypatch.setattr(B.shutil, "disk_usage", lambda p: real(p)._replace(free=1000))
+    with pytest.raises(RuntimeError, match="không đủ dung lượng"):
+        B.backup(tmp_path, reason="start")
+    assert not (tmp_path / B.DIR).exists() or not any((tmp_path / B.DIR).iterdir())
+    monkeypatch.setattr(B.shutil, "disk_usage", real)
+    assert B.verify(B.backup(tmp_path, reason="start")) == []
+
+
+def test_a_failed_copy_is_removed(tmp_path, monkeypatch):
+    from insiders import backup as B
+    T.Store(tmp_path / "insiders_track.db").put("k", "v")
+    monkeypatch.setattr(B, "copy_db", lambda a, b: (_ for _ in ()).throw(OSError("disk full")))
+    with pytest.raises(OSError):
+        B.backup(tmp_path)
+    assert not any((tmp_path / B.DIR).iterdir())
+
+
+def test_existing_research_is_not_updated_without_a_backup(tmp_path, monkeypatch):
+    from insiders import site as S
+    d = _folder(tmp_path)
+    monkeypatch.setenv("ESM_RESEARCH_DIR", str(d))
+    first = S.open_esm(tmp_path, backup_ok=False)                        # empty tables: the first import needs no backup
+    assert first.seed_info["imported"]
+    (d / "verified.json").write_text(json.dumps({"AAA": "changed"}))
+    st = S.open_esm(tmp_path, backup_ok=False)
+    assert st.seed_info["imported"] is None and "sao lưu" in st.seed_info["error"]
+    assert st.get("esm_seed_version") == first.get("esm_seed_version")
+    assert S.open_esm(tmp_path, backup_ok=True).seed_info["imported"]

@@ -41,7 +41,7 @@ def summary(store) -> dict:
             "coins": store.q("SELECT COUNT(*) AS n FROM esm_coin")[0]["n"], "wallets": len(wt),
             "ranked": sum(1 for r in wt if r["ranked"]), "early_2plus": sum(1 for r in wt if r["ranked"] and len(r["early_coins"]) >= 2),
             "classes": cls, "flags": fl, "entities": sum(1 for e in entity_table(store)),
-            "pending": [r["symbol"] for r in store.q("SELECT symbol FROM esm_pending_mint ORDER BY symbol")],
+            "pending": [r["symbol"] for r in store.q("SELECT symbol FROM esm_pending_mint WHERE status='NEEDS_MINT_VERIFICATION' ORDER BY symbol")],
             "imported_at": store.q("SELECT MAX(analyzed_at) AS t FROM esm_coin")[0]["t"]}
 
 
@@ -199,8 +199,13 @@ def _reason(rows: list[dict], cls: str, flags: list, links: int) -> list[str]:
     good = [r["symbol"] for r in rows if "GOOD" in r["roles"] and not r.get("at_creation")]
     if good:
         out.append("GOOD (≥ +50% trong cửa sổ): " + ", ".join(good))
+    lv = [f.split(":", 1)[1] for f in flags if f.startswith("INDEPENDENCE:")]   # tier-A review (V2) when there is one
     out.append({"INDEPENDENT": "nguồn vốn độc lập", "POSSIBLE_LINK": "có liên kết trung bình với ví khác",
-                "LIKELY_SAME_ENTITY": "cùng chủ với ví khác (bằng chứng mạnh)"}.get(cls, "chưa đủ dữ liệu nguồn vốn"))
+                "LIKELY_SAME_ENTITY": "cùng chủ với ví khác (bằng chứng mạnh)"}.get(lv[0] if lv else cls, "chưa đủ dữ liệu nguồn vốn"))
+    if any(f.startswith("PASS_THROUGH") for f in flags):
+        out.append("ví trung chuyển: SOL vào rồi ra gần 1:1 trong vài phút")
+    if any(f.startswith("BATCH_SPLIT") for f in flags):
+        out.append("được trả tiền cùng ví khác trong một giao dịch, lặp lại (" + ", ".join(sorted({f.split(":")[1][:6] for f in flags if f.startswith("BATCH_SPLIT")})) + "…)")
     if any(f.startswith("COORDINATED") for f in flags):
         out.append("giao dịch đồng bộ với nhóm " + ", ".join(f.split(":")[1] for f in flags if f.startswith("COORDINATED")))
     if links:
@@ -268,7 +273,7 @@ def radar(store, live_on: bool, live_note: str | None = None, min_score: int = 4
                      "last_event": store.q("SELECT MAX(block_time) AS t FROM events")[0]["t"] if live_on else None},
             "imported_at": store.q("SELECT MAX(analyzed_at) AS t FROM esm_coin")[0]["t"], "min_score": min_score,
             "candidates": len(allw), "smart": smart, "signals": signals, "coins": by_coin, "groups": _groups(store, cx),
-            "pending": [r["symbol"] for r in store.q("SELECT symbol FROM esm_pending_mint ORDER BY symbol")]}
+            "pending": [r["symbol"] for r in store.q("SELECT symbol FROM esm_pending_mint WHERE status='NEEDS_MINT_VERIFICATION' ORDER BY symbol")]}
 
 
 def _groups(store, cx) -> dict:

@@ -152,6 +152,8 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
             path = self.path.split("?", 1)[0]
             if path == "/healthz":                           # counts only: no address, no alert content
                 h = dict(health)
+                if (health.get("storage") or {}).get("state_dir"):    # disk numbers now, not at start (G0 watch)
+                    h["storage"] = {**health["storage"], **disk(Path(health["storage"]["state_dir"]))}
                 w = getattr(svc, "watcher", None)
                 if w is not None:
                     h["watch_polls"] = w.state.get("polls", 0)
@@ -212,7 +214,9 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                     m = nc[0].metrics()
                     h["newcoins"] = {"connected": nc[1].stat["connected"], "msgs": nc[1].stat["msgs"], "reconnects": nc[1].stat["reconnects"],
                                      **{k: m[k] for k in ("creates", "trades_tracked", "active_coins", "queue", "dropped", "signals",
-                                                          "discovery_latency_s", "signal_latency_s", "smart_watchlist")}}
+                                                          "discovery_latency_s", "signal_latency_s", "smart_watchlist", "smart_v2")}}
+                if esm is not None and getattr(esm, "seed_info", None):   # research seed: version + import counts only
+                    h["esm_seed"] = esm.seed_info
                 if callers is not None:                       # Smart Caller Hunter: counts only
                     h["callers"] = callers.health()
                 return self._json(200, h)
@@ -461,10 +465,12 @@ def open_newcoins(sdir: Path, on: bool):
     return eng, stream
 
 
-def open_esm(sdir: Path):
+def open_esm(sdir: Path, backup_ok: bool = True):
     """The Early Smart Money store (same SQLite file as the tracker; migration v5 = new tables only, backup first).
-    When its tables are empty and the research folder exists locally, the 5 verified coins are imported once
-    (idempotent). Nothing here calls the network."""
+    The research results (local research folder, else the committed esm_seed) are imported when the tables are empty
+    OR when the seed's content changed (SHA-256 of its files, kept in settings 'esm_seed_version'): the import is
+    idempotent (INSERT OR REPLACE into the existing esm_* / edges tables; no table is dropped, no row of another
+    table is touched). The start-up backup (InsiderService.start_watch) runs before this. No network."""
     from insiders import esm as E
     from insiders.track import Store
     if (os.environ.get("INSIDER_ESM_PAGE") or "1") == "0":
@@ -473,10 +479,47 @@ def open_esm(sdir: Path):
     src = Path(os.environ.get("ESM_RESEARCH_DIR") or Path(__file__).resolve().parents[1] / "research" / "seven_coins")
     if not (src / "early_smart_money.json").exists():
         src = Path(__file__).with_name("esm_seed")           # the committed results of the 5 verified coins (server)
-    if not st.q("SELECT COUNT(*) AS n FROM esm_coin")[0]["n"] and (src / "early_smart_money.json").exists():
-        n = E.import_research(st, src)
-        print(f"[insiders] Early Smart Money: đã nạp dữ liệu nghiên cứu {n}", flush=True)
+    st.seed_info = {"version": None, "imported": None, "error": None}
+    if (src / "early_smart_money.json").exists():
+        ver = seed_version(src)
+        st.seed_info["version"] = ver[:12]
+        have = st.q("SELECT COUNT(*) AS n FROM esm_coin")[0]["n"]
+        if have and st.get("esm_seed_version") != ver and not backup_ok:
+            st.seed_info["error"] = "chưa nạp seed mới: lần khởi động này không có bản sao lưu (dữ liệu cũ giữ nguyên)"
+            print(f"[insiders] Early Smart Money: {st.seed_info['error']}", flush=True)
+        elif not have or st.get("esm_seed_version") != ver:
+            try:
+                n = E.import_research(st, src)
+                st.put("esm_seed_version", ver)
+                st.seed_info["imported"] = n
+                print(f"[insiders] Early Smart Money: đã nạp dữ liệu nghiên cứu {ver[:12]} {n}", flush=True)
+            except Exception as e:                           # the import is one transaction: a failure changes nothing
+                st.seed_info["error"] = f"{type(e).__name__}: {str(e)[:120]}"
+                print(f"[insiders] Early Smart Money: nạp lỗi {st.seed_info['error']}", flush=True)
     return st
+
+
+def disk(sdir: Path) -> dict:
+    """Disk of the state directory in GB, and the size of the database + its backups (numbers only, for /healthz)."""
+    import shutil
+    try:
+        u = shutil.disk_usage(sdir)
+        db = sum(f.stat().st_size for f in Path(sdir).glob("insiders_track.db*") if f.is_file())
+        bk = sum(f.stat().st_size for f in (Path(sdir) / "backups").rglob("*") if f.is_file()) if (Path(sdir) / "backups").is_dir() else 0
+        return {"disk_total_gb": round(u.total / 1e9, 2), "disk_free_gb": round(u.free / 1e9, 2),
+                "db_gb": round(db / 1e9, 3), "backups_gb": round(bk / 1e9, 3)}
+    except OSError:
+        return {}
+
+
+def seed_version(folder: Path) -> str:
+    """SHA-256 over the names and bytes of the research files that import_research reads."""
+    import hashlib
+    h = hashlib.sha256()
+    for f in sorted(Path(folder).glob("*.json")):
+        h.update(f.name.encode())
+        h.update(f.read_bytes())
+    return h.hexdigest()
 
 
 def track_get(svc, path: str, raw: str) -> tuple[int, object]:
@@ -630,7 +673,7 @@ def serve(host: str = "127.0.0.1", port: int = 8780, watch: bool = True, svc: In
     started = svc.start_watch(sdir / "insider_watch.json") if watch and (os.environ.get("INSIDER_WATCH") or "1") != "0" \
         else False
     health = {"ok": True, "app": "insiders", "paper": True, "commit": git_commit(),
-              "storage": {"state_dir": str(sdir), "durable": durable}, "watch": bool(started),
+              "storage": {"state_dir": str(sdir), "durable": durable, **disk(sdir)}, "watch": bool(started),
               "result": bool(svc.result)}
     code = os.environ.get("APP_ACCESS_CODE") or None
     if host not in ("127.0.0.1", "localhost") and not code:
@@ -638,7 +681,8 @@ def serve(host: str = "127.0.0.1", port: int = 8780, watch: bool = True, svc: In
     callers = None
     if callers_app is not False and (os.environ.get("CALLERS") or "1") != "0":
         callers = callers_app or _callers_app(svc, sdir, start=watch)
-    esm = open_esm(sdir)
+    # updating existing research data needs this start's backup (taken in start_watch); a first import does not
+    esm = open_esm(sdir, backup_ok=getattr(svc, "last_backup", None) is not None or not started)
     health["esm"] = esm is not None
     nc = open_newcoins(sdir, on=bool(started))
     health["newcoins"] = nc is not None

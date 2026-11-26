@@ -3,5 +3,7 @@
  "MACCA": "đã xác minh (mint đọc từ ảnh, tồn tại on-chain, SPL; tạo thủ công, không qua launchpad)",
  "SCINU": "đã xác minh (mint đọc từ ảnh, tồn tại on-chain, Token-2022, giao dịch tạo pump.fun)",
  "FRENS": "đã xác minh với dự án gốc: frens.gg khai báo VITE_MAIN_TOKEN_CA = mint này",
- "STANK": "đã chứng minh: creator của giao dịch tạo = ví 'tạo coin STANK' trong tài liệu STANK_WOOF (6CrHZ…vkEy), ticker STANK, khớp ảnh trừ lỗi OCR"
+ "STANK": "đã chứng minh: creator của giao dịch tạo = ví 'tạo coin STANK' trong tài liệu STANK_WOOF (6CrHZ…vkEy), ticker STANK, khớp ảnh trừ lỗi OCR",
+ "MOONX": "mint do chủ dự án cung cấp (2026-11-25); tồn tại on-chain, Token-2022, giao dịch đầu tiên là giao dịch tạo pump.fun (identity.json)",
+ "COGE": "mint do chủ dự án cung cấp (2026-11-25); tồn tại on-chain, Token-2022, giao dịch đầu tiên là giao dịch tạo pump.fun (identity.json)"
 }

@@ -1,0 +1,2608 @@
+{
+ "summary": {
+  "wallets": 27,
+  "owner_groups_strong_evidence": 25,
+  "independence": {
+   "POSSIBLE_LINK": 5,
+   "INDEPENDENT": 14,
+   "LIKELY_SAME_ENTITY": 5,
+   "INSUFFICIENT_DATA": 3
+  },
+  "early_and_held_verified": 27,
+  "onchain_first_buys_checked": 0,
+  "onchain_status": {
+   "OK": 57,
+   "MISMATCH signer=False delta=32569416 time=1795536175": 1,
+   "MISMATCH signer=False delta=5657809 time=1793120452": 1
+  },
+  "groups": {
+   "7ER9dTZLgz28euwCRhwUAaG2EHvSAdL8LU4rh5zqwhUE": [
+    "2351du6dyERkj1YBu6D4s8Jc4SpmY17AqzSmeH4JgkpZ",
+    "CKz4sXenERmvMHWPGGF94to7C98R8cZtuiQQUcELhUCd",
+    "7ER9dTZLgz28euwCRhwUAaG2EHvSAdL8LU4rh5zqwhUE"
+   ]
+  },
+  "strong_links": {
+   "2351du6dyERkj1YBu6D4s8Jc4SpmY17AqzSmeH4JgkpZ|CKz4sXenERmvMHWPGGF94to7C98R8cZtuiQQUcELhUCd": [
+    [
+     "direct_transfer",
+     "QVs6BfC8ayNp6hKNADtTpnSVTzUjHBMV1wzeY54pKpAzQiWjDEUC9ZT9WjKtiYNrAcVhes2XSnUqVBYCSMWqXw3"
+    ],
+    [
+     "same_entity_E007",
+     null
+    ]
+   ],
+   "2351du6dyERkj1YBu6D4s8Jc4SpmY17AqzSmeH4JgkpZ|7ER9dTZLgz28euwCRhwUAaG2EHvSAdL8LU4rh5zqwhUE": [
+    [
+     "direct_transfer",
+     "5ZgWkZwaw2ToZAWrVTkDXb7F9FWMvGkVvZnjYt7yu4ooruaCM1jgAszFQC4fcz9WJ3TrUPDAkprK38EGnGYG1jZ"
+    ],
+    [
+     "same_entity_E007",
+     null
+    ]
+   ],
+   "7ER9dTZLgz28euwCRhwUAaG2EHvSAdL8LU4rh5zqwhUE|CKz4sXenERmvMHWPGGF94to7C98R8cZtuiQQUcELhUCd": [
+    [
+     "same_entity_E007",
+     null
+    ],
+    [
+     "shared_funder_hop1",
+     "2351du6dyERkj1YBu6D4s8Jc4SpmY17AqzSmeH4JgkpZ"
+    ]
+   ]
+  },
+  "possible_links": {
+   "2351du6dyERkj1YBu6D4s8Jc4SpmY17AqzSmeH4JgkpZ|CKz4sXenERmvMHWPGGF94to7C98R8cZtuiQQUcELhUCd": [
+    [
+     "same_slot",
+     null
+    ],
+    [
+     "transfer_outside",
+     "PyEySt5qGR4NEcgQDtWEpxaPC2KDQGEdeHbUcVmroSegDRmXuB5aUWoDBVegSea8NmxtUSyTcHtSoTw1WhvNJ8o"
+    ]
+   ],
+   "2351du6dyERkj1YBu6D4s8Jc4SpmY17AqzSmeH4JgkpZ|7ER9dTZLgz28euwCRhwUAaG2EHvSAdL8LU4rh5zqwhUE": [
+    [
+     "transfer_outside",
+     "4MeaeHDM4BToZS429zP5M4C6kgjhPJyoSx7TEah4QG3YxmBHx14xJMPvZtN5sN4hWQoYKjEdDutymr89ecQ8DTQs"
+    ]
+   ],
+   "27HFmP7ccLadGswvQfvea4o3juLw75cPF4V6jWpHM3MX|Fn9n3ftUzjhcmoLwXbTqJdATzamCp3xPEu4LmLSS8ELr": [
+    [
+     "same_slot",
+     null
+    ]
+   ],
+   "7ER9dTZLgz28euwCRhwUAaG2EHvSAdL8LU4rh5zqwhUE|CKz4sXenERmvMHWPGGF94to7C98R8cZtuiQQUcELhUCd": [
+    [
+     "same_slot",
+     null
+    ]
+   ]
+  },
+  "cross_reference": {
+   "checked": 120,
+   "hits": 4,
+   "tier_a_hits": 3,
+   "cohorts": {},
+   "deployers_of_called_coins": [],
+   "new_coins_creators": [],
+   "wallets": {
+    "27HFmP7ccLadGswvQfvea4o3juLw75cPF4V6jWpHM3MX": {
+     "cohort": null,
+     "deployer_of_called": [],
+     "early_buyer_of_called": 4,
+     "repeat_wallet": true,
+     "bot_like": false,
+     "scan_entities": [
+      {
+       "address": "AC5RDfQFmDS1deWZos921JfqscXdByf8BKHs5ACWjtW2",
+       "label": "Bybit Hot Wallet",
+       "kind": "exchange",
+       "hub": true
+      }
+     ],
+     "deep_node": null,
+     "in_family_tree": false,
+     "new_coins": null
+    },
+    "3vKC1m1CgNL3AU27NTYZ93zfpPeFV9JSAV9k9oMuD4HW": {
+     "cohort": null,
+     "deployer_of_called": [],
+     "early_buyer_of_called": 0,
+     "repeat_wallet": false,
+     "bot_like": null,
+     "scan_entities": [],
+     "deep_node": null,
+     "in_family_tree": false,
+     "new_coins": {
+      "trades": 71,
+      "coins_traded": 26
+     }
+    },
+    "56S29mZ3wqvw8hATuUUFqKhGcSGYFASRRFNT38W8q7G3": {
+     "cohort": null,
+     "deployer_of_called": [],
+     "early_buyer_of_called": 10,
+     "repeat_wallet": true,
+     "bot_like": false,
+     "scan_entities": [],
+     "deep_node": null,
+     "in_family_tree": false,
+     "new_coins": null
+    },
+    "Fs9RN3wAsuJKPbTmtX5eek1bhW5krNH8RkQxkFAtgNfR": {
+     "cohort": null,
+     "deployer_of_called": [],
+     "early_buyer_of_called": 3,
+     "repeat_wallet": true,
+     "bot_like": false,
+     "scan_entities": [
+      {
+       "address": "iGdFcQoyR2MwbXMHQskhmNsqddZ6rinsipHc4TNSdwu",
+       "label": "Bybit Wallet 10",
+       "kind": "exchange",
+       "hub": true
+      }
+     ],
+     "deep_node": null,
+     "in_family_tree": false,
+     "new_coins": null
+    }
+   }
+  }
+ },
+ "wallets": [
+  {
+   "wallet": "27HFmP7ccLadGswvQfvea4o3juLw75cPF4V6jWpHM3MX",
+   "group": "27HFmP7ccLadGswvQfvea4o3juLw75cPF4V6jWpHM3MX",
+   "group_size": 1,
+   "independence": "POSSIBLE_LINK",
+   "entity": null,
+   "entity_class": "POSSIBLE_LINK",
+   "coordinated": null,
+   "cohort": null,
+   "class": "EARLY_HOLDER",
+   "funders_hop1": [],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 0,
+    "sol_out": 0,
+    "token_sends": 0,
+    "top_recipients": [],
+    "coverage": {
+     "fwd|CHUCHU": {
+      "listed": 1675,
+      "complete": true,
+      "decoded": 40,
+      "range": "lần mua đầu → hiện tại",
+      "note": null
+     },
+     "fwd|COGE": {
+      "listed": 4000,
+      "complete": false,
+      "decoded": 0,
+      "range": "lần mua đầu → hiện tại",
+      "note": "> 4000 chữ ký sau lần mua: chưa tới được giao dịch ngay sau lần mua"
+     },
+     "fwd|MOONX": {
+      "listed": 4000,
+      "complete": false,
+      "decoded": 0,
+      "range": "lần mua đầu → hiện tại",
+      "note": "> 4000 chữ ký sau lần mua: chưa tới được giao dịch ngay sau lần mua"
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "CHUCHU": {
+     "first_buy": {
+      "sig": "38iDVjiG41E1ixafjBZ8eQjQYsLUsp9cu3WneFtAgyq6vWz13odb9p8z6CvPkUMRpcAtK7BvAsMdSKjG73pkCyXU",
+      "t": 1795534920,
+      "min": 0.05,
+      "sol": 0.002,
+      "tokens": 126071863,
+      "quote": null
+     },
+     "bought": 126071863,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "COGE": {
+     "first_buy": {
+      "sig": "2DYsUXQQ6PEoGTPrqX6BDgF95kSV1DxBPCkdVwupFPgFWEaqsKwTX5LjYQtY4yLZFC21NVykUSaFc3JN4GouNyf4",
+      "t": 1793908132,
+      "min": 0.0,
+      "sol": 0.002,
+      "tokens": 5813122,
+      "quote": null
+     },
+     "bought": 5813122,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "MOONX": {
+     "first_buy": {
+      "sig": "DwGHWXto1vpb9PqYcDftnYaPmvQNdoKR2XiUQxXgW9fehzYa7XnneYx83zxYSAemz27MYwpk75epugjvcbybKPz",
+      "t": 1793115353,
+      "min": 0.0,
+      "sol": 0.002,
+      "tokens": 47526430,
+      "quote": null
+     },
+     "bought": 47526430,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": {
+    "cohort": null,
+    "deployer_of_called": [],
+    "early_buyer_of_called": 4,
+    "repeat_wallet": true,
+    "bot_like": false,
+    "scan_entities": [
+     {
+      "address": "AC5RDfQFmDS1deWZos921JfqscXdByf8BKHs5ACWjtW2",
+      "label": "Bybit Hot Wallet",
+      "kind": "exchange",
+      "hub": true
+     }
+    ],
+    "deep_node": null,
+    "in_family_tree": false,
+    "new_coins": null
+   }
+  },
+  {
+   "wallet": "Fn9n3ftUzjhcmoLwXbTqJdATzamCp3xPEu4LmLSS8ELr",
+   "group": "Fn9n3ftUzjhcmoLwXbTqJdATzamCp3xPEu4LmLSS8ELr",
+   "group_size": 1,
+   "independence": "POSSIBLE_LINK",
+   "entity": null,
+   "entity_class": "POSSIBLE_LINK",
+   "coordinated": null,
+   "cohort": null,
+   "class": "EARLY_HOLDER",
+   "funders_hop1": [],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 0,
+    "sol_out": 0,
+    "token_sends": 0,
+    "top_recipients": [],
+    "coverage": {
+     "fwd|CHUCHU": {
+      "listed": 4000,
+      "complete": false,
+      "decoded": 0,
+      "range": "lần mua đầu → hiện tại",
+      "note": "> 4000 chữ ký sau lần mua: chưa tới được giao dịch ngay sau lần mua"
+     },
+     "fwd|COGE": {
+      "listed": 4000,
+      "complete": false,
+      "decoded": 0,
+      "range": "lần mua đầu → hiện tại",
+      "note": "> 4000 chữ ký sau lần mua: chưa tới được giao dịch ngay sau lần mua"
+     },
+     "fwd|MOONX": {
+      "listed": 4000,
+      "complete": false,
+      "decoded": 0,
+      "range": "lần mua đầu → hiện tại",
+      "note": "> 4000 chữ ký sau lần mua: chưa tới được giao dịch ngay sau lần mua"
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "CHUCHU": {
+     "first_buy": {
+      "sig": "4gCbvyduXKPQ4ctHFmZxUMfCEpPv5Vf3mdZVVnmWh3ki7UoDqDFi4fMC34hDErRN6AaUPdj3cbv8YddRPrhDwnnE",
+      "t": 1795534920,
+      "min": 0.05,
+      "sol": 0.002,
+      "tokens": 104649598,
+      "quote": null
+     },
+     "bought": 104649598,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "COGE": {
+     "first_buy": {
+      "sig": "5B2UXtgE1wsoke8YTT52caY5WncHt8HfGU9yJmjE6UFkaFDa5jBv2uYz6kdRM6tuNUzZig8ZWHUka4AhhiwsugdZ",
+      "t": 1793908135,
+      "min": 0.05,
+      "sol": 0.002,
+      "tokens": 14357846,
+      "quote": null
+     },
+     "bought": 14357846,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "MOONX": {
+     "first_buy": {
+      "sig": "32hjk2UnqsTRtBqn7pmgAerqyHGA47Ejeu7rhMczQyGW9wcHvpApFrckc6H1N1x3ntCfQNr5VvtPE86YrtXEKb8F",
+      "t": 1793115356,
+      "min": 0.05,
+      "sol": 0.002,
+      "tokens": 90017243,
+      "quote": null
+     },
+     "bought": 90017243,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "Fs9RN3wAsuJKPbTmtX5eek1bhW5krNH8RkQxkFAtgNfR",
+   "group": "Fs9RN3wAsuJKPbTmtX5eek1bhW5krNH8RkQxkFAtgNfR",
+   "group_size": 1,
+   "independence": "INDEPENDENT",
+   "entity": null,
+   "entity_class": "INDEPENDENT",
+   "coordinated": null,
+   "cohort": null,
+   "class": "EARLY_HOLDER",
+   "funders_hop1": [],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 0,
+    "sol_out": 0,
+    "token_sends": 0,
+    "top_recipients": [],
+    "coverage": {
+     "fwd|CHUCHU": {
+      "listed": 4000,
+      "complete": false,
+      "decoded": 0,
+      "range": "lần mua đầu → hiện tại",
+      "note": "> 4000 chữ ký sau lần mua: chưa tới được giao dịch ngay sau lần mua"
+     },
+     "fwd|COGE": {
+      "listed": 4000,
+      "complete": false,
+      "decoded": 0,
+      "range": "lần mua đầu → hiện tại",
+      "note": "> 4000 chữ ký sau lần mua: chưa tới được giao dịch ngay sau lần mua"
+     },
+     "fwd|MOONX": {
+      "listed": 4000,
+      "complete": false,
+      "decoded": 0,
+      "range": "lần mua đầu → hiện tại",
+      "note": "> 4000 chữ ký sau lần mua: chưa tới được giao dịch ngay sau lần mua"
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "CHUCHU": {
+     "first_buy": {
+      "sig": "23eHicbWBViKwLB5V4mZuuua1HrFrEt32XXFTry3yEAeEn47fndsiabSTNNs7rQyXZyWADNhbgF92yt67S3x2dDc",
+      "t": 1795534921,
+      "min": 0.07,
+      "sol": 0.002,
+      "tokens": 62241205,
+      "quote": null
+     },
+     "bought": 62241205,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "COGE": {
+     "first_buy": {
+      "sig": "2fzMzd5Ez23CAvbhHJGEUv1niSbLNcxbDCAXmGJXFfrTAcjPzzEd6ptk2YiSbXPGTBYU7gPEtF4Ukd1j1uBHMy4Q",
+      "t": 1793908133,
+      "min": 0.02,
+      "sol": 0.002,
+      "tokens": 8719975,
+      "quote": null
+     },
+     "bought": 8719975,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "MOONX": {
+     "first_buy": {
+      "sig": "4LkxuAmimByajUivqehLoDcsihZ1XfN7eA1ZBtmcDfggafefxnNWf2SsxF3eSR5v8TwkXS3yoTMEEPyqYfb2ozVd",
+      "t": 1793115354,
+      "min": 0.02,
+      "sol": 0.002,
+      "tokens": 61416725,
+      "quote": null
+     },
+     "bought": 61416725,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": {
+    "cohort": null,
+    "deployer_of_called": [],
+    "early_buyer_of_called": 3,
+    "repeat_wallet": true,
+    "bot_like": false,
+    "scan_entities": [
+     {
+      "address": "iGdFcQoyR2MwbXMHQskhmNsqddZ6rinsipHc4TNSdwu",
+      "label": "Bybit Wallet 10",
+      "kind": "exchange",
+      "hub": true
+     }
+    ],
+    "deep_node": null,
+    "in_family_tree": false,
+    "new_coins": null
+   }
+  },
+  {
+   "wallet": "7NNzakXLFv2VfhUuoZ9i4Uy4f63BDJcR96tMCucXa6KL",
+   "group": "7NNzakXLFv2VfhUuoZ9i4Uy4f63BDJcR96tMCucXa6KL",
+   "group_size": 1,
+   "independence": "INDEPENDENT",
+   "entity": null,
+   "entity_class": "INDEPENDENT",
+   "coordinated": null,
+   "cohort": null,
+   "class": "EARLY_HOLDER",
+   "funders_hop1": [],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 0,
+    "sol_out": 0,
+    "token_sends": 0,
+    "top_recipients": [],
+    "coverage": {
+     "fwd|CHUCHU": {
+      "listed": 4001,
+      "complete": false,
+      "decoded": 0,
+      "range": "lần mua đầu → hiện tại",
+      "note": "> 4001 chữ ký sau lần mua: chưa tới được giao dịch ngay sau lần mua"
+     },
+     "fwd|COGE": {
+      "listed": 1,
+      "complete": true,
+      "decoded": 1,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     },
+     "fwd|MOONX": {
+      "listed": 4001,
+      "complete": false,
+      "decoded": 0,
+      "range": "lần mua đầu → hiện tại",
+      "note": "> 4001 chữ ký sau lần mua: chưa tới được giao dịch ngay sau lần mua"
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "CHUCHU": {
+     "first_buy": {
+      "sig": "3GnVuJmmrjXLGfZjoT5TUoSZXfuBUHsTU6W5u937jDLgtsabkyEvTDYwiuQTMzn1f1aFqw7X6tXo1RL28Bqt3EpD",
+      "t": 1795534921,
+      "min": 0.07,
+      "sol": 0.002,
+      "tokens": 129231176,
+      "quote": null
+     },
+     "bought": 129231176,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "COGE": {
+     "first_buy": {
+      "sig": "2U3gwW3dihSDFP6GARHMoAqsXS94aDY8g8GoxnesSptHNqJnLeKKyS6fHcxm571aZjSUcwBxKMaY8s6wXqnJqGYu",
+      "t": 1793908134,
+      "min": 0.03,
+      "sol": 0.002,
+      "tokens": 18749594,
+      "quote": null
+     },
+     "bought": 37414309,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "MOONX": {
+     "first_buy": {
+      "sig": "4PZtKWHuqqmbcLYtgqJyXnXf8BhiPX71xA4N14auubibbEYGo2xwFsx3RkJXGboPs52yjAhADtXdkgraJpPxvj7K",
+      "t": 1793115354,
+      "min": 0.02,
+      "sol": 0.002,
+      "tokens": 132411525,
+      "quote": null
+     },
+     "bought": 132411525,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "2351du6dyERkj1YBu6D4s8Jc4SpmY17AqzSmeH4JgkpZ",
+   "group": "7ER9dTZLgz28euwCRhwUAaG2EHvSAdL8LU4rh5zqwhUE",
+   "group_size": 3,
+   "independence": "LIKELY_SAME_ENTITY",
+   "entity": "E007",
+   "entity_class": "LIKELY_SAME_ENTITY",
+   "coordinated": "C003",
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 36,
+    "sol_out": 35.8839,
+    "token_sends": 4,
+    "top_recipients": [
+     {
+      "address": "EV5HsCZVvhR19Gusdz3dDQCKg6VspuMcdfpxt8VX9L9f",
+      "sol": 12.8862,
+      "kind": "program account"
+     },
+     {
+      "address": "ARqBziPKWFdcq42nmGSGi5YYPLBTRnWJSRyVe9wKWLKK",
+      "sol": 8.0015,
+      "kind": null
+     },
+     {
+      "address": "6Mxh2iVVt2zVs9FcV7pqUcDYQBgd7jYT9fzMdtevWxr7",
+      "sol": 4.9,
+      "kind": null
+     },
+     {
+      "address": "BZjP7o2EUMTXLBjcM8RWUYsqFrnMiMFTnYFo8BRu5tTE",
+      "sol": 2.009,
+      "kind": null
+     },
+     {
+      "address": "FjkBm3JM64MhQxJ76itAT6Kmb8gdYKEHVmhyTnKo1sba",
+      "sol": 1.96,
+      "kind": null
+     }
+    ],
+    "coverage": {
+     "fwd|CHUCHU": {
+      "listed": 30,
+      "complete": true,
+      "decoded": 30,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     },
+     "fwd|MOONX": {
+      "listed": 5,
+      "complete": true,
+      "decoded": 5,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "CHUCHU": {
+     "first_buy": {
+      "sig": "4Jaj13KrfzxQSfGpTZEe9GXJicnnU8diLCnsNMXFZwzgehdioN4hK92Ves9gUc5DQyY6ViCm71DHHdvzBEViingj",
+      "t": 1795535204,
+      "min": 4.78,
+      "sol": 1.504,
+      "tokens": 2845241896057,
+      "quote": null
+     },
+     "bought": 4844090694078,
+     "sold_or_sent": 4844090694078,
+     "held_120m": 0.0,
+     "onchain": "OK"
+    },
+    "MOONX": {
+     "first_buy": {
+      "sig": "4RSQtHnPYGE5nYBmPjJodvGDJYEGZAwHrwvpbWMwb1TLVi87ed9K9DHgYCbTiDcRBQCfkCv55X2amtRNwc4juqkc",
+      "t": 1793120891,
+      "min": 92.3,
+      "sol": 0.802,
+      "tokens": 402273345445,
+      "quote": null
+     },
+     "bought": 1956141462922,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "CKz4sXenERmvMHWPGGF94to7C98R8cZtuiQQUcELhUCd",
+   "group": "7ER9dTZLgz28euwCRhwUAaG2EHvSAdL8LU4rh5zqwhUE",
+   "group_size": 3,
+   "independence": "LIKELY_SAME_ENTITY",
+   "entity": "E007",
+   "entity_class": "LIKELY_SAME_ENTITY",
+   "coordinated": "C003",
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [
+    "2351du6dyERkj1YBu6D4s8Jc4SpmY17AqzSmeH4JgkpZ",
+    "Hn7qzjdWKpFfJNAf1CvxgfRNWST2xB42g21KpUaD7QbP"
+   ],
+   "funders_exchange": [
+    "6LY1JzAFVZsP2a2xKrtU6znQMQ5h4i7tocWdgrkZzkzF (Kraken Hot Wallet)"
+   ],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 27,
+    "sol_out": 14.7189,
+    "token_sends": 0,
+    "top_recipients": [
+     {
+      "address": "ELnpX59jU8KytZqFRBfUTKUvnAwSPhBCrEPHjQcw3STw",
+      "sol": 8.6437,
+      "kind": "program account"
+     },
+     {
+      "address": "2351du6dyERkj1YBu6D4s8Jc4SpmY17AqzSmeH4JgkpZ",
+      "sol": 3.2083,
+      "kind": null
+     },
+     {
+      "address": "FvsXYejoiTtrpxALmdzUGwmeacvvtVzRUxtpfYkYNx57",
+      "sol": 2.1756,
+      "kind": null
+     },
+     {
+      "address": "2phTYhFT1BtCGx3c6xpxQb4bxuP1aFRrDbpmxSM9weLE",
+      "sol": 0.3789,
+      "kind": null
+     },
+     {
+      "address": "HDQ6t4TEtMW8qYuHnG5rfQFYHaXrAafeoMWKBZrWGa7n",
+      "sol": 0.2196,
+      "kind": null
+     }
+    ],
+    "coverage": {
+     "fwd|CHUCHU": {
+      "listed": 21,
+      "complete": true,
+      "decoded": 21,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     },
+     "fwd|MOONX": {
+      "listed": 8,
+      "complete": true,
+      "decoded": 8,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "CHUCHU": {
+     "first_buy": {
+      "sig": "5DQpLywnvaPA5iQorKByVAvqtBNmqiW9rfYCMpaXh4N1JDGqHtRzek5Qpg6TVzu2gDBpukiiM83h5HR8zD5AuucM",
+      "t": 1795535253,
+      "min": 5.6,
+      "sol": 1.055,
+      "tokens": 1827348042274,
+      "quote": null
+     },
+     "bought": 2513473095324,
+     "sold_or_sent": 2513473095324,
+     "held_120m": 0.0,
+     "onchain": "OK"
+    },
+    "MOONX": {
+     "first_buy": {
+      "sig": "2efVJmnNs4jbf1PrzHX7LuS5ZP2kbWKDgbzywbyk1cwK3EQWk61b44zWxSPQ7JjQaFMF2qHQC91kWedvaXCVCFpC",
+      "t": 1793120869,
+      "min": 91.93,
+      "sol": 1.96,
+      "tokens": 1119509056239,
+      "quote": null
+     },
+     "bought": 2840737371914,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "7ER9dTZLgz28euwCRhwUAaG2EHvSAdL8LU4rh5zqwhUE",
+   "group": "7ER9dTZLgz28euwCRhwUAaG2EHvSAdL8LU4rh5zqwhUE",
+   "group_size": 3,
+   "independence": "LIKELY_SAME_ENTITY",
+   "entity": "E007",
+   "entity_class": "LIKELY_SAME_ENTITY",
+   "coordinated": "C003",
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [
+    "2351du6dyERkj1YBu6D4s8Jc4SpmY17AqzSmeH4JgkpZ"
+   ],
+   "funders_exchange": [
+    "5tzFkiKscXHK5ZXCGbXZxdw7gTjjD1mBwuoFbhUvuAi9 (Binance 2)"
+   ],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 21,
+    "sol_out": 13.1276,
+    "token_sends": 0,
+    "top_recipients": [
+     {
+      "address": "79o2yHSyeG1qRx8pkgqJ8KiXuzebregSmTo5Gcng1nVH",
+      "sol": 9.3355,
+      "kind": "program account"
+     },
+     {
+      "address": "FvsXYejoiTtrpxALmdzUGwmeacvvtVzRUxtpfYkYNx57",
+      "sol": 2.1512,
+      "kind": null
+     },
+     {
+      "address": "2351du6dyERkj1YBu6D4s8Jc4SpmY17AqzSmeH4JgkpZ",
+      "sol": 1.153,
+      "kind": null
+     },
+     {
+      "address": "2phTYhFT1BtCGx3c6xpxQb4bxuP1aFRrDbpmxSM9weLE",
+      "sol": 0.3395,
+      "kind": null
+     },
+     {
+      "address": "DjUffB7SQ5NWhKnA1U2mG4u5May5ffh6iytbYart6WRn",
+      "sol": 0.1485,
+      "kind": "program account"
+     }
+    ],
+    "coverage": {
+     "fwd|CHUCHU": {
+      "listed": 22,
+      "complete": true,
+      "decoded": 22,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     },
+     "fwd|MOONX": {
+      "listed": 7,
+      "complete": true,
+      "decoded": 7,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "CHUCHU": {
+     "first_buy": {
+      "sig": "2B78ou43b8cw75vmFKKZNGJETdULdpNvD7L4pwQcKWvKwattmDw1Q6qsSjJooRGoJ6XSfyjmes7SNNrKeZMie5YQ",
+      "t": 1795535253,
+      "min": 5.6,
+      "sol": 0.949,
+      "tokens": 1610676210148,
+      "quote": null
+     },
+     "bought": 2262750792889,
+     "sold_or_sent": 2262750792889,
+     "held_120m": 0.0,
+     "onchain": "OK"
+    },
+    "MOONX": {
+     "first_buy": {
+      "sig": "jgXTYVKRXJ6FS2PWAysN44pTxVzp4aeA9WTn15anB7Q7FvHzqxstCXw3DBLKyBij3GEe8WagR1Th1NpL8N8UuSA",
+      "t": 1793120869,
+      "min": 91.93,
+      "sol": 2.044,
+      "tokens": 1141133112892,
+      "quote": null
+     },
+     "bought": 2507850514451,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "6pNndy8sewtG7QVfJohKRnpTwdWSdHMi6YQgVNKithNh",
+   "group": "6pNndy8sewtG7QVfJohKRnpTwdWSdHMi6YQgVNKithNh",
+   "group_size": 1,
+   "independence": "LIKELY_SAME_ENTITY",
+   "entity": "E020",
+   "entity_class": "LIKELY_SAME_ENTITY",
+   "coordinated": null,
+   "cohort": null,
+   "class": "EARLY_HOLDER",
+   "funders_hop1": [
+    "HxmwX3xRFxPE2LsnC9aRXQqh96fkyCSKnpXH9BLm3n47"
+   ],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 0,
+    "sol_out": 0,
+    "token_sends": 0,
+    "top_recipients": [],
+    "coverage": {
+     "fwd|CHUCHU": {
+      "listed": 6,
+      "complete": true,
+      "decoded": 6,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     },
+     "fwd|MOONX": {
+      "listed": 6,
+      "complete": true,
+      "decoded": 6,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "CHUCHU": {
+     "first_buy": {
+      "sig": "39cVnj1xichXhJSpZYwgUFYsYAps6mygT73LQyiVZXbWVpL1mREzewmmfDhkVThYhg1WXuQDukutTf5AmQdX3TqH",
+      "t": 1795535483,
+      "min": 9.43,
+      "sol": 0.083,
+      "tokens": 123193696185,
+      "quote": null
+     },
+     "bought": 171515485664,
+     "sold_or_sent": 171515485664,
+     "held_120m": 0.0,
+     "onchain": "OK"
+    },
+    "MOONX": {
+     "first_buy": {
+      "sig": "4utePdw38d7mtkdWTC9iidiDHDcDi4H1iEqDvkFaZRdipEXBYEUUekqzizTi4xyG6U9XQomVKjQryDKTwS53pfeW",
+      "t": 1793115401,
+      "min": 0.8,
+      "sol": 0.103,
+      "tokens": 169121613957,
+      "quote": null
+     },
+     "bought": 1279297492330,
+     "sold_or_sent": 137405678023,
+     "held_120m": 0.893,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "3vKC1m1CgNL3AU27NTYZ93zfpPeFV9JSAV9k9oMuD4HW",
+   "group": "3vKC1m1CgNL3AU27NTYZ93zfpPeFV9JSAV9k9oMuD4HW",
+   "group_size": 1,
+   "independence": "INDEPENDENT",
+   "entity": null,
+   "entity_class": "INDEPENDENT",
+   "coordinated": null,
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 7,
+    "sol_out": 1.0479,
+    "token_sends": 2,
+    "top_recipients": [
+     {
+      "address": "52PyuiLNZJ5rZSrD3iroQ1Ga5eYaZJ3LVPZ4mW6gazQS",
+      "sol": 0.382,
+      "kind": "program account"
+     },
+     {
+      "address": "GVeZfrStvb9dus87e5s1B8H8MnHkADV5hX87kpcUyjD6",
+      "sol": 0.3148,
+      "kind": null
+     },
+     {
+      "address": "Dd5Ay4ma2SE6c8YfKNnFMNNQYR69LxfGaQKxoTBYvSnk",
+      "sol": 0.1568,
+      "kind": "program account"
+     },
+     {
+      "address": "32PTtRjSCRTieJBzEUK9G1LH8kS7ZSu9EihoetuEMQ2Z",
+      "sol": 0.1311,
+      "kind": "program account"
+     },
+     {
+      "address": "3VmTVez2iX3iubEMBSSS14maLQfobP2RRSZ9CKh8wKgh",
+      "sol": 0.0632,
+      "kind": "program account"
+     }
+    ],
+    "coverage": {
+     "fwd|CHUCHU": {
+      "listed": 625,
+      "complete": true,
+      "decoded": 40,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     },
+     "fwd|MOONX": {
+      "listed": 8,
+      "complete": true,
+      "decoded": 8,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "CHUCHU": {
+     "first_buy": {
+      "sig": "3R8oKvPpZHF8utXxfpZEX7LAACZB1hdaH5i4xJDHucER27rzwRMUS436nuJ7aeBYrZYSowaZoL4eBT5gHuXfbEpP",
+      "t": 1795536097,
+      "min": 19.67,
+      "sol": 0.485,
+      "tokens": 588186138596,
+      "quote": null
+     },
+     "bought": 2668978610315,
+     "sold_or_sent": 1169858809032,
+     "held_120m": 0.562,
+     "onchain": "OK"
+    },
+    "MOONX": {
+     "first_buy": {
+      "sig": "3xs1zWv4SokdZkFnMdLEb7HDmCbvmrh3zFRcvqvWAQmoSoRhqkF8vMJGSPwPV445SHV3aswx2nrwuifNjbmauQWG",
+      "t": 1793120409,
+      "min": 84.27,
+      "sol": 0.568,
+      "tokens": 500318412115,
+      "quote": null
+     },
+     "bought": 500318412115,
+     "sold_or_sent": 500318412115,
+     "held_120m": 0.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": {
+    "cohort": null,
+    "deployer_of_called": [],
+    "early_buyer_of_called": 0,
+    "repeat_wallet": false,
+    "bot_like": null,
+    "scan_entities": [],
+    "deep_node": null,
+    "in_family_tree": false,
+    "new_coins": {
+     "trades": 71,
+     "coins_traded": 26
+    }
+   }
+  },
+  {
+   "wallet": "6CsTQo1fgTHXdHUVZnj8xpka54SUjxJSdbGFu2GUs7a1",
+   "group": "6CsTQo1fgTHXdHUVZnj8xpka54SUjxJSdbGFu2GUs7a1",
+   "group_size": 1,
+   "independence": "INDEPENDENT",
+   "entity": null,
+   "entity_class": "INDEPENDENT",
+   "coordinated": null,
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [
+    "9jieSqzf5dG72wzWoXj7bfkJjgjpURRSKWAvV5ositme"
+   ],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 36,
+    "sol_out": 6.8164,
+    "token_sends": 3,
+    "top_recipients": [
+     {
+      "address": "GihmPnaayJ3Zbkd9smFm34SbKqC5qFdxfS3K8nPw2GgN",
+      "sol": 6.8164,
+      "kind": "program account"
+     }
+    ],
+    "coverage": {
+     "fwd|CHUCHU": {
+      "listed": 11,
+      "complete": true,
+      "decoded": 11,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     },
+     "fwd|MOONX": {
+      "listed": 403,
+      "complete": true,
+      "decoded": 40,
+      "range": "lần mua đầu → hiện tại",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "CHUCHU": {
+     "first_buy": {
+      "sig": "2q7uSpeH2FRqWsjaCDAd2XXGyTWH8oAzz7HirLurhLNwu1n1BPyccta5da8Yccgvm3iXYbRU9iW1GAxozU5gaYBH",
+      "t": 1795536140,
+      "min": 20.38,
+      "sol": 0.467,
+      "tokens": 513975071531,
+      "quote": null
+     },
+     "bought": 1693165030448,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "MOONX": {
+     "first_buy": {
+      "sig": "DiJY8QrxPXL1rzM51qAUqVshF4mFSbkG8DWFfxM1vNDDtNM27LCMpHuEPFCGzBvCKJ4KesYfwSYS6mMU44xt7tY",
+      "t": 1793120408,
+      "min": 84.25,
+      "sol": 19.996,
+      "tokens": 20508475550835,
+      "quote": null
+     },
+     "bought": 20508475550835,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "2rbMgYvzAb3xDk6vXrzKkY3VwsmyDZsJTkvB3JJYsRzA",
+   "group": "2rbMgYvzAb3xDk6vXrzKkY3VwsmyDZsJTkvB3JJYsRzA",
+   "group_size": 1,
+   "independence": "LIKELY_SAME_ENTITY",
+   "entity": "E006",
+   "entity_class": "LIKELY_SAME_ENTITY",
+   "coordinated": null,
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 0,
+    "sol_out": 0,
+    "token_sends": 0,
+    "top_recipients": [],
+    "coverage": {
+     "fwd|CHUCHU": {
+      "listed": 12,
+      "complete": true,
+      "decoded": 12,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     },
+     "fwd|MOONX": {
+      "listed": 4000,
+      "complete": false,
+      "decoded": 0,
+      "range": "lần mua đầu → hiện tại",
+      "note": "> 4000 chữ ký sau lần mua: chưa tới được giao dịch ngay sau lần mua"
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [
+    {
+     "wallet": "2rbMgYvzAb3xDk6vXrzKkY3VwsmyDZsJTkvB3JJYsRzA",
+     "coin": "CHUCHU",
+     "sig": "4Tgz6GQ7FuWFmSeEuj3KUZQp9GYLN8ZRwZcEF2NsJAJVg8hB4Y2hPX8vrWguHX3x1zFWuTEAGc1aWvtvhMH72F3F",
+     "signers": [
+      "4Jf25tE4TYQeseUeGk5rRfXnqvWRpFc3Q9Uib5QP22k5"
+     ],
+     "payer": "4Jf25tE4TYQeseUeGk5rRfXnqvWRpFc3Q9Uib5QP22k5",
+     "token_from": [],
+     "note": "ví không ký giao dịch; người ký / trả phí: 4Jf25tE4TYQeseUeGk5rRfXnqvWRpFc3Q9Uib5QP22k5. Token về ví từ lệnh mua do ví khác thực hiện (không có lệnh chuyển token giữa hai ví): không phải bằng chứng ví tự mua"
+    },
+    {
+     "wallet": "2rbMgYvzAb3xDk6vXrzKkY3VwsmyDZsJTkvB3JJYsRzA",
+     "coin": "MOONX",
+     "sig": "4NvFhvmcMwwaH7QWqfNPoMMdmunrYWdmhFt5JU7WTu8d5gcoooiu5hUWkot1AkFbMY1PgMA9raM8mGtTo3Bv65fC",
+     "signers": [
+      "E67QyVM4rtE7jSZ2B4fQNiMN4hqNdMPV2rzRQuatgtt1"
+     ],
+     "payer": "E67QyVM4rtE7jSZ2B4fQNiMN4hqNdMPV2rzRQuatgtt1",
+     "token_from": [],
+     "note": "ví không ký giao dịch; người ký / trả phí: E67QyVM4rtE7jSZ2B4fQNiMN4hqNdMPV2rzRQuatgtt1. Token về ví từ lệnh mua do ví khác thực hiện (không có lệnh chuyển token giữa hai ví): không phải bằng chứng ví tự mua"
+    }
+   ],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "CHUCHU": {
+     "first_buy": {
+      "sig": "4Tgz6GQ7FuWFmSeEuj3KUZQp9GYLN8ZRwZcEF2NsJAJVg8hB4Y2hPX8vrWguHX3x1zFWuTEAGc1aWvtvhMH72F3F",
+      "t": 1795536175,
+      "min": 20.97,
+      "sol": 0.0,
+      "tokens": 32569416,
+      "quote": null
+     },
+     "bought": 3628194155,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "MISMATCH signer=False delta=32569416 time=1795536175"
+    },
+    "MOONX": {
+     "first_buy": {
+      "sig": "4NvFhvmcMwwaH7QWqfNPoMMdmunrYWdmhFt5JU7WTu8d5gcoooiu5hUWkot1AkFbMY1PgMA9raM8mGtTo3Bv65fC",
+      "t": 1793120452,
+      "min": 84.98,
+      "sol": 0.0,
+      "tokens": 5657809,
+      "quote": null
+     },
+     "bought": 2683992774,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "MISMATCH signer=False delta=5657809 time=1793120452"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "9Y2Es2V6QN4H637kTNd1LVZTthkRsint3WubyXEJzV7E",
+   "group": "9Y2Es2V6QN4H637kTNd1LVZTthkRsint3WubyXEJzV7E",
+   "group_size": 1,
+   "independence": "POSSIBLE_LINK",
+   "entity": null,
+   "entity_class": "POSSIBLE_LINK",
+   "coordinated": null,
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [
+    "4raqd4tCEnm2yGeUocVqPgN2MPB1W6A3EZfC8LoMChvf",
+    "ARu4n5mFdZogZAravu7CcizaojWnS6oqka37gdLT5SZn"
+   ],
+   "funders_exchange": [
+    "ASTyfSima4LLAdDgoFGkgqoKowG1LZFDr9fAQrg7iaJZ (MEXC)"
+   ],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 12,
+    "sol_out": 17.3003,
+    "token_sends": 0,
+    "top_recipients": [
+     {
+      "address": "9mTZH73WW9ZTSEH2EJuhcdNWdPUQ2QPVhWkj4v2vrk6y",
+      "sol": 7.4565,
+      "kind": "program account"
+     },
+     {
+      "address": "N9WqrXcnhTSk4p8TBpQZdw6m8ZweyT5jcSpnHVqu85X",
+      "sol": 4.3275,
+      "kind": null
+     },
+     {
+      "address": "9MUhLmpKm5Ut5cd6Q7yDjqVZYvtxwLFFL4qtw92aFtrM",
+      "sol": 2.7415,
+      "kind": null
+     },
+     {
+      "address": "G6cbnHpqC3BgjirpFm7mtdYT3ZRQCBjn7UacnyaPRZri",
+      "sol": 1.703,
+      "kind": null
+     },
+     {
+      "address": "HZGH9MFeNYkc6HteJxp6PgziXnSBLFmSdH3uWdckif6x",
+      "sol": 0.7217,
+      "kind": null
+     }
+    ],
+    "coverage": {
+     "fwd|CHUCHU": {
+      "listed": 16,
+      "complete": true,
+      "decoded": 16,
+      "range": "lần mua đầu → hiện tại",
+      "note": null
+     },
+     "fwd|MOONX": {
+      "listed": 2,
+      "complete": true,
+      "decoded": 2,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [
+    {
+     "flag": "PASS_THROUGH",
+     "src": "ARu4n5mFdZogZAravu7CcizaojWnS6oqka37gdLT5SZn",
+     "dst": "9mTZH73WW9ZTSEH2EJuhcdNWdPUQ2QPVhWkj4v2vrk6y",
+     "src_program": true,
+     "dst_program": true,
+     "sol_in": 3.62117,
+     "sol_out": 3.619141,
+     "gap_s": 18,
+     "sigs": [
+      "2KVd1pecWvUtccjJqCFq3MKXASgizDRi3Z8VnDgyAc39tDWGEhCXA3WBWn8KuPvxAAnD8kAeUHcik3FKtM5hgG6w",
+      "AtYojjvyCAB8tHE1SEVXKqP6QUbDTtpFid5gYCmVR5XXJtKTgGnyMFRUVthPKyQLV92QcsMoqg5Wn8AgDnHpFA8"
+     ]
+    },
+    {
+     "flag": "PASS_THROUGH",
+     "src": "ARu4n5mFdZogZAravu7CcizaojWnS6oqka37gdLT5SZn",
+     "dst": "9mTZH73WW9ZTSEH2EJuhcdNWdPUQ2QPVhWkj4v2vrk6y",
+     "src_program": true,
+     "dst_program": true,
+     "sol_in": 1.663029,
+     "sol_out": 1.660976,
+     "gap_s": 70,
+     "sigs": [
+      "3LAfnqnFb57L1YtoWbZzGwh32fzJCo9ktB4LxkBnvLPu3sV5XiJM5qviJHKQEs5hg1eudgwfZAo9LuH1gjXs2yqy",
+      "N6fvK7crKDRo2VtHE1KPscDgJNH4cP2jkdf8fnLcXvviUtNzsVsSQYwkYCxLMR6hPHQa358VUUGYhaDAcnWnDcq"
+     ]
+    }
+   ],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "CHUCHU": {
+     "first_buy": {
+      "sig": "4nJL7EbZ3RS4NXtv9B3HGHW6Fbe5xpNpxBLM273GsFGUy8tDVdvXXcEqS9QEBzwkTFdSu6RPyusc7DDbYBGF17TA",
+      "t": 1795536311,
+      "min": 23.23,
+      "sol": 0.927,
+      "tokens": 767193555172,
+      "quote": null
+     },
+     "bought": 767193555172,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "MOONX": {
+     "first_buy": {
+      "sig": "54ErkTKP8tnAgmjMjJzVRNoBwKmT9exbYvA47n2BvoXMk3hT2Wc8wZtFQCBfqsPu8HeM2Tq2KRbUZqAKiW5FDJH9",
+      "t": 1793120531,
+      "min": 86.3,
+      "sol": 3.304,
+      "tokens": 2103686348554,
+      "quote": null
+     },
+     "bought": 3188596562305,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "HC31SvvuFgNVK723UTabWfaMX8wmZ9HbYPwQBHsyLRki",
+   "group": "HC31SvvuFgNVK723UTabWfaMX8wmZ9HbYPwQBHsyLRki",
+   "group_size": 1,
+   "independence": "INSUFFICIENT_DATA",
+   "entity": null,
+   "entity_class": "INSUFFICIENT_DATA",
+   "coordinated": null,
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [
+    "G5GFpTfMFPU31nmXzu5C7198RqXiVC49ToUA1h5pGyph"
+   ],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 11,
+    "sol_out": 0.55,
+    "token_sends": 0,
+    "top_recipients": [
+     {
+      "address": "G5GFpTfMFPU31nmXzu5C7198RqXiVC49ToUA1h5pGyph",
+      "sol": 0.5,
+      "kind": "busy hub (>= 1000 tx in < 2 days)"
+     },
+     {
+      "address": "HBQ2TC2gmX9qeNuCsY9gRTk9hiZLRZaKhvHGj2ZbVoWB",
+      "sol": 0.05,
+      "kind": "busy hub (>= 1000 tx in < 2 days)"
+     }
+    ],
+    "coverage": {
+     "fwd|CHUCHU": {
+      "listed": 0,
+      "complete": true,
+      "decoded": 0,
+      "range": "lần mua đầu → hiện tại",
+      "note": null
+     },
+     "fwd|MOONX": {
+      "listed": 27,
+      "complete": true,
+      "decoded": 27,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [
+    {
+     "flag": "PASS_THROUGH",
+     "src": "G5GFpTfMFPU31nmXzu5C7198RqXiVC49ToUA1h5pGyph",
+     "dst": "HBQ2TC2gmX9qeNuCsY9gRTk9hiZLRZaKhvHGj2ZbVoWB",
+     "src_program": false,
+     "dst_program": false,
+     "sol_in": 0.05,
+     "sol_out": 0.05,
+     "gap_s": 684,
+     "sigs": [
+      "3aTA77MXNsn616mepUHdzTTtuzTRRzcxqZgtDcQwrWe9EAVGf4dVxVYUryhnz3DH9RtbGxXz3v4z1RQLBLk4GKZJ",
+      "644qfK1j7Q5ziR3oDHbt1WVYSdarwn1dCKZ8PeyHTovVkbL1pkb8jfJmGjzTWzs874yfrfNkgMUANmgF93eFPZRf"
+     ]
+    },
+    {
+     "flag": "PASS_THROUGH",
+     "src": "HBQ2TC2gmX9qeNuCsY9gRTk9hiZLRZaKhvHGj2ZbVoWB",
+     "dst": "G5GFpTfMFPU31nmXzu5C7198RqXiVC49ToUA1h5pGyph",
+     "src_program": false,
+     "dst_program": false,
+     "sol_in": 0.05,
+     "sol_out": 0.05,
+     "gap_s": 443,
+     "sigs": [
+      "2N1ZX2npyE25dz9mRbamHp4NYBweq8Myys2zBQr7v8gFTahkozrgUNqkEN7sN1KYxjjkJrnePqbv5r6U7hrchL2S",
+      "5MyZTdUn8cnvECxGjWNs9nSrdB8VbLcDcWvYeBC2XaEX6wh3sR82EYKwpYcmqKhY2CwkCnMBcpf1z9y4sRPKr1a9"
+     ]
+    }
+   ],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "CHUCHU": {
+     "first_buy": {
+      "sig": "44VhSTLP1GviiVPZ8X6gyq5FXHMwAwPrX9n3vWqgSdpr5MqaVEA6qwqN7mqQfesu8n6xRkcwKZZUu1ghiDWHCWjN",
+      "t": 1795536325,
+      "min": 23.47,
+      "sol": 0.019,
+      "tokens": 13790102783,
+      "quote": null
+     },
+     "bought": 13790102783,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "MOONX": {
+     "first_buy": {
+      "sig": "3cDrteNkAcVfqfemzKLYQeN1s8BiFhMVzBN3i3BvsA75e8TMiZzWf3aSN2BEEMVvGSbGAZ8BTf8bVX9NjNXKkrBG",
+      "t": 1793120475,
+      "min": 85.37,
+      "sol": 0.003,
+      "tokens": 3764,
+      "quote": null
+     },
+     "bought": 34116,
+     "sold_or_sent": 15552,
+     "held_120m": 0.544,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "ELNEkyjQKawYV7syjM4Px8MQC8vn58FUfYUvw7Ww2EtQ",
+   "group": "ELNEkyjQKawYV7syjM4Px8MQC8vn58FUfYUvw7Ww2EtQ",
+   "group_size": 1,
+   "independence": "INDEPENDENT",
+   "entity": null,
+   "entity_class": "INDEPENDENT",
+   "coordinated": null,
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [
+    "71kZJh7k3qkzNiUda6FKyvFU59jbSVwPjHLxC1V6W1HS"
+   ],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 0,
+    "sol_out": 0,
+    "token_sends": 0,
+    "top_recipients": [],
+    "coverage": {
+     "fwd|CHUCHU": {
+      "listed": 13,
+      "complete": true,
+      "decoded": 9,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     },
+     "fwd|MOONX": {
+      "listed": 917,
+      "complete": true,
+      "decoded": 40,
+      "range": "lần mua đầu → hiện tại",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "CHUCHU": {
+     "first_buy": {
+      "sig": "NE8B684SxfVvJZ8PAXSi5UxyR6D8awcFaZUq6wkuNkw7CMQ6PZkTKQJiDYdbruzahTNmSgVmFKo9waHqkRLJ1if",
+      "t": 1795536330,
+      "min": 23.55,
+      "sol": 0.102,
+      "tokens": 78540022409,
+      "quote": null
+     },
+     "bought": 133633706829,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "MOONX": {
+     "first_buy": {
+      "sig": "3oZ28iwFTgcgrdYLYUtFr5wa8ATCsT4vbYCdCCZsk1SsSYQ5yUg52jERL8xZ3r82Z3NCBmgJY14EaqEUcjjsKbY6",
+      "t": 1793120448,
+      "min": 84.92,
+      "sol": 0.152,
+      "tokens": 93948292536,
+      "quote": null
+     },
+     "bought": 93948292536,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "9w1ZT5hYoR6JSU4bjjpgoNF3v4Wrnh8CZmjBKEsZC6u7",
+   "group": "9w1ZT5hYoR6JSU4bjjpgoNF3v4Wrnh8CZmjBKEsZC6u7",
+   "group_size": 1,
+   "independence": "INSUFFICIENT_DATA",
+   "entity": null,
+   "entity_class": "INSUFFICIENT_DATA",
+   "coordinated": null,
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [],
+   "funders_exchange": [
+    "iGdFcQoyR2MwbXMHQskhmNsqddZ6rinsipHc4TNSdwu (Bybit Wallet 10)"
+   ],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 5,
+    "sol_out": 0.9191,
+    "token_sends": 4,
+    "top_recipients": [
+     {
+      "address": "CCwLBQNVsU9Ybkxdi2SMbKWHwekngaNssKb9z22ceP4h",
+      "sol": 0.8691,
+      "kind": "program account"
+     },
+     {
+      "address": "HBQ2TC2gmX9qeNuCsY9gRTk9hiZLRZaKhvHGj2ZbVoWB",
+      "sol": 0.05,
+      "kind": "busy hub (>= 1000 tx in < 2 days)"
+     }
+    ],
+    "coverage": {
+     "fwd|CHUCHU": {
+      "listed": 0,
+      "complete": true,
+      "decoded": 0,
+      "range": "lần mua đầu → hiện tại",
+      "note": null
+     },
+     "fwd|MOONX": {
+      "listed": 25,
+      "complete": true,
+      "decoded": 25,
+      "range": "lần mua đầu → hiện tại",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [
+    {
+     "flag": "PASS_THROUGH",
+     "src": "4jSK8TcicECiLt9TB3L8PDGJ6BMs2Px6yECRgzWx6THq",
+     "dst": "CCwLBQNVsU9Ybkxdi2SMbKWHwekngaNssKb9z22ceP4h",
+     "src_program": false,
+     "dst_program": true,
+     "sol_in": 0.471597,
+     "sol_out": 0.471394,
+     "gap_s": 216,
+     "sigs": [
+      "PmALUrt6ryeXB2CD1xKewRBuVqfXDBVR6MyfJgZyjQHYqc2qVSUkWRE3vdydndLtnXThQ4rcc7R6qcLhKyu9U1v",
+      "RGBH4sTC4DtVxk6NRaCxfZC3sUENBDT3cywHrjH533XLL6bYvFMP4HCqK6FrVt2E1spyoU47XB7BpTKxCrsyj77"
+     ]
+    },
+    {
+     "flag": "PASS_THROUGH",
+     "src": "iGdFcQoyR2MwbXMHQskhmNsqddZ6rinsipHc4TNSdwu",
+     "dst": "CCwLBQNVsU9Ybkxdi2SMbKWHwekngaNssKb9z22ceP4h",
+     "src_program": false,
+     "dst_program": true,
+     "sol_in": 0.157352,
+     "sol_out": 0.157119,
+     "gap_s": 49,
+     "sigs": [
+      "e6YFLT7NXu7WDyajVG9PLqkbhWrTJA1Jc2BiqQ1M2ztFD1YxWtzPTUmvYZVyr7MAbEvnhE8XDtX2at4RAa1KFZc",
+      "66jdeQVb66yeD6vbT89F8xbaEEhTBhDEKB1Pe4JzdAZvYGBdHXP7Dv4GzadCXkMJmUJPoMHxPg8fPZoRTgsPZT11"
+     ]
+    }
+   ],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "CHUCHU": {
+     "first_buy": {
+      "sig": "4MGjEjx3Uw4P37oDXsazqh3duhRTjGf6aQx3Kp23uLGL9QzphPTzm171d6VVjtz6bS4UwLsm2gecpwq9i4NtPTQo",
+      "t": 1795536373,
+      "min": 24.27,
+      "sol": 0.019,
+      "tokens": 13326676111,
+      "quote": null
+     },
+     "bought": 13326676111,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "MOONX": {
+     "first_buy": {
+      "sig": "2mbwfi2kTYYShDuiEDD1KUxe7g4DZo7mjudhweBh68VFyB5vozdQCaxVTBzBPEbAZycN5ER9WbWN8kjKmN7P14FM",
+      "t": 1793120578,
+      "min": 87.08,
+      "sol": 0.196,
+      "tokens": 126900094445,
+      "quote": null
+     },
+     "bought": 126900094445,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "CdeT4gc7dT5JVpVszWioFbugqS2E5SbmbZHDWiRjyvam",
+   "group": "CdeT4gc7dT5JVpVszWioFbugqS2E5SbmbZHDWiRjyvam",
+   "group_size": 1,
+   "independence": "INDEPENDENT",
+   "entity": null,
+   "entity_class": "INDEPENDENT",
+   "coordinated": null,
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 32,
+    "sol_out": 7.3229,
+    "token_sends": 0,
+    "top_recipients": [
+     {
+      "address": "9XC37QpzjajPx6GDAjfe6tMXyV14MmPRbBfVZFx535gy",
+      "sol": 7.2629,
+      "kind": "program account"
+     },
+     {
+      "address": "9yCcSQp1qzZiFAf3KwGCZTzhtCA8Tmx9vdnQYs5fC5V6",
+      "sol": 0.06,
+      "kind": "program account"
+     }
+    ],
+    "coverage": {
+     "fwd|CHUCHU": {
+      "listed": 1030,
+      "complete": true,
+      "decoded": 40,
+      "range": "lần mua đầu → hiện tại",
+      "note": null
+     },
+     "fwd|FRENS": {
+      "listed": 79,
+      "complete": true,
+      "decoded": 40,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "CHUCHU": {
+     "first_buy": {
+      "sig": "4mQ5dmXWyeKRX6HgCwwGHRKJvo9JYYo1oskWx7ePkJSoUSwMinWoJhxaoLQzQpe4NhHRFCUdLzbVRRRnakyCkL8e",
+      "t": 1795538864,
+      "min": 65.78,
+      "sol": 0.131,
+      "tokens": 104451337999,
+      "quote": null
+     },
+     "bought": 104451337999,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "FRENS": {
+     "first_buy": {
+      "sig": "3Sz6iD8MRM9xZDRSLe9qEwwL86gUNneUETy6RTSbY7wQ7s7cTLD7h6jmCLf1rfHRfyQCFhXF6LznTE6owZJ6CPZA",
+      "t": 1792627406,
+      "min": 56.05,
+      "sol": 0.093,
+      "tokens": 92712580431,
+      "quote": null
+     },
+     "bought": 92712580431,
+     "sold_or_sent": 92712580431,
+     "held_120m": 0.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "77H4ozFy3cZT54rsGLebyDB5nHfczakZdSEzF35aqMVX",
+   "group": "77H4ozFy3cZT54rsGLebyDB5nHfczakZdSEzF35aqMVX",
+   "group_size": 1,
+   "independence": "INDEPENDENT",
+   "entity": null,
+   "entity_class": "INDEPENDENT",
+   "coordinated": null,
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 9,
+    "sol_out": 1.5626,
+    "token_sends": 0,
+    "top_recipients": [
+     {
+      "address": "GaYt4qdeZCytFFGbC2eHkvbuQm4MnSnd1nP3YRaYF1pq",
+      "sol": 1.5626,
+      "kind": "program account"
+     }
+    ],
+    "coverage": {
+     "fwd|CHUCHU": {
+      "listed": 882,
+      "complete": true,
+      "decoded": 40,
+      "range": "lần mua đầu → hiện tại",
+      "note": null
+     },
+     "fwd|FRENS": {
+      "listed": 104,
+      "complete": true,
+      "decoded": 40,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "CHUCHU": {
+     "first_buy": {
+      "sig": "42QQMYFVfFoyHDdffFxBm24uC15YpfGR3w3ChyG8HV7hQ2HXkDeEybche3vhBywPmiLfFbZFrvVWfRFdrQc3M1WU",
+      "t": 1795538864,
+      "min": 65.78,
+      "sol": 0.041,
+      "tokens": 31299905168,
+      "quote": null
+     },
+     "bought": 31299905168,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "FRENS": {
+     "first_buy": {
+      "sig": "2TZS9Na7P6RJqfvXep1ERJKBUhoPbKu2JQWjpVe3PxtLU3nC4us116ATHsuWrHJZTuNCCL6sJ5gErTezjBgbGaqs",
+      "t": 1792627407,
+      "min": 56.07,
+      "sol": 0.029,
+      "tokens": 27735735516,
+      "quote": null
+     },
+     "bought": 27735735516,
+     "sold_or_sent": 27735735516,
+     "held_120m": 0.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "Gx55Z1r9TXrRzNvjsBxAoeRY1etuE41aethSSRgzboLj",
+   "group": "Gx55Z1r9TXrRzNvjsBxAoeRY1etuE41aethSSRgzboLj",
+   "group_size": 1,
+   "independence": "INDEPENDENT",
+   "entity": null,
+   "entity_class": "INDEPENDENT",
+   "coordinated": null,
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 0,
+    "sol_out": 0,
+    "token_sends": 0,
+    "top_recipients": [],
+    "coverage": {
+     "fwd|COGE": {
+      "listed": 1,
+      "complete": true,
+      "decoded": 1,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     },
+     "fwd|MOONX": {
+      "listed": 2157,
+      "complete": true,
+      "decoded": 40,
+      "range": "lần mua đầu → hiện tại",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "COGE": {
+     "first_buy": {
+      "sig": "3GjANd6KFfmAWcNdXF3BBG1BR1ZGJo8VRxBx4uwMD3cNvSM8drXgS5V8oGi73xfEgGsQa2nxNkKFHX1Jf65BhEaY",
+      "t": 1793910823,
+      "min": 44.85,
+      "sol": 0.007,
+      "tokens": 424655638,
+      "quote": null
+     },
+     "bought": 424655638,
+     "sold_or_sent": 424655638,
+     "held_120m": 0.0,
+     "onchain": "OK"
+    },
+    "MOONX": {
+     "first_buy": {
+      "sig": "jLKKDwUyEKuQxEEELViBdSsG6NNi2sDmPdyotay85hqGYAh3zikHh2eADGsFJRp3GDdp4RSRfEa3N6MSQqUUYVs",
+      "t": 1793122268,
+      "min": 115.25,
+      "sol": 0.007,
+      "tokens": 2618752103,
+      "quote": null
+     },
+     "bought": 2618752103,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "H62okU4XsRvmfCEephKaCN3AABi1kayaHU7iRU16SXE6",
+   "group": "H62okU4XsRvmfCEephKaCN3AABi1kayaHU7iRU16SXE6",
+   "group_size": 1,
+   "independence": "POSSIBLE_LINK",
+   "entity": null,
+   "entity_class": "POSSIBLE_LINK",
+   "coordinated": null,
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [],
+   "funders_exchange": [
+    "BmFdpraQhkiDQE6SnfG5omcA1VwzqfXrwtNYBwWTymy6 (KuCoin Hot Wallet)"
+   ],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 2,
+    "sol_out": 1.2346,
+    "token_sends": 0,
+    "top_recipients": [
+     {
+      "address": "FzVkhs3XKwbQYjMWuboWWXnX3Qqk9RuQjeL3LtWJDW2Y",
+      "sol": 1.2346,
+      "kind": null
+     }
+    ],
+    "coverage": {
+     "fwd|FRENS": {
+      "listed": 1,
+      "complete": true,
+      "decoded": 1,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     },
+     "fwd|STANK": {
+      "listed": 1,
+      "complete": true,
+      "decoded": 1,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "FRENS": {
+     "first_buy": {
+      "sig": "4xhpA96QSYjkgP67F2RCxsBVFXKBvbasfNgVe944bQELWBn8WhYTiicaAa1jtjhRWquJ1bu3WzQXTZUshrNBPqNL",
+      "t": 1792625769,
+      "min": 28.77,
+      "sol": 0.551,
+      "tokens": 7068205410050,
+      "quote": null
+     },
+     "bought": 7068205410050,
+     "sold_or_sent": 3534102705025,
+     "held_120m": 0.5,
+     "onchain": "OK"
+    },
+    "STANK": {
+     "first_buy": {
+      "sig": "4rmmKSc8n4r2BNvDaN8W61KgtynSXRUDZ2Rvppq7rSbRrgTbodGtWKLKFsjn95TfBZPENRGX46kkWy119z78EbyL",
+      "t": 1793283736,
+      "min": 25.48,
+      "sol": 1.014,
+      "tokens": 1260761709734,
+      "quote": null
+     },
+     "bought": 1260761709734,
+     "sold_or_sent": 1260761709734,
+     "held_120m": 0.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "3byvsa7YHf9iqN37iguJN4jWZMtpvBL1SL9XCJvGuVwT",
+   "group": "3byvsa7YHf9iqN37iguJN4jWZMtpvBL1SL9XCJvGuVwT",
+   "group_size": 1,
+   "independence": "INDEPENDENT",
+   "entity": null,
+   "entity_class": "INDEPENDENT",
+   "coordinated": null,
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 6,
+    "sol_out": 4.2016,
+    "token_sends": 0,
+    "top_recipients": [
+     {
+      "address": "foX3PHkR7FZMpw7rgU38X1pmc8XA1aoz1ftKtKu5CC6",
+      "sol": 4.2016,
+      "kind": null
+     }
+    ],
+    "coverage": {
+     "fwd|FRENS": {
+      "listed": 4000,
+      "complete": false,
+      "decoded": 0,
+      "range": "lần mua đầu → hiện tại",
+      "note": "> 4000 chữ ký sau lần mua: chưa tới được giao dịch ngay sau lần mua"
+     },
+     "fwd|STANK": {
+      "listed": 4000,
+      "complete": false,
+      "decoded": 0,
+      "range": "lần mua đầu → hiện tại",
+      "note": "> 4000 chữ ký sau lần mua: chưa tới được giao dịch ngay sau lần mua"
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "FRENS": {
+     "first_buy": {
+      "sig": "3kpdvELxgnFbUGijQfRvr2BnTCGahNWdpSncpEJgEZeCfPbNsc3yZjY91ujycSQE3PapirwSV64FVdMzTQoTPAhg",
+      "t": 1792626751,
+      "min": 45.13,
+      "sol": 0.1,
+      "tokens": 74760067195,
+      "quote": null
+     },
+     "bought": 74760067195,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "STANK": {
+     "first_buy": {
+      "sig": "5ffidmpjAC86pGKJiUN2ELazkqSeU14ps3McJeNYVzTcNDPcmJZY75oJmYsWTdHb5ENX18CGmGbGJL4Do1gUbzp5",
+      "t": 1793287172,
+      "min": 82.75,
+      "sol": 0.179,
+      "tokens": 359103911692,
+      "quote": null
+     },
+     "bought": 359103911692,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "GkZbaqoFVbfZf3cSNPxHdtSfQWajnqvbXcVH98d1QD5G",
+   "group": "GkZbaqoFVbfZf3cSNPxHdtSfQWajnqvbXcVH98d1QD5G",
+   "group_size": 1,
+   "independence": "INDEPENDENT",
+   "entity": null,
+   "entity_class": "INDEPENDENT",
+   "coordinated": null,
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 7,
+    "sol_out": 2.5354,
+    "token_sends": 0,
+    "top_recipients": [
+     {
+      "address": "EVPLy1mbXFkkjqTuR6otPU2rgx2GNfLCwzLkZsMubNkK",
+      "sol": 2.5354,
+      "kind": null
+     }
+    ],
+    "coverage": {
+     "fwd|FRENS": {
+      "listed": 4000,
+      "complete": false,
+      "decoded": 0,
+      "range": "lần mua đầu → hiện tại",
+      "note": "> 4000 chữ ký sau lần mua: chưa tới được giao dịch ngay sau lần mua"
+     },
+     "fwd|STANK": {
+      "listed": 4000,
+      "complete": false,
+      "decoded": 0,
+      "range": "lần mua đầu → hiện tại",
+      "note": "> 4000 chữ ký sau lần mua: chưa tới được giao dịch ngay sau lần mua"
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "FRENS": {
+     "first_buy": {
+      "sig": "4qqHQWqvMcNmwV3frFujhpym6NfDQ4RRRKSvkZStqNTY2zErXsBYk9225CZst98tEw2gXUnfdukw8X4kHQQ5zbge",
+      "t": 1792626752,
+      "min": 45.15,
+      "sol": 0.302,
+      "tokens": 227290334276,
+      "quote": null
+     },
+     "bought": 227290334276,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "STANK": {
+     "first_buy": {
+      "sig": "3SncVHpHiuEqHnZShwaBtMsas2LbKZrxyyycTPH7WGu62d9YxpyXFkwQCJ4X6Xf69cZpo1VQu19VSGQ9NenwhGe6",
+      "t": 1793287172,
+      "min": 82.75,
+      "sol": 0.402,
+      "tokens": 815241357770,
+      "quote": null
+     },
+     "bought": 815241357770,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "Aud2Dfp4x2Dxcbmb6vYiLhSGSrfUZMA4nky1XPtVZmNa",
+   "group": "Aud2Dfp4x2Dxcbmb6vYiLhSGSrfUZMA4nky1XPtVZmNa",
+   "group_size": 1,
+   "independence": "INDEPENDENT",
+   "entity": null,
+   "entity_class": "INDEPENDENT",
+   "coordinated": null,
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 3,
+    "sol_out": 1.1722,
+    "token_sends": 0,
+    "top_recipients": [
+     {
+      "address": "EKCDKHBPPTywHypPpp4uJixdVefZP5XEfypH8jgP74wa",
+      "sol": 1.1722,
+      "kind": null
+     }
+    ],
+    "coverage": {
+     "fwd|FRENS": {
+      "listed": 4000,
+      "complete": false,
+      "decoded": 0,
+      "range": "lần mua đầu → hiện tại",
+      "note": "> 4000 chữ ký sau lần mua: chưa tới được giao dịch ngay sau lần mua"
+     },
+     "fwd|STANK": {
+      "listed": 1,
+      "complete": true,
+      "decoded": 1,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "FRENS": {
+     "first_buy": {
+      "sig": "284Sc3ftWPFAkqt9FSyVckDzEKRSh21khyPkA9SRND3yrh36GQPg9wbXkuztEtsWBHJK142eDNobydExdTMRRSnD",
+      "t": 1792626752,
+      "min": 45.15,
+      "sol": 0.031,
+      "tokens": 22285172692,
+      "quote": null
+     },
+     "bought": 22285172692,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "STANK": {
+     "first_buy": {
+      "sig": "4SosxY8ZWKsc5CHJh7hkMKNbhrSXuzZtaXMaU8iXgR4BFSLnGCNCmc9xJEi812VAvXuNooaz9akPh5tASvornRJu",
+      "t": 1793287172,
+      "min": 82.75,
+      "sol": 0.055,
+      "tokens": 107414709778,
+      "quote": null
+     },
+     "bought": 107414709778,
+     "sold_or_sent": 107414709778,
+     "held_120m": 0.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "9r3LKAwNcZtHBj9hMTb71eKj4YBwzHxLMcgq73QGdqLb",
+   "group": "9r3LKAwNcZtHBj9hMTb71eKj4YBwzHxLMcgq73QGdqLb",
+   "group_size": 1,
+   "independence": "INDEPENDENT",
+   "entity": null,
+   "entity_class": "INDEPENDENT",
+   "coordinated": null,
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 20,
+    "sol_out": 24.1133,
+    "token_sends": 0,
+    "top_recipients": [
+     {
+      "address": "Dp3biikThz87rPDFjnRcmpCzPvNvEqJfsiAQg2d1KCNn",
+      "sol": 20.1233,
+      "kind": "program account"
+     },
+     {
+      "address": "GtqVAUiAvduGtZnaTF3xcu2t3GxZyCj8aNmqFX2qeCfw",
+      "sol": 2.0,
+      "kind": null
+     },
+     {
+      "address": "DLoGHj9LyuEYrc3ATAD5P3nMYUHAqPEHjA2w7SAJqA9u",
+      "sol": 1.99,
+      "kind": "program account"
+     }
+    ],
+    "coverage": {
+     "fwd|FRENS": {
+      "listed": 1163,
+      "complete": true,
+      "decoded": 40,
+      "range": "lần mua đầu → hiện tại",
+      "note": null
+     },
+     "fwd|STANK": {
+      "listed": 4,
+      "complete": true,
+      "decoded": 4,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "FRENS": {
+     "first_buy": {
+      "sig": "2jAivrp3M7jbRnw9P4zmayS2B3aCG4KaXZRg3o2fGccjixwjTcAb7dY4sfyCSaq3J9ZKaiLpDwnXuWnucmZo4e9o",
+      "t": 1792628281,
+      "min": 70.63,
+      "sol": 1.502,
+      "tokens": 1556417158691,
+      "quote": null
+     },
+     "bought": 1556417158691,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "STANK": {
+     "first_buy": {
+      "sig": "5yaxkfMLWM1FsWzQqTWZLM8XZ4ZpJYE3c5p48ZmdoGKuTFwQ6uD7UwJrbEFDCobD7aRFAdARwqLQiLvkQU8ZKD9V",
+      "t": 1793285451,
+      "min": 54.07,
+      "sol": 2.002,
+      "tokens": 2879849465016,
+      "quote": null
+     },
+     "bought": 7056871570111,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "4uXt4HGxRyg4xyHY5pgg9nGrYhuKxXtB7QqGWvwbbrpr",
+   "group": "4uXt4HGxRyg4xyHY5pgg9nGrYhuKxXtB7QqGWvwbbrpr",
+   "group_size": 1,
+   "independence": "INDEPENDENT",
+   "entity": null,
+   "entity_class": "INDEPENDENT",
+   "coordinated": null,
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 56,
+    "sol_out": 5.6834,
+    "token_sends": 0,
+    "top_recipients": [
+     {
+      "address": "FSs84DVueEAQyvxFJgUePfgJu21HzKGHvGAAwGQBjmHp",
+      "sol": 5.6834,
+      "kind": "program account"
+     }
+    ],
+    "coverage": {
+     "fwd|FRENS": {
+      "listed": 2,
+      "complete": true,
+      "decoded": 2,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     },
+     "fwd|MOONX": {
+      "listed": 178,
+      "complete": true,
+      "decoded": 40,
+      "range": "lần mua đầu → hiện tại",
+      "note": null
+     },
+     "fwd|STANK": {
+      "listed": 148,
+      "complete": true,
+      "decoded": 40,
+      "range": "lần mua đầu → hiện tại",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "FRENS": {
+     "first_buy": {
+      "sig": "3rptYFnU2fuErfnqST2aT3A2pkjNeTbAc5nYkW8WsBRzyCZ9h2cSPuN9b5Z7uPtQ8yNLPvTCGhahYqejGukvircW",
+      "t": 1792629224,
+      "min": 86.35,
+      "sol": 0.103,
+      "tokens": 114064810648,
+      "quote": null
+     },
+     "bought": 114064810648,
+     "sold_or_sent": 114064810648,
+     "held_120m": 0.0,
+     "onchain": "OK"
+    },
+    "MOONX": {
+     "first_buy": {
+      "sig": "2FATbKXraFaskwAo4HmxQP8W5s1jqRxKYXrQdjAZpCwUZzwDtebJYSuvmRVtHVRd2G3NhcpJKQrfnyFABEMgw4Jh",
+      "t": 1793120883,
+      "min": 92.17,
+      "sol": 0.102,
+      "tokens": 50938947439,
+      "quote": null
+     },
+     "bought": 50938947439,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "STANK": {
+     "first_buy": {
+      "sig": "2YrfTDcLQt8Lzgk6dC7FRnNWCHPuLWm9aekfH6fVSLVyWNrC1GjE3Tx7Kv8bU1yADmuW3fxrxwGzPf92PHMPGhF8",
+      "t": 1793285185,
+      "min": 49.63,
+      "sol": 0.102,
+      "tokens": 115856890493,
+      "quote": null
+     },
+     "bought": 115856890493,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "CiVeLZ1D5ZxDnQK8QZ6XzgeaUDHn7jMXoYeHnvxgX88Q",
+   "group": "CiVeLZ1D5ZxDnQK8QZ6XzgeaUDHn7jMXoYeHnvxgX88Q",
+   "group_size": 1,
+   "independence": "INSUFFICIENT_DATA",
+   "entity": null,
+   "entity_class": "INDEPENDENT",
+   "coordinated": null,
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 0,
+    "sol_out": 0,
+    "token_sends": 0,
+    "top_recipients": [],
+    "coverage": {
+     "fwd|FRENS": {
+      "listed": 79,
+      "complete": true,
+      "decoded": 40,
+      "range": "lần mua đầu → hiện tại",
+      "note": null
+     },
+     "fwd|STANK": {
+      "listed": 1,
+      "complete": true,
+      "decoded": 1,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "FRENS": {
+     "first_buy": {
+      "sig": "3RvreuB9RPH6WmCnpd6rCSMP2p67bpLLt64HrzgBPGLyxB4zbak7dxrsn1NxgXewUhRmVrBbQTrJ3V7aWpR54AuC",
+      "t": 1792629594,
+      "min": 92.52,
+      "sol": 0.0,
+      "tokens": 181020451488,
+      "quote": "USDC"
+     },
+     "bought": 181020451488,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "STANK": {
+     "first_buy": {
+      "sig": "C8cGino3g3hKnGUpwochcX9Zd9cweYm7PGDrspD2VD8jLKYCZMSaVoLR2z5jfakiu5bKD3AHaxMCUh4aGoPW6o5",
+      "t": 1793283466,
+      "min": 20.98,
+      "sol": 0.0,
+      "tokens": 146196672041,
+      "quote": "USDC"
+     },
+     "bought": 146196672041,
+     "sold_or_sent": 146196672041,
+     "held_120m": 0.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "6BQoEMyDmGrR7TGWz8eA98VJGqEyHwHDj5oLXWUQZWmJ",
+   "group": "6BQoEMyDmGrR7TGWz8eA98VJGqEyHwHDj5oLXWUQZWmJ",
+   "group_size": 1,
+   "independence": "INDEPENDENT",
+   "entity": null,
+   "entity_class": "INDEPENDENT",
+   "coordinated": null,
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [
+    "593keTzNZmBBU1gaF3iZTtVauGJixvbzZXApGmDjDFaL"
+   ],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 2,
+    "sol_out": 0.1525,
+    "token_sends": 0,
+    "top_recipients": [
+     {
+      "address": "EJuGurk3AHwAwyMoruSjEUFtktpgHRKb6kcuYe1GZHQL",
+      "sol": 0.1525,
+      "kind": "program account"
+     }
+    ],
+    "coverage": {
+     "fwd|MOONX": {
+      "listed": 9,
+      "complete": true,
+      "decoded": 9,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     },
+     "fwd|STANK": {
+      "listed": 11,
+      "complete": true,
+      "decoded": 11,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "MOONX": {
+     "first_buy": {
+      "sig": "djbECdS9c3Uc2J62Lt3C9NGGU22HbSfZw8Up2482h4bhWXyvwjybvGTTkBsBATRRXh2MVdpsk7gwequxEsFDhWQ",
+      "t": 1793118069,
+      "min": 45.27,
+      "sol": 0.022,
+      "tokens": 25644081161,
+      "quote": null
+     },
+     "bought": 101940977471,
+     "sold_or_sent": 39085374528,
+     "held_120m": 0.617,
+     "onchain": "OK"
+    },
+    "STANK": {
+     "first_buy": {
+      "sig": "4wg4kXMPjhGLDEU43hDWH8Rfe3i8Sw47ZQRxpzrQ9iJFfLkmHDL2Q7udKXZWqfETbSEzNDG7EajseRWci6H9hqHd",
+      "t": 1793282322,
+      "min": 1.92,
+      "sol": 0.033,
+      "tokens": 46799368618,
+      "quote": null
+     },
+     "bought": 46799368618,
+     "sold_or_sent": 46799368618,
+     "held_120m": 0.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  },
+  {
+   "wallet": "HHLzvoz1A95eKAQu3qs5i6qLC7VEm8R9qhQmqpRDFSjZ",
+   "group": "HHLzvoz1A95eKAQu3qs5i6qLC7VEm8R9qhQmqpRDFSjZ",
+   "group_size": 1,
+   "independence": "POSSIBLE_LINK",
+   "entity": null,
+   "entity_class": "POSSIBLE_LINK",
+   "coordinated": null,
+   "cohort": null,
+   "class": "OTHER",
+   "funders_hop1": [
+    "5DkYfyHm2FQCurJkfwmLG4js1fpR81qwGr4cLP7SjfPm"
+   ],
+   "funders_exchange": [],
+   "funding_traced": true,
+   "outgoing": {
+    "sol_edges_ge_0_05": 9,
+    "sol_out": 4.0098,
+    "token_sends": 0,
+    "top_recipients": [
+     {
+      "address": "DyrKfa9unX9T5u3HvTbhfkpPVYwDuUrnBwFNf3uM37rH",
+      "sol": 2.7228,
+      "kind": "program account"
+     },
+     {
+      "address": "HNbZoQEosLMZJ4uuhoWBmLQq8neNqh3mjZaqL1HMyBRv",
+      "sol": 1.287,
+      "kind": null
+     }
+    ],
+    "coverage": {
+     "fwd|MOONX": {
+      "listed": 2,
+      "complete": true,
+      "decoded": 1,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     },
+     "fwd|STANK": {
+      "listed": 2,
+      "complete": true,
+      "decoded": 1,
+      "range": "lần mua đầu → giao dịch cuối của ví trong cửa sổ 120 phút",
+      "note": null
+     }
+    }
+   },
+   "flags_v2": [],
+   "first_buy_notes": [],
+   "early_ok": true,
+   "held_ok": true,
+   "per_coin": {
+    "MOONX": {
+     "first_buy": {
+      "sig": "YxDJe3sYWVdjggeKvfrJ3UAvMr5xzCcqdvgDJnsQry8ZDMVqiWtNLT3FsjqiXNLHzuWuDQo8hNnTwHxvfVeRuvn",
+      "t": 1793122084,
+      "min": 112.18,
+      "sol": 0.092,
+      "tokens": 44628881411,
+      "quote": null
+     },
+     "bought": 89170743479,
+     "sold_or_sent": 0,
+     "held_120m": 1.0,
+     "onchain": "OK"
+    },
+    "STANK": {
+     "first_buy": {
+      "sig": "3D7LicAFAW47ShXona3fBdy5iqc6FqgocroH8GTr9RdAGBxWmAsbgSABy3GqCbeYCc5Yp3znpZwsrqLpT4856b1W",
+      "t": 1793283837,
+      "min": 27.17,
+      "sol": 0.079,
+      "tokens": 87109031300,
+      "quote": null
+     },
+     "bought": 87109031300,
+     "sold_or_sent": 87109031300,
+     "held_120m": 0.0,
+     "onchain": "OK"
+    }
+   },
+   "known_in": null
+  }
+ ]
+}

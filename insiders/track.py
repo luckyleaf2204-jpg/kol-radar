@@ -349,8 +349,13 @@ class Store:
         return self.x("INSERT OR IGNORE INTO edges (src, dst, asset, amount, ts, sig, kind) VALUES (?,?,?,?,?,?,?)",
                       (src, dst, asset, float(amount or 0), ts, sig, kind)) > 0
 
-    def edges(self, hidden: bool = False) -> list[dict]:
-        return self.q("SELECT * FROM edges" + ("" if hidden else " WHERE hidden=0"))
+    def edges(self, hidden: bool = False, research: bool = False) -> list[dict]:
+        """Graph edges of the live tracker. The research edges imported by esm.import_research (kind research_sol /
+        research_token) are left out unless research=True, so the tracker's signals and pages stay as they were."""
+        w = [] if hidden else ["hidden=0"]
+        if not research:
+            w.append("kind NOT LIKE 'research_%'")
+        return self.q("SELECT * FROM edges" + (" WHERE " + " AND ".join(w) if w else ""))
 
 
 # ---------------------------------------------------------------------------------------------------- validation
@@ -454,7 +459,127 @@ def sol_and_token_in(tx: dict, wallet: str) -> list[tuple[str, str, float]]:
     return out
 
 
+def token_moves(tx: dict, min_raw: int = 1) -> list[dict]:
+    """Token transfers of one transaction, sender and receiver taken from the OWNER of the token accounts (pre / post
+    token balances), not from the fee payer or the signer. Per mint: owners whose balance fell = senders, rose =
+    receivers. A side that is a program account (pool, curve, vault) makes it a swap, not a transfer (skipped).
+    Pairing: one sender -> each receiver, or each sender -> one receiver; several on both sides = src/dst None
+    ('ambiguous'), never guessed. WSOL is SOL, not a token (skipped)."""
+    meta = tx.get("meta") or {}
+    if meta.get("err") is not None:
+        return []
+    keys = _keys(tx)
+    by: dict[tuple[str, str], int] = defaultdict(int)
+    acct: dict[tuple[str, str], str] = {}
+    dec: dict[str, int] = {}
+    for rows, sign in ((meta.get("preTokenBalances"), -1), (meta.get("postTokenBalances"), 1)):
+        for b in rows or []:
+            m, o = b.get("mint"), b.get("owner")
+            if not m or not o or m == WSOL:
+                continue
+            amt = b.get("uiTokenAmount") or {}
+            dec[m] = int(amt.get("decimals") or 0)
+            by[(o, m)] += sign * int(amt.get("amount") or 0)
+            i = b.get("accountIndex")
+            if isinstance(i, int) and i < len(keys):
+                acct[(o, m)] = keys[i]
+    out = []
+    for m in sorted({m for _, m in by}):
+        snd = [(o, -d) for (o, mm), d in by.items() if mm == m and d <= -min_raw]
+        rcv = [(o, d) for (o, mm), d in by.items() if mm == m and d >= min_raw]
+        if not snd or not rcv or any(not on_curve(o) for o, _ in snd + rcv):
+            continue                                          # a mint / burn, or a swap against a pool
+        if len(snd) == 1:
+            pairs = [(snd[0][0], o, d) for o, d in rcv]
+        elif len(rcv) == 1:
+            pairs = [(o, rcv[0][0], d) for o, d in snd]
+        else:
+            pairs = [(None, None, sum(d for _, d in rcv))]
+        for s, d, raw in pairs:
+            out.append({"src": s, "dst": d, "mint": m, "raw": raw, "decimals": dec.get(m, 0),
+                        "src_account": acct.get((s, m)), "dst_account": acct.get((d, m)),
+                        "verified": "owner" if s and d else "ambiguous"})
+    return out
+
+
 # ---------------------------------------------------------------------------------------------------- graph
+def pass_through(edges: list[dict], max_gap_s: float = 900, max_loss_sol: float = 0.02, max_loss_pct: float = 0.02,
+                 min_sol: float = 0.05, busy: set | None = None) -> list[dict]:
+    """Near 1:1 relays: SOL arrives at a wallet and (almost) the same amount leaves it soon after to someone else
+    (in -> out within max_gap_s, out <= in, the difference <= max(max_loss_sol, max_loss_pct x in): fees only).
+    A relay wallet hides who really pays whom. Raw edges (one per transfer), SOL only; services never count."""
+    ins: dict[str, list[dict]] = defaultdict(list)
+    outs: dict[str, list[dict]] = defaultdict(list)
+    for e in edges:
+        if e.get("asset") != "SOL" or (e.get("amount") or 0) < min_sol or e.get("ts") is None:
+            continue
+        ins[e["dst"]].append(e)
+        outs[e["src"]].append(e)
+    rows = []
+    for node, es in ins.items():
+        if is_service(node, busy) or node not in outs:
+            continue
+        used = set()
+        for a in sorted(es, key=lambda e: e["ts"]):
+            for b in sorted(outs[node], key=lambda e: e["ts"]):
+                gap = b["ts"] - a["ts"]
+                if id(b) in used or gap < 0 or gap > max_gap_s or b["dst"] == a["src"]:
+                    continue
+                loss = a["amount"] - b["amount"]
+                if 0 <= loss <= max(max_loss_sol, max_loss_pct * a["amount"]):
+                    used.add(id(b))
+                    rows.append({"relay": node, "src": a["src"], "dst": b["dst"], "src_program": not on_curve(a["src"]),
+                                 "dst_program": not on_curve(b["dst"]), "sol_in": round(a["amount"], 6),
+                                 "sol_out": round(b["amount"], 6), "loss_sol": round(loss, 6), "gap_s": round(gap, 1),
+                                 "in_sig": a.get("sig"), "out_sig": b.get("sig"), "ts": a["ts"]})
+                    break
+    return sorted(rows, key=lambda r: (r["relay"], r["ts"]))
+
+
+def batch_splits(edges: list[dict], min_sol: float = 0.05, busy: set | None = None) -> list[dict]:
+    """One transaction, one source, SOL to >= 2 recipients (each >= min_sol): a payout split. The same recipient set
+    paid again in another transaction = a recurring split (an operator paying its own wallets, or a fee split).
+    persons = every recipient is a wallet (on the curve); a split into program accounts (vaults, fee accounts of a
+    trading bot) is a payment to a service and links nobody."""
+    per: dict[tuple[str, str], dict[str, float]] = defaultdict(dict)
+    ts: dict[str, float] = {}
+    for e in edges:
+        if e.get("asset") == "SOL" and (e.get("amount") or 0) >= min_sol and e.get("sig") and not is_service(e["src"], busy) \
+                and not is_service(e["dst"], busy):
+            d = per[(e["sig"], e["src"])]
+            d[e["dst"]] = d.get(e["dst"], 0) + e["amount"]
+            ts[e["sig"]] = e.get("ts")
+    groups: dict[tuple, list] = defaultdict(list)
+    for (sig, src), d in per.items():
+        if len(d) >= 2:
+            groups[(src, tuple(sorted(d)))].append({"sig": sig, "ts": ts.get(sig), "amounts": {k: round(v, 6) for k, v in d.items()}})
+    rows = [{"source": src, "recipients": list(dst), "n_tx": len(txs), "recurring": len(txs) >= 2,
+             "persons": all(on_curve(d) for d in dst), "program_recipients": [d for d in dst if not on_curve(d)],
+             "sol": round(sum(sum(t["amounts"].values()) for t in txs), 6), "txs": sorted(txs, key=lambda t: t["ts"] or 0)}
+            for (src, dst), txs in groups.items()]
+    return sorted(rows, key=lambda r: (-r["n_tx"], -r["sol"]))
+
+
+def shared_counterparties(edges: list[dict], wallets: set[str], side: str, min_sol: float = 0.05,
+                          busy: set | None = None) -> dict[str, dict]:
+    """side='in': funders that sent SOL to >= 2 of `wallets`; side='out': recipients that got SOL from >= 2 of them.
+    Services / busy hubs and the wallets themselves (that is a direct transfer) are left out."""
+    hit: dict[str, dict] = defaultdict(lambda: {"wallets": set(), "sol": 0.0, "sigs": []})
+    for e in edges:
+        if e.get("asset") != "SOL" or (e.get("amount") or 0) < min_sol:
+            continue
+        me, other = (e["dst"], e["src"]) if side == "in" else (e["src"], e["dst"])
+        if me not in wallets or other in wallets or is_service(other, busy) or not on_curve(other):
+            continue
+        h = hit[other]
+        h["wallets"].add(me)
+        h["sol"] += e["amount"]
+        if len(h["sigs"]) < 8:
+            h["sigs"].append(e.get("sig"))
+    return {a: {"wallets": sorted(h["wallets"]), "sol": round(h["sol"], 6), "sigs": h["sigs"]}
+            for a, h in hit.items() if len(h["wallets"]) >= 2}
+
+
 def edge_weight(e: dict, now: float, buy_ts: float | None = None, inflow_sol: float | None = None) -> float:
     """0..1: amount (SOL; tokens count as medium), share of what the wallet received, recency, and how close to the buy."""
     amt = float(e.get("amount") or 0)
@@ -1325,7 +1450,7 @@ class Tracker:
             mc = None
             if ui and r["quote_sol"] and f.get("supply_ui") and sol_usd:
                 mc = round(r["quote_sol"] / ui * sol_usd * f["supply_ui"])
-            fund = self.s.q("SELECT src, asset, amount, ts, sig FROM edges WHERE dst=? AND hidden=0 AND (ts IS NULL OR ts<=?) "
+            fund = self.s.q("SELECT src, asset, amount, ts, sig FROM edges WHERE dst=? AND hidden=0 AND kind NOT LIKE 'research_%' AND (ts IS NULL OR ts<=?) "
                             "ORDER BY (asset='SOL') DESC, amount DESC LIMIT 1", (r["wallet"], r["block_time"] or self.now()))
             src = fund[0] if fund else None
             if src:
@@ -1412,7 +1537,7 @@ class Tracker:
         last = self.s.q("SELECT MAX(block_time) t, MAX(parsed_at) p FROM events")[0]
         return {"mints": len(ms), "by_status": dict(by), "queue": self.s.q("SELECT COUNT(*) n FROM queue")[0]["n"],
                 "funding_todo": self.s.q("SELECT COUNT(*) n FROM fund_todo WHERE done=0")[0]["n"],
-                "events": self.s.q("SELECT COUNT(*) n FROM events")[0]["n"], "edges": self.s.q("SELECT COUNT(*) n FROM edges")[0]["n"],
+                "events": self.s.q("SELECT COUNT(*) n FROM events")[0]["n"], "edges": self.s.q("SELECT COUNT(*) n FROM edges WHERE kind NOT LIKE 'research_%'")[0]["n"],
                 "signals": self.s.q("SELECT COUNT(*) n FROM signals")[0]["n"], "latest_block_time": last["t"],
                 "latest_parsed": last["p"], "budget_per_min": self.budget.per_min, "calls": self.stat["calls"],
                 "paused": bool(self.paused()), "shadow_on": self.shadow_on(), "schema": self.s.version(),

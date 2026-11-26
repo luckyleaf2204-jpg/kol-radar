@@ -18,6 +18,7 @@ from pathlib import Path
 
 FILES = ("insider_watch.json", "insiders_track.db")
 KEEP = int(os.environ.get("INSIDER_BACKUP_KEEP") or 10)
+RESERVE_BYTES = int(float(os.environ.get("INSIDER_BACKUP_RESERVE_GB") or 0.5) * 1e9)   # left free for the live database
 DIR = "backups"
 
 
@@ -60,6 +61,12 @@ def backup(state_dir: str | Path, files=FILES, keep: int = KEEP, reason: str = "
     if not present:
         return None
     root = state_dir / DIR
+    need = sum((state_dir / n).stat().st_size + ((state_dir / f"{n}-wal").stat().st_size if (state_dir / f"{n}-wal").is_file() else 0)
+               for n in present)
+    free = shutil.disk_usage(state_dir).free
+    if free < need * 1.1 + RESERVE_BYTES:                      # a copy must never fill the disk the live database needs
+        raise RuntimeError(f"không đủ dung lượng để sao lưu: cần ~{need / 1e9:.2f} GB + dự phòng {RESERVE_BYTES / 1e9:.1f} GB, "
+                           f"còn trống {free / 1e9:.2f} GB")
     stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime(now()))
     out, k = root / stamp, 1
     while out.exists():
@@ -67,17 +74,21 @@ def backup(state_dir: str | Path, files=FILES, keep: int = KEEP, reason: str = "
         out = root / f"{stamp}-{k}"
     out.mkdir(parents=True)
     man = {"created": now(), "reason": reason, "files": {}}
-    for n in present:
-        src, dst = state_dir / n, out / n
-        if _is_db(n):
-            copy_db(src, dst)
-        else:
-            shutil.copyfile(src, dst)
-        entry = {"sha256": sha256(dst), "bytes": dst.stat().st_size}
-        if _is_db(n):
-            entry["rows"] = table_rows(dst)
-        man["files"][n] = entry
-    (out / "manifest.json").write_text(json.dumps(man, indent=1), encoding="utf-8")
+    try:
+        for n in present:
+            src, dst = state_dir / n, out / n
+            if _is_db(n):
+                copy_db(src, dst)
+            else:
+                shutil.copyfile(src, dst)
+            entry = {"sha256": sha256(dst), "bytes": dst.stat().st_size}
+            if _is_db(n):
+                entry["rows"] = table_rows(dst)
+            man["files"][n] = entry
+        (out / "manifest.json").write_text(json.dumps(man, indent=1), encoding="utf-8")
+    except BaseException:
+        shutil.rmtree(out, ignore_errors=True)                 # a half-written copy is not a backup: free its space
+        raise
     prune(root, keep)
     return out
 
