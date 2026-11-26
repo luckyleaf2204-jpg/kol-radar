@@ -217,7 +217,8 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                                                               "discovery_latency_s", "signal_latency_s", "smart_watchlist", "smart_v2",
                                                               "wal_checkpoint")}}
                 if esm is not None and getattr(esm, "seed_info", None):   # research seed: version + import counts only
-                    h["esm_seed"] = esm.seed_info
+                    h["esm_seed"] = {**esm.seed_info, "coin_requests": esm.q(
+                        "SELECT COUNT(*) AS n FROM esm_pending_mint WHERE status IN ('REQUESTED', 'RUNNING')")[0]["n"]}
                 if callers is not None:                       # Smart Caller Hunter: counts only
                     h["callers"] = callers.health()
                 return self._json(200, h)
@@ -319,6 +320,8 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                 from urllib.parse import urlsplit
                 res = callers.post(path, urlsplit(self.path).query, body)
                 return self._json(*res) if res else self._json(404, {"error": "route"})
+            if path == "/api/nc/request":                     # "Thêm coin": queued for the research pipeline
+                return self._json(*nc_request(esm, body))
             if path == "/api/insiders/pause":                 # "Tạm dừng" / "Bật lại quét" (?on=1 pause | ?on=0 resume)
                 from urllib.parse import parse_qs, urlsplit
                 v = getattr(getattr(svc, "watcher", None), "vip", None)
@@ -417,6 +420,32 @@ def nc_get(nc, store, path: str, raw: str) -> tuple[int, object]:
     if name == "report":
         from insiders.nc_report import report
         return 200, report(st)
+    if name == "wallets":                                       # the ONE watchlist file + what each wallet bought live (24 h)
+        from insiders.esm import load_wallet_db
+        db = load_wallet_db() or {"wallets": {}}
+        ids = list(db["wallets"])                              # by wallet: the (wallet, t) index, not a scan of nc_trade
+        live = {}
+        for i in range(0, len(ids), 500):
+            part = ids[i:i + 500]
+            live.update({r["wallet"]: r for r in st.q(f"SELECT wallet, COUNT(DISTINCT mint) AS coins, MAX(t) AS last_t FROM nc_trade "
+                                                      f"WHERE wallet IN ({','.join('?' * len(part))}) AND t >= ? AND smart=1 AND buy=1 "
+                                                      "GROUP BY wallet", (*part, time.time() - 86400))})
+        ws = [{"wallet": w, "sources": e.get("sources") or [], "cohort": e.get("cohort"), "label": e.get("cohort_label"),
+               "early_coins": e.get("early_coins") or [], "max_buy_sol": e.get("max_buy_sol"), "independence": e.get("independence"),
+               "added": e.get("added"), "coins_24h": (live.get(w) or {}).get("coins", 0), "last_buy": (live.get(w) or {}).get("last_t")}
+              for w, e in db["wallets"].items()]
+        return 200, {"count": len(ws), "watching": len(eng.book.smart) if eng else None, "by_source": db.get("by_source"),
+                     "coins": db.get("coins") or {}, "rules": db.get("rules"), "updated": db.get("updated"),
+                     "min_live_sol": N.SMART_MIN_LIVE_SOL, "active_24h": sum(1 for x in ws if x["coins_24h"]), "wallets": ws}
+    if name == "requests":                                      # coins the user asked to research (table esm_pending_mint)
+        rows = st.q("SELECT symbol, status, candidates, note, updated FROM esm_pending_mint "
+                    "WHERE status IN ('REQUESTED', 'RUNNING', 'DONE', 'REJECTED') ORDER BY updated DESC")
+        for r in rows:
+            try:
+                r["mint"] = (json.loads(r.pop("candidates") or "[]") or [{}])[0].get("mint")
+            except (ValueError, AttributeError):
+                r["mint"] = None
+        return 200, {"requests": rows}
     if name == "coin":
         if not q.get("mint") or not _ADDR.fullmatch(q["mint"]):
             return 400, {"error": "mint"}
@@ -428,6 +457,43 @@ def nc_get(nc, store, path: str, raw: str) -> tuple[int, object]:
             d["dev_profile"] = pi.user(d["creator"]) if d.get("creator") else None
         return (200, d) if d else (404, {"error": "coin"})
     return 404, {"error": "route"}
+
+
+_SYM = __import__("re").compile(r"[A-Za-z0-9$._-]{1,16}")
+MAX_REQUESTS = 50
+
+
+def nc_request(store, body: bytes) -> tuple[int, object]:
+    """POST /api/nc/request {mint, symbol}: a coin to research, kept in the existing table esm_pending_mint with
+    status REQUESTED (the research pipeline is run on it, then its big wallets join insiders/wallet_db.json). Only
+    stored: no network call here. A mint already researched or already asked for is not added twice."""
+    from insiders.esm import load_wallet_db
+    from insiders.track import valid_mint
+    if store is None:
+        return 503, {"error": "esm_off"}
+    try:
+        d = json.loads(body or b"{}")
+        mint, sym = str(d.get("mint") or "").strip(), str(d.get("symbol") or "").strip().upper()
+    except (ValueError, AttributeError):
+        return 400, {"error": "json"}
+    if not valid_mint(mint):
+        return 400, {"error": "mint", "message": "địa chỉ mint không hợp lệ"}
+    if not _SYM.fullmatch(sym):
+        return 400, {"error": "symbol", "message": "tên coin: 1–16 ký tự chữ / số"}
+    coins = (load_wallet_db() or {}).get("coins") or {}
+    coins.update({r["symbol"]: r["mint"] for r in store.q("SELECT symbol, mint FROM esm_coin")})
+    if mint in coins.values():
+        return 409, {"error": "done", "message": "coin này đã được truy vết, ví đã có trong danh sách"}
+    rows = store.q("SELECT symbol, status, candidates FROM esm_pending_mint WHERE status IN ('REQUESTED', 'RUNNING')")
+    if any(mint in (r["candidates"] or "") for r in rows):
+        return 409, {"error": "queued", "message": "coin này đã ở trong hàng chờ"}
+    if len(rows) >= MAX_REQUESTS:
+        return 429, {"error": "full", "message": f"hàng chờ đã đủ {MAX_REQUESTS} coin"}
+    if sym in coins or store.q("SELECT 1 FROM esm_pending_mint WHERE symbol=?", (sym,)):
+        return 409, {"error": "symbol_taken", "message": "tên này đã dùng cho coin khác, đặt tên khác"}
+    store.x("INSERT INTO esm_pending_mint VALUES (?,?,?,?,?)",
+            (sym, "REQUESTED", json.dumps([{"mint": mint}]), "thêm trên trang New Coins", time.time()))
+    return 200, {"symbol": sym, "mint": mint, "status": "REQUESTED"}
 
 
 _PI = None

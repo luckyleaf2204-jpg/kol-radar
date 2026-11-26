@@ -330,3 +330,28 @@ def test_retention_truncates_the_wal_and_the_backup_estimate_ignores_it(tmp_path
     (big / "insiders_track.db").write_bytes(b"x" * 1000)
     (big / "insiders_track.db-wal").write_bytes(b"x" * 900_000)          # a huge WAL does not count
     assert B.needed_bytes(big, ["insiders_track.db"]) == 1000
+
+
+# ------------------------------------------------------------------------- page: watched wallets, "Thêm coin"
+def test_add_coin_request_is_validated_queued_once_and_marked_done_after_research(tmp_path):
+    from insiders import site as S
+    NEW_MINT = "8DzqPteAAAkhozWJeWFwYS9ZiZLD2psU6BPiGFuwpump"                # not researched yet
+    st = T.Store(tmp_path / "db.sqlite")
+    folder = _folder(tmp_path)
+    E.import_research(st, folder)
+    req = lambda d: S.nc_request(st, json.dumps(d).encode())          # noqa: E731
+    assert req({"mint": "bad", "symbol": "X"})[0] == 400
+    assert req({"mint": NEW_MINT, "symbol": "bad name!"})[0] == 400
+    code, d = req({"mint": NEW_MINT, "symbol": "newc"})
+    assert code == 200 and d["symbol"] == "NEWC" and d["status"] == "REQUESTED"
+    assert req({"mint": NEW_MINT, "symbol": "OTHER"})[0] == 409                # already queued
+    assert req({"mint": "7uqfEqdd9strJVYiju6kasjCj6AzjBF2S1GmWRhdpump", "symbol": "NEWC"})[0] == 409   # name taken
+    code, r = S.nc_get(None, st, "/api/nc/requests", "")
+    assert code == 200 and r["requests"][0]["mint"] == NEW_MINT and r["requests"][0]["status"] == "REQUESTED"
+    w = json.loads((folder / "window_AAA.json").read_text())              # the research of that coin lands in the seed
+    w["coin"].update(symbol="NEWC", mint=NEW_MINT)
+    (folder / "window_NEWC.json").write_text(json.dumps(w))
+    E.import_research(st, folder)
+    assert st.q("SELECT status FROM esm_pending_mint WHERE symbol='NEWC'")[0]["status"] == "DONE"
+    assert "NEWC" not in [p["symbol"] for p in E.pending_mints(st)]       # never shown as an unverified mint
+    assert S.nc_get(None, st, "/api/nc/wallets", "")[1]["count"] == E.load_wallet_db()["count"]

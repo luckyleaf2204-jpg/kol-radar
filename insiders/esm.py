@@ -160,6 +160,9 @@ def import_research(store, folder: str | Path, verified: dict | None = None, now
             for tk in sorted({c["ticker"] for c in cand.values()} & set(coins)):   # its mint is verified now: the row is kept,
                 db.execute("UPDATE esm_pending_mint SET status='VERIFIED', note=?, updated=? WHERE symbol=?",   # marked resolved
                            (f"mint đã xác minh: {coins[tk]} (cửa sổ 120 phút đã nạp)", ts, tk))
+            for sym, mint in coins.items():                      # a coin asked for on the page is researched now
+                db.execute("UPDATE esm_pending_mint SET status='DONE', note=?, updated=? WHERE status IN ('REQUESTED', 'RUNNING') "
+                           "AND (symbol=? OR candidates LIKE ?)", (f"đã truy vết, cửa sổ 120 phút đã nạp ({mint})", ts, sym, f"%{mint}%"))
             for tk in sorted({c["ticker"] for c in cand.values()} - set(coins)):
                 cs = [{"mint": c["mint"], "name": c.get("name"), "t_create_utc": c.get("t_create_utc"),
                        "overlap_early": len(c.get("overlap_verified_early") or {}), "first15_buyers": c.get("first15_buyers")}
