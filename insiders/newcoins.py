@@ -494,7 +494,8 @@ class Engine:
         c.dirty = False
 
     def retention(self, now: float) -> None:
-        """Bounded disk: raw trades kept 2 days (Smart Money trades forever); quiet coins (< 3 buyers, NEW only) 3 days."""
+        """Bounded disk: raw trades kept KEEP_TRADES_S (Smart Money trades forever); quiet coins (< 3 buyers, NEW only)
+        3 days; then the WAL file is checkpointed and truncated so the deletes do not keep disk."""
         self.last_retention = now
         with self.s.lock:
             self.s.db.execute("DELETE FROM nc_trade WHERE t < ? AND smart=0", (now - KEEP_TRADES_S,))
@@ -504,6 +505,8 @@ class Engine:
                 self.s.db.execute("DELETE FROM nc_coin WHERE mint=?", (m,))
                 self.s.db.execute("DELETE FROM nc_signal WHERE mint=?", (m,))
             self.s.db.commit()
+            from insiders.track import checkpoint
+            self.stat["wal_checkpoint"] = checkpoint(self.s.db)
 
     def metrics(self) -> dict:
         def pct(d, p):

@@ -213,8 +213,9 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                 if nc is not None:                            # New Coins LIVE: counts only
                     m = nc[0].metrics()
                     h["newcoins"] = {"connected": nc[1].stat["connected"], "msgs": nc[1].stat["msgs"], "reconnects": nc[1].stat["reconnects"],
-                                     **{k: m[k] for k in ("creates", "trades_tracked", "active_coins", "queue", "dropped", "signals",
-                                                          "discovery_latency_s", "signal_latency_s", "smart_watchlist", "smart_v2")}}
+                                     **{k: m.get(k) for k in ("creates", "trades_tracked", "active_coins", "queue", "dropped", "signals",
+                                                              "discovery_latency_s", "signal_latency_s", "smart_watchlist", "smart_v2",
+                                                              "wal_checkpoint")}}
                 if esm is not None and getattr(esm, "seed_info", None):   # research seed: version + import counts only
                     h["esm_seed"] = esm.seed_info
                 if callers is not None:                       # Smart Caller Hunter: counts only

@@ -307,3 +307,26 @@ def test_the_committed_wallet_file_is_the_watchlist(tmp_path):
     b = SmartBook(st)
     b.refresh(1e9)
     assert set(b.smart) <= set(wdb["wallets"]) and len(b.smart) >= len(wdb["wallets"]) - 50
+
+
+def test_retention_truncates_the_wal_and_the_backup_estimate_ignores_it(tmp_path, monkeypatch):
+    import shutil
+    from insiders import backup as B
+    st = T.Store(tmp_path / "insiders_track.db")
+    assert st.db.execute("PRAGMA journal_size_limit").fetchone()[0] == T.WAL_LIMIT_BYTES
+    st.db.executemany("INSERT INTO nc_trade (mint, sig, wallet, buy, t, smart) VALUES ('m', ?, 'w', 1, 0, 0)",
+                      [(f"s{i}",) for i in range(20000)])
+    st.db.commit()
+    from insiders.newcoins import Engine
+    e = Engine(st, now=lambda: 10 * 86400)
+    e.retention(10 * 86400)
+    assert st.q("SELECT COUNT(*) n FROM nc_trade")[0]["n"] == 0
+    assert e.stat["wal_checkpoint"] is not None and e.stat["wal_checkpoint"][0] == 0      # 0 = not busy, done
+    wal = tmp_path / "insiders_track.db-wal"
+    assert not wal.exists() or wal.stat().st_size <= T.WAL_LIMIT_BYTES
+    st.db.close()
+    big = tmp_path / "other"
+    big.mkdir()
+    (big / "insiders_track.db").write_bytes(b"x" * 1000)
+    (big / "insiders_track.db-wal").write_bytes(b"x" * 900_000)          # a huge WAL does not count
+    assert B.needed_bytes(big, ["insiders_track.db"]) == 1000

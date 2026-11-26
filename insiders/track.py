@@ -230,6 +230,17 @@ MIGRATIONS = [
 ]
 
 
+WAL_LIMIT_BYTES = 64 * 1024 * 1024
+
+
+def checkpoint(db) -> tuple | None:
+    """Move the WAL into the database and truncate the WAL file (disk, G0). Busy readers just make it a no-op."""
+    try:
+        return tuple(db.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone())
+    except sqlite3.Error:
+        return None
+
+
 class Store:
     """Thread-safe SQLite store; every schema change is a numbered migration (never a dropped table)."""
 
@@ -241,7 +252,10 @@ class Store:
         self.db.row_factory = sqlite3.Row
         self.lock = threading.RLock()
         with self.lock:
-            self.db.execute("PRAGMA journal_mode=WAL") if self.path != ":memory:" else None
+            if self.path != ":memory:":
+                self.db.execute("PRAGMA journal_mode=WAL")
+                # a checkpoint truncates the WAL file back to 64 MB at most (a big delete once grew it by ~0.5 GB)
+                self.db.execute(f"PRAGMA journal_size_limit={WAL_LIMIT_BYTES}")
             ver = self.db.execute("PRAGMA user_version").fetchone()[0]
             if 0 < ver < len(MIGRATIONS) and self.path != ":memory:":
                 from insiders.backup import copy_db           # a copy before any schema change (rollback = restore it);

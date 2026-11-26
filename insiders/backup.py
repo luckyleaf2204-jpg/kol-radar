@@ -54,6 +54,12 @@ def _is_db(name: str) -> bool:
     return name.endswith(".db")
 
 
+def needed_bytes(state_dir: str | Path, present) -> int:
+    """Room a backup needs: the size of the state files. The -wal file is NOT added: its pages fold into the copy
+    (a WAL left large by a big delete is mostly free pages again)."""
+    return sum((Path(state_dir) / n).stat().st_size for n in present)
+
+
 def backup(state_dir: str | Path, files=FILES, keep: int = KEEP, reason: str = "", now=time.time) -> Path | None:
     """Back up the state files that exist; None when there is nothing to back up."""
     state_dir = Path(state_dir)
@@ -63,8 +69,7 @@ def backup(state_dir: str | Path, files=FILES, keep: int = KEEP, reason: str = "
     root = state_dir / DIR
     if keep > 0:                                               # room first: the oldest copies beyond keep - 1 go (one stays);
         prune(root, max(1, keep - 1))                          # keep=0 (pre-restore) never prunes anything
-    need = sum((state_dir / n).stat().st_size + ((state_dir / f"{n}-wal").stat().st_size if (state_dir / f"{n}-wal").is_file() else 0)
-               for n in present)
+    need = needed_bytes(state_dir, present)
     free = shutil.disk_usage(state_dir).free
     if free < need * 1.1 + RESERVE_BYTES:                      # a copy must never fill the disk the live database needs
         raise RuntimeError(f"không đủ dung lượng để sao lưu: cần ~{need / 1e9:.2f} GB + dự phòng {RESERVE_BYTES / 1e9:.1f} GB, "
