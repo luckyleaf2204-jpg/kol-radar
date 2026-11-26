@@ -229,3 +229,26 @@ def test_daily_public_rpc_cap(tmp_path, monkeypatch):
     w.step()
     w.step()
     assert w.step() == {"_capped": "ESM_MAX_CALLS_DAY"} and len(c.calls) == 4
+
+
+def test_router_uses_helius_up_to_its_daily_cap_then_the_public_rpc(tmp_path, monkeypatch):
+    monkeypatch.setattr(EW, "HELIUS_MAX_DAY", 2)
+    st = T.Store(tmp_path / "t.db")
+    hel, pub = [], []
+
+    def helius(m, p):
+        hel.append(m)
+        return {"h": 1}
+
+    def public(m, p):
+        pub.append(m)
+        return {"p": 1}
+    r = EW.Router(st, helius, public)
+    assert [r("getTransaction", ["x"]) for _ in range(3)] == [{"h": 1}, {"h": 1}, {"p": 1}]
+    assert (len(hel), len(pub)) == (2, 1) and r.helius_today() == 2
+
+    def broken(m, p):
+        raise RuntimeError("HTTP 401")
+    r2 = EW.Router(T.Store(tmp_path / "u.db"), broken, public)
+    assert r2("getTransaction", ["x"]) == {"p": 1} and r2.stat["helius_errors"] == 1        # Helius down: public, no stop
+    assert EW.Router(st, None, public)("getTransaction", ["x"]) == {"p": 1}                   # no key: public only

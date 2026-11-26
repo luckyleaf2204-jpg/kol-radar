@@ -221,6 +221,9 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                         "SELECT COUNT(*) AS n FROM esm_pending_mint WHERE status IN ('REQUESTED', 'RUNNING')")[0]["n"]}
                     wk = getattr(esm, "worker", None)                # tracing worker: on / off, calls today, queue states
                     h["esm_worker"] = {"on": wk is not None, **({"calls_today": wk.calls_today(), **wk.stat,
+                                       "rpc": {**wk.router.stat, "helius_today": wk.router.helius_today(),
+                                               "helius_max_day": __import__("insiders.esm_worker", fromlist=["x"]).HELIUS_MAX_DAY}
+                                       if getattr(wk, "router", None) else None,
                                        "queue": {r["state"]: r["n"] for r in esm.q("SELECT state, COUNT(*) AS n FROM esm_queue GROUP BY state")}}
                                        if wk is not None else {})}
                 if callers is not None:                       # Smart Caller Hunter: counts only
@@ -585,15 +588,22 @@ def open_esm(sdir: Path, backup_ok: bool = True):
 
 
 def start_esm_worker(sdir: Path):
-    """The tracing worker (insiders.esm_worker) in its own thread, on the PUBLIC RPC (no key, metered in rpc_usage,
-    ESM_MAX_CALLS_DAY a day). INSIDER_ESM=0 turns it off. Its own Store connection on the same database."""
+    """The tracing worker (insiders.esm_worker) in its own thread: Helius (the server's key) up to ESM_HELIUS_MAX_DAY
+    calls a day, then the public RPC; every call metered in rpc_usage. INSIDER_ESM=0 turns it off, ESM_HELIUS=0 keeps
+    it on the public RPC only. Its own Store connection on the same database."""
     import threading
     from insiders import esm_worker as EW
     from insiders.track import Store
     from insiders.watch import Rpc
     if not EW.enabled():
         return None
-    w = EW.EsmWorker(Store(sdir / "insiders_track.db"), Rpc(gap_s=float(os.environ.get("ESM_RPC_GAP_S") or 0.4)))
+    st = Store(sdir / "insiders_track.db")
+    key = os.environ.get("HELIUS_API_KEY")                     # the key stays on the server: it is only in this URL
+    helius = Rpc(url=f"https://mainnet.helius-rpc.com/?api-key={key}", gap_s=float(os.environ.get("ESM_HELIUS_GAP_S") or 0.05)) \
+        if key and os.environ.get("ESM_HELIUS") != "0" else None
+    router = EW.Router(st, helius, Rpc(gap_s=float(os.environ.get("ESM_RPC_GAP_S") or 0.4)))
+    w = EW.EsmWorker(st, router, budget_per_step=500)
+    w.router = router
     w.stat = {"rounds": 0, "error": None, "last": None}
 
     def loop():
@@ -606,7 +616,7 @@ def start_esm_worker(sdir: Path):
                 w.stat["error"], busy = f"{type(e).__name__}: {str(e)[:120]}", False
             time.sleep(3 if busy else 30)
     threading.Thread(target=loop, daemon=True, name="esm-worker").start()
-    print("[insiders] tracing worker: public RPC, on", flush=True)
+    print(f"[insiders] tracing worker: on, {'Helius first, then' if helius else 'only the'} public RPC", flush=True)
     return w
 
 

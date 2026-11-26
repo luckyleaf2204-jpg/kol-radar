@@ -1,8 +1,9 @@
 """Early Smart Money worker: the 120-minute window of each queued mint, then its big wallets join the watchlist.
 
 ON by default since 2026-11-26 (the user asked for the tracing to run by itself); INSIDER_ESM=0 turns it off. Started
-by insiders.site in its own thread. Read-only on chain, never signs or sends. Every RPC call goes through `rpc` (the
-PUBLIC RPC, metered in rpc_usage, at most ESM_MAX_CALLS_DAY a day) and is counted per coin; a per-step budget stops it.
+by insiders.site in its own thread. Read-only on chain, never signs or sends. Every RPC call goes through `rpc` (Router:
+the server's Helius key first, at most ESM_HELIUS_MAX_DAY calls a day, then the public RPC; metered in rpc_usage, at
+most ESM_MAX_CALLS_DAY a day) and is counted per coin; a per-step budget stops it.
 
 Intake: a coin asked for on the page (esm_pending_mint status REQUESTED) is queued (RUNNING); the creation check below
 is its verification (the oldest transaction must create that mint), so a wrong address ends REJECTED.
@@ -33,8 +34,37 @@ from insiders.scan import KNOWN_LABELS
 
 PAGE = 1000
 MAX_PAGES = int(os.environ.get("ESM_MAX_PAGES") or 1200)          # x 1000 signatures back to the creation
-MAX_DECODE = int(os.environ.get("ESM_MAX_DECODE") or 25000)       # window transactions read at most per coin
-MAX_CALLS_DAY = int(os.environ.get("ESM_MAX_CALLS_DAY") or 60000)  # public RPC calls a day, all coins
+MAX_DECODE = int(os.environ.get("ESM_MAX_DECODE") or 60000)       # window transactions read at most per coin
+MAX_CALLS_DAY = int(os.environ.get("ESM_MAX_CALLS_DAY") or 700000)  # RPC calls a day, all coins, Helius + public
+HELIUS_MAX_DAY = int(os.environ.get("ESM_HELIUS_MAX_DAY") or 500000)  # Helius calls a day (user: 4 M credits, 5 days)
+
+
+class Router:
+    """Helius first (the server's HELIUS_API_KEY, never shown), at most HELIUS_MAX_DAY calls a UTC day; past that, or
+    when Helius fails, the public RPC. Each call is metered by provider in rpc_usage (esm_helius / esm_public)."""
+
+    def __init__(self, store, helius, public, now=time.time):
+        self.s, self.helius, self.public, self.now = store, helius, public, now
+        self.stat = {"helius": 0, "public": 0, "helius_errors": 0, "provider": "helius" if helius else "public"}
+
+    def helius_today(self) -> int:
+        day = time.strftime("%Y-%m-%d", time.gmtime(self.now()))
+        return self.s.q("SELECT COALESCE(SUM(calls), 0) AS n FROM rpc_usage WHERE day=? AND worker='esm_helius'", (day,))[0]["n"]
+
+    def __call__(self, method, params):
+        if self.helius is not None and self.helius_today() < HELIUS_MAX_DAY:
+            try:
+                res = self.helius(method, params)
+                self.s.usage("esm_helius", method, res)
+                self.stat.update(helius=self.stat["helius"] + 1, provider="helius")
+                return res
+            except RuntimeError:
+                self.s.usage("esm_helius", method, err=True)
+                self.stat["helius_errors"] += 1
+        res = self.public(method, params)
+        self.s.usage("esm_public", method, res)
+        self.stat.update(public=self.stat["public"] + 1, provider="public")
+        return res
 MAX_TRIES = 3
 FUND_SIGS, FUND_MIN_SOL, FUND_WINDOW_S = 10, 0.05, 72 * 3600
 TX_OPTS = {"encoding": "jsonParsed", "commitment": "confirmed", "maxSupportedTransactionVersion": 1}
