@@ -234,3 +234,16 @@ def test_existing_research_is_not_updated_without_a_backup(tmp_path, monkeypatch
     assert st.seed_info["imported"] is None and "sao lưu" in st.seed_info["error"]
     assert st.get("esm_seed_version") == first.get("esm_seed_version")
     assert S.open_esm(tmp_path, backup_ok=True).seed_info["imported"]
+
+
+# ------------------------------------------------------------------------- size thresholds (user, 2026-11-26)
+def test_watchlist_keeps_only_wallets_that_bought_big_early():
+    from insiders.newcoins import SMART_MIN_BUY_SOL, big
+    assert SMART_MIN_BUY_SOL == 5
+    e = lambda sol, bucket="0-15", at=False: {"sol_in": sol, "bucket": bucket, "at_creation": at}   # noqa: E731
+    assert big({"entries": [e(0.4), e(6.0, "15-60")]})
+    assert not big({"entries": [e(4.9), e(50.0, "60-120")]})            # big only late: not an early insider buy
+    assert not big({"entries": [e(20.0, at=True)]})                       # bought inside the creation: not counted
+    assert not big({"entries": []})
+    assert big({"early_coins": ["A", "B"], "entries": [e(1.0), e(0.2, "15-60")]})          # repeat early wallet: >= 1 SOL
+    assert not big({"early_coins": ["A", "B"], "entries": [e(0.9), e(0.2, "15-60")]})

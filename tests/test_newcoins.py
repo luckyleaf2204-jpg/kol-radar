@@ -298,3 +298,17 @@ def test_metadata_reads_links_and_launcher_and_rewrites_ipfs():
     assert seen == [N.IPFS_GW + "QmTest1"] and m["twitter"] == "https://x.com/abc/status/1" and m["telegram"] is None
     assert m["launcher"] == "j7tracker.io" and m["website"] == "https://abc.io"
     assert N.metadata("http://10.0.0.1/x", get=get, now=lambda: 1.0) is None and len(seen) == 1    # never a private host
+
+
+def test_a_small_live_buy_of_a_watchlist_wallet_is_not_smart_money(tmp_path):
+    st, e = eng(tmp_path)
+    e.book.smart = {W[1]: {"rank": 1, "multi": True, "why": ["x"], "creator_of": []}}
+    e.put("c1", 100, logs(create()), T0 + 1)
+    e.put("b1", 101, logs(trade(W[1], 0.3, 1000, ts=T0 + 40)), T0 + 41)               # < SMART_MIN_LIVE_SOL (1 SOL)
+    e.put("s1", 102, logs(trade(W[1], 0.1, 500, buy=False, ts=T0 + 45)), T0 + 46)      # its sell stays marked
+    e.step(drain(e))
+    assert not st.q("SELECT 1 FROM nc_signal WHERE mint=? AND kind='SMART_MONEY'", (MINT,))
+    assert [(r["buy"], r["smart"]) for r in st.q("SELECT buy, smart FROM nc_trade WHERE mint=? ORDER BY t", (MINT,))] == [(1, 0), (0, 1)]
+    e.put("b2", 103, logs(trade(W[1], 1.0, 2000, ts=T0 + 50)), T0 + 51)               # >= 1 SOL: counts
+    e.step(drain(e))
+    assert st.q("SELECT 1 FROM nc_signal WHERE mint=? AND kind='SMART_MONEY'", (MINT,))

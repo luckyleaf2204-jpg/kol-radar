@@ -32,6 +32,11 @@ MULTI_MIN = 5
 DEV_RISK = 0.10
 BUNDLE_MIN = 3
 SMART_REFRESH_S = 600
+# only wallets that put real size in (user, 2026-11-26): on the watchlist only a wallet that bought >= SMART_MIN_BUY_SOL
+# in one coin it entered early (0-60 min, research window), and a live buy counts only from SMART_MIN_LIVE_SOL
+SMART_MIN_BUY_SOL = float(os.environ.get("SMART_MIN_BUY_SOL") or 5)
+SMART_MIN_BUY_MULTI_SOL = float(os.environ.get("SMART_MIN_BUY_MULTI_SOL") or 1)   # a wallet early in >= 2 coins (repeat)
+SMART_MIN_LIVE_SOL = float(os.environ.get("SMART_MIN_LIVE_SOL") or 1)
 KEEP_TRADES_S = 2 * 86400
 KEEP_QUIET_COINS_S = 3 * 86400
 HORIZONS = (("15m", 900), ("1h", 3600), ("2h", 7200), ("6h", 21600), ("24h", 86400))
@@ -46,6 +51,14 @@ def sane(price: float | None) -> float | None:
 
 def stage(minute: float) -> str:
     return "0-15" if minute < 15 else "15-60" if minute < 60 else "60-120"
+
+
+def big(x: dict) -> bool:
+    """A watchlist wallet that bought >= SMART_MIN_BUY_SOL in one coin it entered early (not at the coin's creation),
+    or, when it entered >= 2 coins early (a repeat insider pattern), >= SMART_MIN_BUY_MULTI_SOL in one of them."""
+    buys = [e.get("sol_in") or 0 for e in x.get("entries") or [] if e.get("bucket") in ("0-15", "15-60") and not e.get("at_creation")]
+    top = max(buys, default=0)
+    return top >= SMART_MIN_BUY_SOL or (len(x.get("early_coins") or []) >= 2 and top >= SMART_MIN_BUY_MULTI_SOL)
 
 
 class SmartBook:
@@ -76,7 +89,7 @@ class SmartBook:
                                         "independence": self.independence(x["wallet"]),
                                         "network": [f for f in (info.get(x["wallet"]) or {}).get("flags", [])
                                                     if f.split(":")[0] in ("PASS_THROUGH", "BATCH_SPLIT")]}
-                          for x in r["smart"] if not x["creator_of"]}
+                          for x in r["smart"] if not x["creator_of"] and big(x)}
         except Exception as e:                                   # never stop the stream for the watchlist
             print(f"[newcoins] smart list: {type(e).__name__}: {e}", flush=True)
 
@@ -315,7 +328,7 @@ class Engine:
             if c.row["platform"] == "pump.fun":
                 c.row["platform"], c.row["price"], c.row["mc_sol"] = "pump.fun (quote khác SOL)", None, None
         dev = e["user"] == c.creator
-        smart = (not dev) and e["user"] in self.book.smart
+        smart = (not dev) and e["user"] in self.book.smart and (not e["buy"] or sol >= SMART_MIN_LIVE_SOL)   # small buys ignored
         db.execute("INSERT OR IGNORE INTO nc_trade VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                    (c.mint, sig, e["user"], int(e["buy"]), sol, tok, price, t, slot, seen, int(dev), int(smart)))
         self.stat["trades_tracked"] += 1
@@ -353,7 +366,7 @@ class Engine:
                     c.slot_buyers.add(e["user"])
                     if len(c.slot_buyers) >= BUNDLE_MIN:
                         self._signal(db, c, "RISK", t, seen, sorted(c.slot_buyers), {"why": f"{len(c.slot_buyers)} ví mua ngay trong slot tạo coin (bundle)"})
-                if smart and new:
+                if smart and e["user"] not in c.smart:          # its first buy of >= SMART_MIN_LIVE_SOL (a small test buy before it does not block it)
                     c.smart.append(e["user"])
                     r["smart"] = len(c.smart)
                     sm = self.book.smart[e["user"]]
