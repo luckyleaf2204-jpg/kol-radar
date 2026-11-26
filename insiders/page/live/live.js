@@ -314,16 +314,19 @@ async function showWallets() {
   S.wal = w;
   const bs = w.by_source || {};
   const reqRows = (rq.requests || []).map((r) => `<tr><td><b>${esc(r.symbol)}</b><div class="addr">${esc(r.mint || "")}</div></td>
-    <td>${esc(RQ[r.status] || r.status)}</td><td class="r">${r.updated ? age(now() - r.updated) : "–"}</td></tr>`).join("");
+    <td>${esc(RQ[r.status] || r.status)}${r.note ? `<div class="why">${esc(r.note)}</div>` : ""}${r.progress && r.status === "RUNNING" ?
+      `<div class="why">${fmt(r.progress.calls, 0)} lệnh RPC${r.progress.t_create && r.progress.state === "WAIT" ?
+        ` · xong lúc ~${new Date((r.progress.t_create + 7200) * 1000).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}` : ""}</div>` : ""}</td>
+    <td class="r">${r.updated ? age(now() - r.updated) : "–"}</td></tr>`).join("");
   $("#side").innerHTML = `<button class="ghost x" id="cx">Đóng ✕</button><h2>Ví theo dõi</h2>
     <div class="sub">Đang theo dõi <b>${fmt(w.watching ?? w.count, 0)}</b> ví. Lệnh mua live chỉ tính từ ${fmt(w.min_live_sol, 2)} SOL. ${fmt(w.active_24h, 0)} ví đã mua coin mới trong 24 giờ qua.</div>
     <div class="wtiles">${["DEPTH", "STANK", "INSIDERS"].map((k) => `<div><b>${fmt(bs[k] || 0, 0)}</b><span>${k}</span></div>`).join("")}
-      <div><b>${fmt(bs.coin || 0, 0)}</b><span>ví lớn của ${Object.keys(w.coins || {}).length} coin</span></div></div>
+      <div><b>${fmt((bs.coin || 0) + (bs.auto || 0), 0)}</b><span>ví lớn của coin${bs.auto ? ` (${fmt(bs.auto, 0)} tự truy vết)` : ""}</span></div></div>
     <div class="why">Coin đã truy vết: ${Object.keys(w.coins || {}).map(esc).join(", ") || "–"}</div>
     <h3>Thêm coin để truy vết</h3>
     <form id="rqf" class="rqf"><input id="rqm" placeholder="Địa chỉ mint" autocomplete="off"><input id="rqs" placeholder="Tên (VD: STANK)" maxlength="16" autocomplete="off">
       <button>Thêm</button></form>
-    <div id="rqmsg" class="why">Coin vào hàng chờ; sau khi truy vết xong, ví lớn của coin tự vào danh sách theo dõi (ví cũ giữ nguyên).</div>
+    <div id="rqmsg" class="why">Server tự truy vết: tìm giao dịch tạo coin → chờ hết 120 phút đầu → giải mã giao dịch → chấm ví → truy nguồn tiền ví lớn. Xong thì ví lớn tự vào danh sách theo dõi (ví cũ giữ nguyên). Coin cũ, nhiều giao dịch có thể mất vài giờ.</div>
     ${reqRows ? `<table class="bt"><thead><tr><th>Coin</th><th>Trạng thái</th><th class="r">Cập nhật</th></tr></thead><tbody>${reqRows}</tbody></table>` : ""}
     <h3>Danh sách ví <button class="ghost" id="wcsv" style="float:right;padding:2px 10px">Tải CSV</button></h3>
     <input id="wq" type="search" placeholder="Tìm địa chỉ ví, nguồn hoặc coin…" class="wq">

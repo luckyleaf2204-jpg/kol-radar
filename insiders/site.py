@@ -219,6 +219,10 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                 if esm is not None and getattr(esm, "seed_info", None):   # research seed: version + import counts only
                     h["esm_seed"] = {**esm.seed_info, "coin_requests": esm.q(
                         "SELECT COUNT(*) AS n FROM esm_pending_mint WHERE status IN ('REQUESTED', 'RUNNING')")[0]["n"]}
+                    wk = getattr(esm, "worker", None)                # tracing worker: on / off, calls today, queue states
+                    h["esm_worker"] = {"on": wk is not None, **({"calls_today": wk.calls_today(), **wk.stat,
+                                       "queue": {r["state"]: r["n"] for r in esm.q("SELECT state, COUNT(*) AS n FROM esm_queue GROUP BY state")}}
+                                       if wk is not None else {})}
                 if callers is not None:                       # Smart Caller Hunter: counts only
                     h["callers"] = callers.health()
                 return self._json(200, h)
@@ -434,7 +438,19 @@ def nc_get(nc, store, path: str, raw: str) -> tuple[int, object]:
                "early_coins": e.get("early_coins") or [], "max_buy_sol": e.get("max_buy_sol"), "independence": e.get("independence"),
                "added": e.get("added"), "coins_24h": (live.get(w) or {}).get("coins", 0), "last_buy": (live.get(w) or {}).get("last_t")}
               for w, e in db["wallets"].items()]
-        return 200, {"count": len(ws), "watching": len(eng.book.smart) if eng else None, "by_source": db.get("by_source"),
+        auto = {w: e for w, e in N.auto_wallets(st).items() if w not in db["wallets"]}   # traced by the server worker
+        if auto:
+            q2 = ",".join("?" * len(auto))
+            live.update({r["wallet"]: r for r in st.q(f"SELECT wallet, COUNT(DISTINCT mint) AS coins, MAX(t) AS last_t FROM nc_trade "
+                                                      f"WHERE wallet IN ({q2}) AND t >= ? AND smart=1 AND buy=1 GROUP BY wallet",
+                                                      (*auto, time.time() - 86400))})
+        ws += [{"wallet": w, "sources": e["sources"], "cohort": None, "label": "tự truy vết trên server", "early_coins": e["early_coins"],
+                "max_buy_sol": e["max_buy_sol"], "independence": e["independence"], "added": None,
+                "coins_24h": (live.get(w) or {}).get("coins", 0), "last_buy": (live.get(w) or {}).get("last_t")} for w, e in auto.items()]
+        by = dict(db.get("by_source") or {})
+        if auto:
+            by["auto"] = len(auto)
+        return 200, {"count": len(ws), "watching": len(eng.book.smart) if eng else None, "by_source": by,
                      "coins": db.get("coins") or {}, "rules": db.get("rules"), "updated": db.get("updated"),
                      "min_live_sol": N.SMART_MIN_LIVE_SOL, "active_24h": sum(1 for x in ws if x["coins_24h"]), "wallets": ws}
     if name == "requests":                                      # coins the user asked to research (table esm_pending_mint)
@@ -445,6 +461,8 @@ def nc_get(nc, store, path: str, raw: str) -> tuple[int, object]:
                 r["mint"] = (json.loads(r.pop("candidates") or "[]") or [{}])[0].get("mint")
             except (ValueError, AttributeError):
                 r["mint"] = None
+            qq = st.q("SELECT state, calls, pages, t_create FROM esm_queue WHERE mint=?", (r["mint"],)) if r["mint"] else []
+            r["progress"] = qq[0] if qq else None
         return 200, {"requests": rows}
     if name == "coin":
         if not q.get("mint") or not _ADDR.fullmatch(q["mint"]):
@@ -564,6 +582,32 @@ def open_esm(sdir: Path, backup_ok: bool = True):
                 st.seed_info["error"] = f"{type(e).__name__}: {str(e)[:120]}"
                 print(f"[insiders] Early Smart Money: nạp lỗi {st.seed_info['error']}", flush=True)
     return st
+
+
+def start_esm_worker(sdir: Path):
+    """The tracing worker (insiders.esm_worker) in its own thread, on the PUBLIC RPC (no key, metered in rpc_usage,
+    ESM_MAX_CALLS_DAY a day). INSIDER_ESM=0 turns it off. Its own Store connection on the same database."""
+    import threading
+    from insiders import esm_worker as EW
+    from insiders.track import Store
+    from insiders.watch import Rpc
+    if not EW.enabled():
+        return None
+    w = EW.EsmWorker(Store(sdir / "insiders_track.db"), Rpc(gap_s=float(os.environ.get("ESM_RPC_GAP_S") or 0.4)))
+    w.stat = {"rounds": 0, "error": None, "last": None}
+
+    def loop():
+        while True:
+            try:
+                out = w.step()
+                w.stat.update(rounds=w.stat["rounds"] + 1, last=time.time(), error=None)
+                busy = any(v not in ("DONE", "INSUFFICIENT_DATA", "WAIT") for k, v in out.items() if not k.startswith("_"))
+            except Exception as e:                              # never stops: shown on /healthz, retried
+                w.stat["error"], busy = f"{type(e).__name__}: {str(e)[:120]}", False
+            time.sleep(3 if busy else 30)
+    threading.Thread(target=loop, daemon=True, name="esm-worker").start()
+    print("[insiders] tracing worker: public RPC, on", flush=True)
+    return w
 
 
 def disk(sdir: Path) -> dict:
@@ -753,6 +797,8 @@ def serve(host: str = "127.0.0.1", port: int = 8780, watch: bool = True, svc: In
     health["esm"] = esm is not None
     nc = open_newcoins(sdir, on=bool(started))
     health["newcoins"] = nc is not None
+    if esm is not None:
+        esm.worker = start_esm_worker(sdir) if started or os.environ.get("INSIDER_ESM") == "1" else None
     httpd = ThreadingHTTPServer((host, port), make_handler(svc, code, health, callers, esm, nc))
     print(f"[insiders] http://{host}:{port} · state {sdir} (durable {durable}) · watch {bool(started)}", flush=True)
     return httpd

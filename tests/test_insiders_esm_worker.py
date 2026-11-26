@@ -1,4 +1,4 @@
-"""Early Smart Money worker (prepared, OFF by default). Fake chain only, no network, no thread."""
+"""Early Smart Money worker (ON by default since 2026-11-26, INSIDER_ESM=0 = off). Fake chain only, no network, no thread."""
 import json
 from pathlib import Path
 
@@ -63,13 +63,15 @@ def run(w, rounds=20):
         w.step()
 
 
-def test_off_by_default_does_nothing(tmp_path, monkeypatch):
-    monkeypatch.delenv("INSIDER_ESM", raising=False)
+def test_off_when_asked_and_on_by_default(tmp_path, monkeypatch):
+    monkeypatch.setenv("INSIDER_ESM", "0")
     st, c = store(tmp_path), chain()
     w = EW.EsmWorker(st, c)
     assert w.add(MINT)
     assert w.step() == {} and c.calls == []
     assert not EW.enabled()
+    monkeypatch.delenv("INSIDER_ESM")
+    assert EW.enabled()
 
 
 def test_the_service_does_not_start_it():
@@ -143,3 +145,87 @@ def test_oldest_signature_that_is_not_a_creation_stops(tmp_path):
     w.add(MINT)
     run(w)
     assert st.q("SELECT state FROM esm_queue")[0]["state"] == "INSUFFICIENT_DATA"
+
+
+# ------------------------------------------------------------------ auto tracing (2026-11-26)
+WHALE = "AcysJyF3VVkS6pUU2AgMYNaNrkjXAuTW4Q2LPkPp6TCT"                     # not on the watchlist file
+FUNDER = "7uqfEqdd9strJVYiju6kasjCj6AzjBF2S1GmWRhdpump"
+
+
+def fund_tx(src, dst, sol, ts, sig):
+    return {"blockTime": ts, "slot": ts, "meta": {"err": None, "fee": 5000, "preBalances": [], "postBalances": [], "preTokenBalances": [],
+                                                  "postTokenBalances": [], "innerInstructions": [], "logMessages": []},
+            "transaction": {"signatures": [sig], "message": {"accountKeys": [{"pubkey": src, "signer": True}], "instructions": [
+                {"program": "system", "parsed": {"type": "transfer", "info": {"source": src, "destination": dst, "lamports": int(sol * 1e9)}}}]}}}
+
+
+class WalletChain(Chain):
+    """Mint history + one wallet history (its funding before the buy)."""
+    def __init__(self, txs, wallet_txs):
+        super().__init__({**txs, **wallet_txs})
+        self.mint_order = [s for s in self.order if s not in wallet_txs]
+        self.wallet_order = sorted(wallet_txs, key=lambda s: -wallet_txs[s]["blockTime"])
+
+    def __call__(self, method, params):
+        if method == "getSignaturesForAddress" and params[0] == WHALE:
+            self.calls.append((method, params[0]))
+            return [{"signature": s, "blockTime": self.txs[s]["blockTime"], "err": None} for s in self.wallet_order]
+        if method == "getSignaturesForAddress":
+            self.calls.append((method, params[0]))
+            opts = params[1]
+            i = self.mint_order.index(opts["before"]) + 1 if opts.get("before") else 0
+            return [{"signature": s, "blockTime": self.txs[s]["blockTime"], "err": None} for s in self.mint_order[i:i + opts["limit"]]]
+        return super().__call__(method, params)
+
+
+def test_a_coin_added_on_the_page_is_traced_and_its_big_wallet_watched(tmp_path, monkeypatch):
+    from insiders import esm as E
+    from insiders.newcoins import SmartBook
+    st = T.Store(tmp_path / "t.db")
+    st.x("INSERT INTO esm_pending_mint VALUES ('NEWC', 'REQUESTED', ?, 'page', 1)", (json.dumps([{"mint": MINT}]),))
+    txs = {"c": create_tx(), "w1": buy_tx(WHALE, T0 + 30, 8.0, 3_000_000_000, "w1"), "b1": buy_tx(BUYER, T0 + 60, 1.0, 1_000_000_000, "b1")}
+    c = WalletChain(txs, {"f1": fund_tx(FUNDER, WHALE, 9.0, T0 - 3600, "f1")})
+    now = [T0 + 7300]
+    w = EW.EsmWorker(st, c, now=lambda: now[0], on=True)
+    run(w, 30)
+    assert st.q("SELECT state FROM esm_queue")[0]["state"] == "DONE"
+    req = st.q("SELECT status, note FROM esm_pending_mint WHERE symbol='NEWC'")[0]
+    assert req["status"] == "DONE" and "1 ví lớn" in req["note"]                 # WHALE (8 SOL); BUYER (1 SOL) is small
+    assert st.q("SELECT src, dst, amount FROM edges WHERE kind='research_sol'") == [{"src": FUNDER, "dst": WHALE, "amount": 9.0}]
+    assert st.q("SELECT ref FROM esm_flag WHERE wallet=? AND flag='INDEPENDENCE'", (WHALE,))[0]["ref"] == "INDEPENDENT"
+    assert st.q("SELECT SUM(calls) n FROM rpc_usage WHERE worker='esm'")[0]["n"] == len(c.calls)   # every call metered
+    b = SmartBook(st)
+    b.refresh(1e12)
+    assert WHALE in b.smart and b.smart[WHALE]["sources"] == ["auto:NEWC"] and BUYER not in b.smart
+    assert WHALE in {x["wallet"] for x in __import__("insiders.site", fromlist=["x"]).nc_get(None, st, "/api/nc/wallets", "")[1]["wallets"]}
+
+
+def test_a_wrong_address_ends_rejected(tmp_path):
+    st = T.Store(tmp_path / "t.db")
+    st.x("INSERT INTO esm_pending_mint VALUES ('BAD', 'REQUESTED', ?, 'page', 1)", (json.dumps([{"mint": MINT}]),))
+    txs = {"x": buy_tx(BUYER, T0, 1.0, 10, "x")}                             # oldest transaction does not create the mint
+    run(EW.EsmWorker(st, Chain(txs), on=True), 5)
+    r = st.q("SELECT status, note FROM esm_pending_mint")[0]
+    assert r["status"] == "REJECTED" and "không truy vết được" in r["note"]
+
+
+def test_discovery_keeps_only_signatures_that_can_be_in_the_window(tmp_path, monkeypatch):
+    monkeypatch.setattr(EW, "PAGE", 2)
+    txs = {"c": create_tx(), "b1": buy_tx(BUYER, T0 + 60, 1.0, 10, "b1")}
+    txs.update({f"old{i}": buy_tx(BUYER, T0 + 50_000 + i, 0.1, 1, f"old{i}") for i in range(9)})   # long after the window
+    st = store(tmp_path)
+    w = EW.EsmWorker(st, Chain(txs), on=True)
+    w.add(MINT)
+    run(w, 10)
+    assert {r["sig"] for r in st.q("SELECT sig FROM esm_sig")} == {"c", "b1"}
+
+
+def test_daily_public_rpc_cap(tmp_path, monkeypatch):
+    monkeypatch.setattr(EW, "MAX_CALLS_DAY", 3)
+    monkeypatch.setattr(EW, "PAGE", 1)
+    st, c = store(tmp_path), chain()
+    w = EW.EsmWorker(st, c, on=True, budget_per_step=2)
+    w.add(MINT)
+    w.step()
+    w.step()
+    assert w.step() == {"_capped": "ESM_MAX_CALLS_DAY"} and len(c.calls) == 4

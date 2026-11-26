@@ -83,6 +83,37 @@ def big(x: dict) -> bool:
     return top >= SMART_MIN_BUY_SOL or (len(x.get("early_coins") or []) >= 2 and top >= SMART_MIN_BUY_MULTI_SOL)
 
 
+def auto_wallets(store) -> dict[str, dict]:
+    """Big wallets of the coins the server worker traced (esm_coin.source='worker'): kept in the database (never in
+    the file), so they stay on the watchlist across restarts and seed updates. Creators / CREATOR_GROUP never."""
+    coins = {r["mint"]: r for r in store.q("SELECT mint, symbol, creator FROM esm_coin WHERE source='worker'")}
+    if not coins:
+        return {}
+    skip = {r["wallet"] for r in store.q("SELECT wallet FROM esm_flag WHERE flag IN ('CREATOR_GROUP', 'CREATOR')")}
+    skip |= {r["creator"] for r in store.q("SELECT creator FROM esm_coin WHERE creator IS NOT NULL")}
+    lv = {r["wallet"]: r["ref"] for r in store.q("SELECT wallet, ref FROM esm_flag WHERE flag='INDEPENDENCE'")}
+    q = ",".join("?" * len(coins))
+    out = {}
+    for r in store.q(f"SELECT DISTINCT wallet FROM esm_window_wallet WHERE mint IN ({q}) AND bucket IN ('0-15', '15-60')", list(coins)):
+        w = r["wallet"]
+        if w in skip:
+            continue
+        rows = store.q("SELECT w.mint, w.bucket, w.sol_in, w.first_buy_min, c.symbol, c.creator FROM esm_window_wallet w "
+                       "JOIN esm_coin c ON c.mint=w.mint WHERE w.wallet=?", (w,))
+        early = [x for x in rows if x["bucket"] in ("0-15", "15-60") and x["creator"] != w]
+        x = {"entries": [{"bucket": e["bucket"], "sol_in": e["sol_in"], "at_creation": False} for e in early],
+             "early_coins": sorted({e["symbol"] for e in early})}
+        if not big(x):
+            continue
+        mine = [e for e in early if e["mint"] in coins]
+        out[w] = {"rank": "AUTO", "multi": len(x["early_coins"]) >= 2, "creator_of": [], "cohort": None,
+                  "sources": [f"auto:{e['symbol']}" for e in mine], "early_coins": x["early_coins"],
+                  "max_buy_sol": max((e["sol_in"] or 0) for e in early),
+                  "why": [f"tự truy vết: vào sớm {e['symbol']} phút {e['first_buy_min']:g}, mua {e['sol_in'] or 0:.2f} SOL" for e in mine][:3],
+                  "independence": lv.get(w) or "INSUFFICIENT_DATA"}
+    return out
+
+
 class SmartBook:
     """Who is Smart Money and what we already know about any wallet (from the v5 esm_* tables)."""
 
@@ -120,6 +151,10 @@ class SmartBook:
                                   "cohort": e.get("cohort"), "sources": e.get("sources"), "independence": self.independence(w),
                                   "network": [f for f in (info.get(w) or {}).get("flags", []) if f.split(":")[0] in ("PASS_THROUGH", "BATCH_SPLIT")]}
                               for w, e in wdb["wallets"].items() if "CREATOR_GROUP" not in (info.get(w) or {}).get("flags", [])}
+            for w, e in auto_wallets(self.s).items():                # coins traced by the server worker
+                if w not in self.smart:
+                    self.smart[w] = {k: e[k] for k in ("rank", "multi", "why", "creator_of", "cohort", "sources", "independence")} | {
+                        "network": [f for f in (info.get(w) or {}).get("flags", []) if f.split(":")[0] in ("PASS_THROUGH", "BATCH_SPLIT")]}
         except Exception as e:                                   # never stop the stream for the watchlist
             print(f"[newcoins] smart list: {type(e).__name__}: {e}", flush=True)
 
