@@ -23,6 +23,7 @@ import statistics
 import threading
 import time
 from collections import deque
+from pathlib import Path
 
 from insiders import pumplog as P
 
@@ -37,6 +38,9 @@ SMART_REFRESH_S = 600
 SMART_MIN_BUY_SOL = float(os.environ.get("SMART_MIN_BUY_SOL") or 5)
 SMART_MIN_BUY_MULTI_SOL = float(os.environ.get("SMART_MIN_BUY_MULTI_SOL") or 1)   # a wallet early in >= 2 coins (repeat)
 SMART_MIN_LIVE_SOL = float(os.environ.get("SMART_MIN_LIVE_SOL") or 1)
+# the old research cohorts join the watchlist (user, 2026-11-26): read only from insiders/result.json (wallets.cohorts),
+# never changed; exchange / deposit successors (skip) left out. No window data: only the live >= 1 SOL rule applies
+SMART_COHORTS = tuple(x.strip().upper() for x in (os.environ.get("SMART_COHORTS") or "DEPTH,STANK,INSIDERS").split(",") if x.strip())
 # trades of a coin's first 120 minutes, kept 12 h (disk, 2026-11-26; was 2 days); Smart Money trades (smart=1) are kept
 KEEP_TRADES_S = float(os.environ.get("NC_KEEP_TRADES_H") or 12) * 3600
 KEEP_QUIET_COINS_S = 3 * 86400
@@ -52,6 +56,23 @@ def sane(price: float | None) -> float | None:
 
 def stage(minute: float) -> str:
     return "0-15" if minute < 15 else "15-60" if minute < 60 else "60-120"
+
+
+_COHORTS: list | None = None
+
+
+def cohort_wallets() -> list[dict]:
+    """DEPTH / STANK / INSIDERS wallets of the old research (insiders/result.json), read once; skip = exchange / deposit."""
+    global _COHORTS
+    if _COHORTS is None:
+        try:
+            from insiders.wallets import cohorts
+            res = json.loads((Path(__file__).with_name("result.json")).read_text(encoding="utf-8"))
+            _COHORTS = [c for c in cohorts(res) if c["cohort"] in SMART_COHORTS and not c.get("skip")]
+        except (OSError, ValueError) as e:
+            print(f"[newcoins] cohorts: {type(e).__name__}: {e}", flush=True)
+            _COHORTS = []
+    return _COHORTS
 
 
 def big(x: dict) -> bool:
@@ -91,6 +112,14 @@ class SmartBook:
                                         "network": [f for f in (info.get(x["wallet"]) or {}).get("flags", [])
                                                     if f.split(":")[0] in ("PASS_THROUGH", "BATCH_SPLIT")]}
                           for x in r["smart"] if not x["creator_of"] and big(x)}
+            from insiders.esm import load_wallet_db
+            wdb = load_wallet_db()
+            if wdb:                                                  # the ONE watchlist file (insiders/wallet_db.json)
+                self.smart = {w: {"rank": e.get("rank") if e.get("rank") is not None else e.get("cohort"), "multi": bool(e.get("multi")),
+                                  "why": (e.get("why") or [f"ví {e.get('cohort')} (nghiên cứu cũ)"])[:3], "creator_of": [],
+                                  "cohort": e.get("cohort"), "sources": e.get("sources"), "independence": self.independence(w),
+                                  "network": [f for f in (info.get(w) or {}).get("flags", []) if f.split(":")[0] in ("PASS_THROUGH", "BATCH_SPLIT")]}
+                              for w, e in wdb["wallets"].items() if "CREATOR_GROUP" not in (info.get(w) or {}).get("flags", [])}
         except Exception as e:                                   # never stop the stream for the watchlist
             print(f"[newcoins] smart list: {type(e).__name__}: {e}", flush=True)
 

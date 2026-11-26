@@ -325,21 +325,109 @@ def points(w: dict) -> int:
     return pts + (1 if "GOOD" in w["roles"] else 0)
 
 
+# ---------------------------------------------------------------------------------------------- the wallet file
+WALLET_DB = Path(__file__).with_name("wallet_db.json")
+WALLET_CSV = Path(__file__).with_name("wallet_db.csv")
+
+
+def build_wallet_db(store, old: dict | None = None, now=time.time) -> dict:
+    """The ONE watchlist file: the old research cohorts (DEPTH / STANK / INSIDERS, insiders/result.json, read only)
+    + the big wallets of every research coin in esm_* (newcoins.big: >= 5 SOL in a coin entered early, or early in
+    >= 2 coins with >= 1 SOL; CREATOR_GROUP and creators never). Merged into `old`: a wallet already in the file is
+    never removed (only its coins / evidence are brought up to date, `in_latest_build` says whether it still
+    qualifies); a new wallet is added with today's date."""
+    from insiders import esm_view as V
+    from insiders.newcoins import SMART_MIN_BUY_MULTI_SOL, SMART_MIN_BUY_SOL, big, cohort_wallets
+    ts, day = now(), time.strftime("%Y-%m-%d", time.gmtime(now()))
+    coins = {r["symbol"]: r["mint"] for r in store.q("SELECT symbol, mint FROM esm_coin ORDER BY t_create")}
+    cg = {r["wallet"] for r in store.q("SELECT wallet FROM esm_flag WHERE flag='CREATOR_GROUP'")}
+    built: dict[str, dict] = {}
+    for x in V.radar(store, False, min_score=4)["smart"] if coins else []:
+        if x["creator_of"] or x["wallet"] in cg or not big(x):
+            continue
+        early = [e for e in x["entries"] if e["bucket"] in ("0-15", "15-60") and not e["at_creation"]]
+        built[x["wallet"]] = {
+            "sources": [f"coin:{c}" for c in x["early_coins"]], "rank": x["rank"], "multi": x["multi"], "why": x["why"][:4],
+            "coins": {e["symbol"]: {"mint": e["mint"], "bucket": e["bucket"], "minute": e["first_buy_min"], "sol_in": e["sol_in"],
+                                    "rise_x": e["rise_x"], "roles": e["roles"]} for e in x["entries"]},
+            "early_coins": x["early_coins"], "max_buy_sol": round(max((e["sol_in"] or 0) for e in early), 4) if early else None}
+    for c in cohort_wallets():
+        b = built.setdefault(c["wallet"], {"sources": [], "rank": None, "multi": False, "why": [], "coins": {}, "early_coins": [],
+                                           "max_buy_sol": None})
+        b["sources"] = [c["cohort"]] + b["sources"]
+        b["cohort"], b["cohort_label"] = c["cohort"], c.get("label")
+    flags: dict[str, list] = {}
+    for f in store.q("SELECT wallet, flag, ref FROM esm_flag WHERE flag IN ('INDEPENDENCE', 'PASS_THROUGH', 'BATCH_SPLIT', 'COORDINATED_PATTERN')"):
+        flags.setdefault(f["wallet"], []).append(f"{f['flag']}:{f['ref']}")
+    ent = {r["wallet"]: r for r in store.q("SELECT wallet, entity, class FROM esm_wallet_entity")}
+    out = {w: dict(e, in_latest_build=False) for w, e in ((old or {}).get("wallets") or {}).items()}   # nobody is dropped
+    for w, b in built.items():
+        e = ent.get(w) or {}
+        lv = [f.split(":", 1)[1] for f in flags.get(w, []) if f.startswith("INDEPENDENCE:")]
+        prev = out.get(w) or {}
+        out[w] = {**prev, **b, "sources": sorted(set(prev.get("sources") or []) | set(b["sources"])),
+                  "independence": lv[0] if lv else e.get("class") or "INSUFFICIENT_DATA", "entity": e.get("entity"),
+                  "flags": flags.get(w, []), "added": prev.get("added") or day, "updated": day, "in_latest_build": True}
+    return {"version": 1, "updated": ts,
+            "rules": {"min_buy_sol": SMART_MIN_BUY_SOL, "min_buy_multi_sol": SMART_MIN_BUY_MULTI_SOL,
+                      "early": "0-60 phút sau khi tạo coin", "cohorts": "DEPTH, STANK, INSIDERS (insiders/result.json)"},
+            "coins": {**((old or {}).get("coins") or {}), **coins}, "count": len(out),
+            "by_source": {k: sum(1 for e in out.values() if any(x == k or x.startswith(k + ":") for x in e["sources"]))
+                          for k in ("DEPTH", "STANK", "INSIDERS", "coin")},
+            "wallets": dict(sorted(out.items()))}
+
+
+def write_wallet_db(db: dict, path: Path = WALLET_DB, csv_path: Path = WALLET_CSV) -> None:
+    import csv
+    path.write_text(json.dumps(db, ensure_ascii=False, indent=1), encoding="utf-8")
+    with open(csv_path, "w", newline="", encoding="utf-8-sig") as fh:          # utf-8-sig: Excel reads the accents
+        wr = csv.writer(fh)
+        wr.writerow(["wallet", "sources", "cohort", "cohort_label", "early_coins", "max_buy_sol", "rank", "independence",
+                     "entity", "flags", "added", "in_latest_build", "coins"])
+        for w, e in db["wallets"].items():
+            coins = "; ".join(f"{k} phút {c['minute']:g} {c['sol_in'] if c['sol_in'] is not None else '?'} SOL"
+                              for k, c in (e.get("coins") or {}).items())
+            wr.writerow([w, " ".join(e["sources"]), e.get("cohort") or "", e.get("cohort_label") or "",
+                         " ".join(e.get("early_coins") or []), "" if e.get("max_buy_sol") is None else e["max_buy_sol"],
+                         "" if e.get("rank") is None else e["rank"], e.get("independence"), e.get("entity") or "",
+                         " ".join(e.get("flags") or []), e.get("added"), int(bool(e.get("in_latest_build"))), coins])
+
+
+def load_wallet_db(path: Path = WALLET_DB) -> dict | None:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
 def main(argv=None) -> int:
     """python -m insiders.esm import [research_dir] [--db path]: load the research into the local database (idempotent,
-    no network). Default db: the state directory used by main.py (INSIDERS_STATE_DIR / KOL_DB / ./data)."""
+    no network). Default db: the state directory used by main.py (INSIDERS_STATE_DIR / KOL_DB / ./data).
+    python -m insiders.esm walletdb [seed_dir]: rebuild insiders/wallet_db.json / .csv from the research seed (an
+    in-memory import: no network, no database touched), merged into the current file (no wallet is removed)."""
     import argparse
     from insiders.track import Store
     ap = argparse.ArgumentParser(prog="python -m insiders.esm")
-    ap.add_argument("cmd", choices=["import"])
-    ap.add_argument("folder", nargs="?", default=str(Path(__file__).resolve().parents[1] / "research" / "seven_coins"))
+    ap.add_argument("cmd", choices=["import", "walletdb"])
+    ap.add_argument("folder", nargs="?", default=None)
     ap.add_argument("--db", default=None)
     a = ap.parse_args(argv)
+    if a.cmd == "walletdb":
+        st = Store(":memory:")
+        import_research(st, a.folder or Path(__file__).with_name("esm_seed"))
+        old = load_wallet_db()
+        db = build_wallet_db(st, old)
+        write_wallet_db(db)
+        added = len(set(db["wallets"]) - set((old or {}).get("wallets") or {}))
+        print(json.dumps({"file": str(WALLET_DB), "count": db["count"], "added": added, "by_source": db["by_source"],
+                          "coins": list(db["coins"])}, ensure_ascii=False))
+        return 0
+    folder = a.folder or str(Path(__file__).resolve().parents[1] / "research" / "seven_coins")
     if a.db is None:
         from insiders.site import state_dir
         a.db = str(state_dir()[0] / "insiders_track.db")
     st = Store(a.db)
-    print(json.dumps({"db": a.db, "schema": st.version(), **import_research(st, a.folder)}, ensure_ascii=False))
+    print(json.dumps({"db": a.db, "schema": st.version(), **import_research(st, folder)}, ensure_ascii=False))
     return 0
 
 

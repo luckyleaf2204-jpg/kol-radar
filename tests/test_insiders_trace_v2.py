@@ -266,3 +266,44 @@ def test_old_copies_are_pruned_before_the_space_check(tmp_path, monkeypatch):
     out = B.backup(tmp_path, keep=2, now=lambda: 2000.0)
     assert seen == [1] and B.verify(out) == []
     assert len([d for d in (tmp_path / B.DIR).iterdir() if d.is_dir()]) == 2
+
+
+def test_old_cohorts_join_the_watchlist_read_only(tmp_path):
+    from insiders.newcoins import SmartBook, cohort_wallets
+    cw = cohort_wallets()
+    assert {c["cohort"] for c in cw} == {"DEPTH", "STANK", "INSIDERS"} and not any(c.get("skip") for c in cw)
+    st = T.Store(tmp_path / "db.sqlite")
+    E.import_research(st, _folder(tmp_path))
+    b = SmartBook(st)
+    b.refresh(1e9)
+    for c in cw[:20]:
+        assert c["wallet"] in b.smart and b.smart[c["wallet"]]["cohort"] == c["cohort"]
+    assert st.q("SELECT COUNT(*) n FROM wallets")[0]["n"] == 0             # the cohort table is never written
+
+
+def test_wallet_file_keeps_old_wallets_and_adds_new_ones(tmp_path):
+    st = T.Store(tmp_path / "db.sqlite")
+    E.import_research(st, _folder(tmp_path))
+    old = {"coins": {"OLD": "MintOld"}, "wallets": {"KeptWallet111111111111111111111111111111111": {
+        "sources": ["coin:OLD"], "coins": {}, "early_coins": ["OLD"], "added": "2026-01-01"}}}
+    db = E.build_wallet_db(st, old, now=lambda: 1795600000.0)
+    kept = db["wallets"]["KeptWallet111111111111111111111111111111111"]
+    assert kept["added"] == "2026-01-01" and kept["in_latest_build"] is False      # never removed
+    assert {"OLD", "AAA", "BBB"} <= set(db["coins"])
+    from insiders.newcoins import cohort_wallets
+    for c in cohort_wallets()[:10]:
+        assert db["wallets"][c["wallet"]]["cohort"] == c["cohort"] and c["cohort"] in db["wallets"][c["wallet"]]["sources"]
+    E.write_wallet_db(db, tmp_path / "w.json", tmp_path / "w.csv")
+    again = E.build_wallet_db(st, E.load_wallet_db(tmp_path / "w.json"))
+    assert set(again["wallets"]) == set(db["wallets"])                    # a rebuild adds nothing twice
+
+
+def test_the_committed_wallet_file_is_the_watchlist(tmp_path):
+    from insiders.newcoins import SmartBook
+    wdb = E.load_wallet_db()
+    assert wdb and wdb["count"] == len(wdb["wallets"]) >= 370
+    st = T.Store(tmp_path / "db.sqlite")
+    E.import_research(st, _folder(tmp_path))
+    b = SmartBook(st)
+    b.refresh(1e9)
+    assert set(b.smart) <= set(wdb["wallets"]) and len(b.smart) >= len(wdb["wallets"]) - 50
