@@ -57,3 +57,17 @@ python -m insiders.trace <db> <ví> [tầng] [both|in|out] [SOL tối thiểu] [
 
 - Bật trên Render (`INSIDER_TRACE=1`) và chọn nguồn RPC (công khai hay Helius).
 - Danh sách Tier A chính thức (27 ví).
+
+## 6. Kết quả kiểm chứng (development, RPC công khai, 26/11/2026)
+
+- Ghi lại 56 lần truy vết: 4 case, mỗi case 2 tầng, và 52 ví Tier A tạm, mỗi ví 1 tầng. Tổng 628 lượt gọi, 690 phản hồi RPC.
+- Chạy lại offline: **344 dòng tiền** (142 SOL, 96 token, 106 trả phí hộ) và 204 ví. Mọi dòng tiền đều khớp giao dịch gốc khi kiểm độc lập.
+- Toàn bộ test: 360 pass. Gồm 354 test cũ và test mới; đã cập nhật số phiên bản schema 7 → 8.
+- Các ví khớp với dữ liệu hệ thống, kèm chữ ký giao dịch:
+  - **E007**: `Em8J3g…` trả phí hộ cho lệnh của `A9Dam8…`, chữ ký `4nGzpeNK1V5V…`. Cả hai đều thuộc E007.
+  - **HHLz**: nhận 1,833 SOL từ `F7p3dF…`. Ví này là E003 trong ESM và mang nhãn sàn "Relay Solver (bridge)", nên không mở rộng. Chữ ký `3tinBSYXMCqi…`.
+  - **9Y2**: chuyển 1,4399 SOL tới `N9WqrX…` (chủ thể E002), chữ ký `24nXyzQmbYNN…`. Đường tới E009 đi qua một hub nên chỉ là tín hiệu yếu.
+  - **DEV/Creator CHUCHU** (`5uGbn3…`):
+    - creator chuyển 26.594.655 CHUCHU cho `2EpFa1…` (CREATOR_GROUP E001), chữ ký `22jzE8WcK9Nv…`;
+    - ví `F5XZHy…` (E001) nhận CHUCHU từ 17 ví khác cùng E001: dòng gom token của nhóm phát hành.
+- Kết quả 2 tầng từ ví creator CHUCHU chỉ đọc 10 giao dịch gần nhất của mỗi ví. Liên kết tới nhóm E001 nằm ở giao dịch cũ hơn, nên cần tăng "giao dịch/ví" khi truy vết thật.
