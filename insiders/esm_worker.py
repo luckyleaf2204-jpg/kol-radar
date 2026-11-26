@@ -16,7 +16,9 @@ Stages per mint (esm_queue.state):
   DECODE    getTransaction of each successful signature inside the window -> esm_event (stablecoin quote kept);
             not served after MAX_TRIES -> counted as not_served (coverage), never guessed.
   ANALYZE   insiders.esm.analyze_window -> esm_coin + esm_window_wallet (points from the window only).
-  FUNDING   for every BIG wallet of the coin (newcoins.big: >= 5 SOL early, or early in >= 2 coins with >= 1 SOL):
+  FUNDING   for every BIG wallet of the coin (newcoins.big: >= 5 SOL early, or early in >= 2 coins with >= 1 SOL) that
+            also meets the research watchlist rule (>= 4 points in the coin, i.e. the price rose after it bought, or
+            early in >= 2 coins):
             SOL >= 0.05 sent to it in the 72 h before its first buy (FUND_SIGS transactions) -> edges (research_sol);
             a watched wallet that funded it, or a non-exchange funder shared with a watched wallet = STRONG link
             (esm_link) -> independence LIKELY_SAME_ENTITY; only exchanges -> INSUFFICIENT_DATA; else INDEPENDENT
@@ -288,7 +290,7 @@ class EsmWorker:
 
     # -- FUNDING: the big wallets of the coin, where their SOL came from (72 h before the first buy)
     def big_wallets(self, mint) -> list[dict]:
-        from insiders.newcoins import big
+        from insiders.newcoins import MIN_SCORE, big
         creators = {r["creator"] for r in self.s.q("SELECT creator FROM esm_coin WHERE creator IS NOT NULL")}
         cg = {r["wallet"] for r in self.s.q("SELECT wallet FROM esm_flag WHERE flag IN ('CREATOR_GROUP', 'CREATOR')")}
         out = []
@@ -296,11 +298,12 @@ class EsmWorker:
             w = r["wallet"]
             if w in creators or w in cg:
                 continue
-            rows = self.s.q("SELECT w.mint, w.bucket, w.sol_in, c.symbol, c.creator FROM esm_window_wallet w JOIN esm_coin c ON c.mint=w.mint "
-                            "WHERE w.wallet=?", (w,))
+            rows = self.s.q("SELECT w.mint, w.bucket, w.sol_in, w.points, c.symbol, c.creator FROM esm_window_wallet w JOIN esm_coin c "
+                            "ON c.mint=w.mint WHERE w.wallet=?", (w,))
             entries = [{"bucket": x["bucket"], "sol_in": x["sol_in"], "at_creation": x["creator"] == w} for x in rows]
             early = sorted({x["symbol"] for x in rows if x["bucket"] in ("0-15", "15-60")})
-            if big({"entries": entries, "early_coins": early}):
+            pts = max([x["points"] or 0 for x in rows if x["bucket"] in ("0-15", "15-60") and x["creator"] != w] or [0])
+            if big({"entries": entries, "early_coins": early}) and (len(early) >= 2 or pts >= MIN_SCORE):   # = newcoins.auto_wallets
                 out.append(r)
         return out
 

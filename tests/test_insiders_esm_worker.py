@@ -184,6 +184,7 @@ def test_a_coin_added_on_the_page_is_traced_and_its_big_wallet_watched(tmp_path,
     st = T.Store(tmp_path / "t.db")
     st.x("INSERT INTO esm_pending_mint VALUES ('NEWC', 'REQUESTED', ?, 'page', 1)", (json.dumps([{"mint": MINT}]),))
     txs = {"c": create_tx(), "w1": buy_tx(WHALE, T0 + 30, 8.0, 3_000_000_000, "w1"), "b1": buy_tx(BUYER, T0 + 60, 1.0, 1_000_000_000, "b1")}
+    txs.update({f"up{i}": buy_tx(BUYER, T0 + 4000 + i, 0.5, 20_000_000, f"up{i}") for i in range(4)})   # the price rose ~9x after WHALE
     c = WalletChain(txs, {"f1": fund_tx(FUNDER, WHALE, 9.0, T0 - 3600, "f1")})
     now = [T0 + 7300]
     w = EW.EsmWorker(st, c, now=lambda: now[0], on=True)
@@ -252,3 +253,15 @@ def test_router_uses_helius_up_to_its_daily_cap_then_the_public_rpc(tmp_path, mo
     r2 = EW.Router(T.Store(tmp_path / "u.db"), broken, public)
     assert r2("getTransaction", ["x"]) == {"p": 1} and r2.stat["helius_errors"] == 1        # Helius down: public, no stop
     assert EW.Router(st, None, public)("getTransaction", ["x"]) == {"p": 1}                   # no key: public only
+
+
+def test_big_buyers_of_a_coin_that_dumped_are_not_watched(tmp_path):
+    from insiders.newcoins import auto_wallets
+    st = T.Store(tmp_path / "t.db")
+    st.x("INSERT INTO esm_pending_mint VALUES ('DUMP', 'REQUESTED', ?, 'page', 1)", (json.dumps([{"mint": MINT}]),))
+    txs = {"c": create_tx(), "w1": buy_tx(WHALE, T0 + 30, 8.0, 3_000_000_000, "w1")}
+    txs.update({f"dn{i}": buy_tx(BUYER, T0 + 4000 + i, 0.1, 1_000_000_000, f"dn{i}") for i in range(4)})   # price fell ~25x
+    c = WalletChain(txs, {"f1": fund_tx(FUNDER, WHALE, 9.0, T0 - 3600, "f1")})
+    run(EW.EsmWorker(st, c, now=lambda: T0 + 7300, on=True), 30)
+    assert st.q("SELECT status, note FROM esm_pending_mint")[0] == {"status": "DONE", "note": "xong: 0 ví lớn đã vào danh sách theo dõi"}
+    assert auto_wallets(st) == {} and ("getSignaturesForAddress", WHALE) not in c.calls          # no funding read wasted

@@ -38,6 +38,7 @@ SMART_REFRESH_S = 600
 SMART_MIN_BUY_SOL = float(os.environ.get("SMART_MIN_BUY_SOL") or 5)
 SMART_MIN_BUY_MULTI_SOL = float(os.environ.get("SMART_MIN_BUY_MULTI_SOL") or 1)   # a wallet early in >= 2 coins (repeat)
 SMART_MIN_LIVE_SOL = float(os.environ.get("SMART_MIN_LIVE_SOL") or 1)
+MIN_SCORE = 4                                              # esm_view.radar min_score: the research watchlist rule
 # the old research cohorts join the watchlist (user, 2026-11-26): read only from insiders/result.json (wallets.cohorts),
 # never changed; exchange / deposit successors (skip) left out. No window data: only the live >= 1 SOL rule applies
 SMART_COHORTS = tuple(x.strip().upper() for x in (os.environ.get("SMART_COHORTS") or "DEPTH,STANK,INSIDERS").split(",") if x.strip())
@@ -98,12 +99,14 @@ def auto_wallets(store) -> dict[str, dict]:
         w = r["wallet"]
         if w in skip:
             continue
-        rows = store.q("SELECT w.mint, w.bucket, w.sol_in, w.first_buy_min, c.symbol, c.creator FROM esm_window_wallet w "
+        rows = store.q("SELECT w.mint, w.bucket, w.sol_in, w.first_buy_min, w.points, c.symbol, c.creator FROM esm_window_wallet w "
                        "JOIN esm_coin c ON c.mint=w.mint WHERE w.wallet=?", (w,))
         early = [x for x in rows if x["bucket"] in ("0-15", "15-60") and x["creator"] != w]
         x = {"entries": [{"bucket": e["bucket"], "sol_in": e["sol_in"], "at_creation": False} for e in early],
              "early_coins": sorted({e["symbol"] for e in early})}
-        if not big(x):
+        # same watchlist rule as the research list (esm_view.radar): early in >= 2 coins, or >= MIN_SCORE points in one
+        # (early + the price rose >= 2x after it bought / ended in profit): a big buyer of a coin that dumped is not one
+        if not big(x) or not (len(x["early_coins"]) >= 2 or max((e["points"] or 0) for e in early) >= MIN_SCORE):
             continue
         mine = [e for e in early if e["mint"] in coins]
         out[w] = {"rank": "AUTO", "multi": len(x["early_coins"]) >= 2, "creator_of": [], "cohort": None,
