@@ -37,7 +37,8 @@ SMART_REFRESH_S = 600
 SMART_MIN_BUY_SOL = float(os.environ.get("SMART_MIN_BUY_SOL") or 5)
 SMART_MIN_BUY_MULTI_SOL = float(os.environ.get("SMART_MIN_BUY_MULTI_SOL") or 1)   # a wallet early in >= 2 coins (repeat)
 SMART_MIN_LIVE_SOL = float(os.environ.get("SMART_MIN_LIVE_SOL") or 1)
-KEEP_TRADES_S = 2 * 86400
+# trades of a coin's first 120 minutes, kept 12 h (disk, 2026-11-26; was 2 days); Smart Money trades (smart=1) are kept
+KEEP_TRADES_S = float(os.environ.get("NC_KEEP_TRADES_H") or 12) * 3600
 KEEP_QUIET_COINS_S = 3 * 86400
 HORIZONS = (("15m", 900), ("1h", 3600), ("2h", 7200), ("6h", 21600), ("24h", 86400))
 LAUNCH_PRICE = 30 / 1_073_000_000                          # SOL per token on a fresh standard pump.fun SOL curve

@@ -247,3 +247,22 @@ def test_watchlist_keeps_only_wallets_that_bought_big_early():
     assert not big({"entries": []})
     assert big({"early_coins": ["A", "B"], "entries": [e(1.0), e(0.2, "15-60")]})          # repeat early wallet: >= 1 SOL
     assert not big({"early_coins": ["A", "B"], "entries": [e(0.9), e(0.2, "15-60")]})
+
+
+def test_old_copies_are_pruned_before_the_space_check(tmp_path, monkeypatch):
+    import shutil
+    from insiders import backup as B
+    from insiders import newcoins as N
+    assert B.KEEP == 2 and N.KEEP_TRADES_S == 12 * 3600                # defaults of 2026-11-26
+    T.Store(tmp_path / "insiders_track.db").put("k", "v")
+    for i in range(4):
+        B.backup(tmp_path, keep=10, now=lambda i=i: 1000.0 + i)
+    real, seen = shutil.disk_usage, []
+
+    def usage(p):                                                         # the check runs with one old copy left
+        seen.append(len([d for d in (tmp_path / B.DIR).iterdir() if d.is_dir()]))
+        return real(p)
+    monkeypatch.setattr(B.shutil, "disk_usage", usage)
+    out = B.backup(tmp_path, keep=2, now=lambda: 2000.0)
+    assert seen == [1] and B.verify(out) == []
+    assert len([d for d in (tmp_path / B.DIR).iterdir() if d.is_dir()]) == 2

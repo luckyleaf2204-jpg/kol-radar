@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 
 FILES = ("insider_watch.json", "insiders_track.db")
-KEEP = int(os.environ.get("INSIDER_BACKUP_KEEP") or 10)
+KEEP = int(os.environ.get("INSIDER_BACKUP_KEEP") or 2)    # 2026-11-26: 2 (was 10) - each copy is the whole database
 RESERVE_BYTES = int(float(os.environ.get("INSIDER_BACKUP_RESERVE_GB") or 0.5) * 1e9)   # left free for the live database
 DIR = "backups"
 
@@ -61,6 +61,8 @@ def backup(state_dir: str | Path, files=FILES, keep: int = KEEP, reason: str = "
     if not present:
         return None
     root = state_dir / DIR
+    if keep > 0:                                               # room first: the oldest copies beyond keep - 1 go (one stays);
+        prune(root, max(1, keep - 1))                          # keep=0 (pre-restore) never prunes anything
     need = sum((state_dir / n).stat().st_size + ((state_dir / f"{n}-wal").stat().st_size if (state_dir / f"{n}-wal").is_file() else 0)
                for n in present)
     free = shutil.disk_usage(state_dir).free
