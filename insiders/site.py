@@ -76,7 +76,7 @@ def git_commit() -> str | None:
         return None
 
 
-def make_handler(svc: InsiderService, access_code: str | None, health: dict, callers=None, esm=None, nc=None):
+def make_handler(svc: InsiderService, access_code: str | None, health: dict, callers=None, esm=None, nc=None, trace=None):
     class H(BaseHTTPRequestHandler):
         server_version = "insiders"
         protocol_version = "HTTP/1.1"                       # keep-alive: every response sets Content-Length
@@ -263,6 +263,8 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
             if path.startswith("/api/insiders/esm/"):
                 from urllib.parse import urlsplit
                 return self._json(*esm_get(esm, path, self.path, svc))
+            if path.startswith("/api/insiders/trace/"):
+                return self._json(*trace_get(trace, path, self.path))
             if path == "/api/insiders":
                 return self._json(200, svc.status())
             if path == "/api/insiders/chart":
@@ -329,6 +331,8 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                 on = (parse_qs(urlsplit(self.path).query).get("on") or ["0"])[0] == "1"
                 until = v.set_turbo(on)
                 return self._json(200, {"turbo": v.turbo(), "turbo_until": until})
+            if path.startswith("/api/insiders/trace/"):
+                return self._json(*trace_post(trace, path, self.path, body))
             if path.startswith("/api/insiders/track/"):
                 res = track_post(svc, path, self.path, body)
                 return self._json(*res)
@@ -477,6 +481,80 @@ def open_esm(sdir: Path):
         n = E.import_research(st, src)
         print(f"[insiders] Early Smart Money: đã nạp dữ liệu nghiên cứu {n}", flush=True)
     return st
+
+
+def open_trace(sdir: Path):
+    """The wallet trace worker (insiders/trace.py) on the tracker's SQLite file. OFF unless INSIDER_TRACE=1, so nothing
+    here spends an RPC call without that switch. RPC: INSIDER_TRACE_RPC, else Helius when keyed and
+    INSIDER_TRACE_HELIUS=1, else the public endpoint."""
+    from insiders import trace as T
+    if not T.enabled_by_env():
+        return None
+    import threading
+    from insiders.track import Store
+    from insiders.watch import Rpc
+    url = os.environ.get("INSIDER_TRACE_RPC")
+    key = os.environ.get("HELIUS_API_KEY")
+    if not url and key and os.environ.get("INSIDER_TRACE_HELIUS") == "1":
+        url = f"https://mainnet.helius-rpc.com/?api-key={key}"
+    tr = T.Tracer(Store(sdir / "insiders_track.db"), Rpc(url=url, gap_s=0.05) if url else Rpc(gap_s=0.35))
+    threading.Thread(target=tr.run_forever, args=(threading.Event(),), daemon=True, name="trace").start()
+    print(f"[insiders] Truy vết ví: bật ({'RPC riêng' if url else 'RPC công khai'})", flush=True)
+    return tr
+
+
+def trace_get(tr, path: str, raw: str) -> tuple[int, object]:
+    """GET /api/insiders/trace/{status|jobs|job}: wallet traces (read only, no network)."""
+    if tr is None:
+        return 503, {"error": "trace_off", "note": "truy vết tắt: đặt INSIDER_TRACE=1"}
+    q = _qs(raw)
+    name = path.rsplit("/", 1)[-1]
+    if name == "status":
+        return 200, tr.status()
+    if name == "jobs":
+        w = q.get("wallet")
+        if w and not _ADDR.fullmatch(w):
+            return 400, {"error": "wallet"}
+        rows = tr.jobs(100)
+        return 200, {"jobs": [r for r in rows if not w or r["root"] == w][:30]}
+    if name == "job":
+        try:
+            jid = int(q.get("id") or "")
+        except ValueError:
+            return 400, {"error": "id"}
+        f = q.get("focus")
+        if f and not _ADDR.fullmatch(f):
+            return 400, {"error": "focus"}
+        d = tr.view(jid, focus=f)
+        return (200, d) if d else (404, {"error": "job"})
+    return 404, {"error": "route"}
+
+
+def trace_post(tr, path: str, raw: str, body: bytes) -> tuple[int, object]:
+    """POST /api/insiders/trace/start {wallet, hops 1-3, direction both|in|out, min_sol, sigs 5-100} | /stop?id=."""
+    if tr is None:
+        return 503, {"error": "trace_off", "note": "truy vết tắt: đặt INSIDER_TRACE=1"}
+    name = path.rsplit("/", 1)[-1]
+    if name == "start":
+        try:
+            d = json.loads(body or b"{}")
+            if not isinstance(d, dict):
+                raise ValueError
+            w = str(d.get("wallet") or "").strip()
+            if not _ADDR.fullmatch(w):
+                return 400, {"error": "wallet"}
+            job = tr.start(w, int(d.get("hops") or 2), str(d.get("direction") or "both"), float(d.get("min_sol") or 0.1),
+                           int(d.get("sigs") or 40))
+        except (ValueError, TypeError):
+            return 400, {"error": "args"}
+        return 200, {"job": job}
+    if name == "stop":
+        try:
+            jid = int(_qs(raw).get("id") or "")
+        except ValueError:
+            return 400, {"error": "id"}
+        return (200, {"ok": True}) if tr.cancel(jid) else (404, {"error": "job"})
+    return 404, {"error": "route"}
 
 
 def track_get(svc, path: str, raw: str) -> tuple[int, object]:
@@ -642,7 +720,9 @@ def serve(host: str = "127.0.0.1", port: int = 8780, watch: bool = True, svc: In
     health["esm"] = esm is not None
     nc = open_newcoins(sdir, on=bool(started))
     health["newcoins"] = nc is not None
-    httpd = ThreadingHTTPServer((host, port), make_handler(svc, code, health, callers, esm, nc))
+    trace = open_trace(sdir)
+    health["trace"] = trace is not None
+    httpd = ThreadingHTTPServer((host, port), make_handler(svc, code, health, callers, esm, nc, trace))
     print(f"[insiders] http://{host}:{port} · state {sdir} (durable {durable}) · watch {bool(started)}", flush=True)
     return httpd
 

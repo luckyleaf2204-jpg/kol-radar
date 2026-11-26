@@ -8,7 +8,7 @@ const LS = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) { /* private mode */ } },
 };
 const S = { code: LS.get("insAccessCode", ""), cache: {}, wl: LS.get("esm.wl", {}), el: LS.get("esm.el", {}), cw: {} };
-const TABS = [["", "RADAR"], ["stats", "Thống kê"], ["wallets", "Xếp hạng ví"], ["entities", "Xếp hạng chủ thể"], ["coins", "Coin"], ["guide", "Chú giải"]];
+const TABS = [["", "RADAR"], ["stats", "Thống kê"], ["wallets", "Xếp hạng ví"], ["entities", "Xếp hạng chủ thể"], ["coins", "Coin"], ["trace", "Truy vết ví"], ["guide", "Chú giải"]];
 const BUCKETS = ["0-15", "15-60", "60-120"];
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const short = (a, n = 4) => a ? (a.length > 12 ? `${a.slice(0, n)}…${a.slice(-n)}` : a) : "";
@@ -337,7 +337,8 @@ async function viewWallet(w) {
   setMain(`
     <div class="crumbs"><a href="#/wallets">Xếp hạng ví</a> › <span class="mono">${short(w, 6)}</span></div>
     <section class="panel">
-      <div class="hdr"><h1>${esc(w)}</h1><span class="copy" data-copy="${w}">⧉</span><a class="ext" href="${SOLSCAN.acc(w)}" target="_blank" rel="noopener">solscan ↗</a></div>
+      <div class="hdr"><h1>${esc(w)}</h1><span class="copy" data-copy="${w}">⧉</span><a class="ext" href="${SOLSCAN.acc(w)}" target="_blank" rel="noopener">solscan ↗</a>
+        <span class="grow"></span><a class="btn small" href="#/trace/new/${w}">Truy vết ví này</a></div>
       <div class="bds">${d.rank ? `<span class="bd cr">Hạng #${d.rank}</span>` : `<span class="bd id">Không xếp hạng</span>`}${clsBadge(d.class)}
         ${d.entity ? `<a class="bd ch" href="#/entity/${d.entity}">Chủ thể ${d.entity} · ${d.entity_members.length} ví</a>` : ""}${flagBadges(d.flags)}
         ${d.cohort ? `<span class="bd st">Cohort ${esc(d.cohort)} (tham chiếu)</span>` : ""}</div>
@@ -552,6 +553,7 @@ async function route() {
     else if (page === "wallet" && arg) await viewWallet(arg);
     else if (page === "entity" && arg) await viewEntity(arg);
     else if (page === "guide") viewGuide();
+    else if (page === "trace") await viewTrace(arg, h[2], h[3]);
     else if (page === "stats") await viewOverview();
     else await viewRadar();
     $$(".ccard[data-go]").forEach((x) => x.onclick = () => location.hash = x.dataset.go);
@@ -562,3 +564,151 @@ async function route() {
 }
 window.addEventListener("hashchange", () => { window.scrollTo(0, 0); route(); });
 route();
+
+
+// ---------------------------------------------------------------- wallet trace (/api/insiders/trace/*)
+async function tapi(name, qs, body) {
+  const r = await fetch(`/api/insiders/trace/${name}${qs ? "?" + qs : ""}`, body === undefined ? { headers: { "X-Access-Code": S.code }, cache: "no-store" }
+    : { method: "POST", headers: { "X-Access-Code": S.code, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (r.status === 401) { login("Cần mã truy cập"); throw new Error("auth"); }
+  const d = await r.json().catch(() => ({}));
+  if (r.status === 503) return { off: true, note: d.note };
+  if (!r.ok) throw new Error(d.error || "http " + r.status);
+  return d;
+}
+const T = { timer: null };
+const TAG = { CREATOR: "cg", CREATOR_GROUP: "cg", DEV: "cg", DEPTH: "cr", STANK: "cr", INSIDERS: "cr", HUB: "bot", EXCHANGE: "bot", FEE: "bot" };
+const tagBadges = (tags) => (tags || []).map((t) => `<span class="bd ${TAG[t] || (/^E\d+$/.test(t) ? "ls" : "ch")}" title="${esc(tagHelp(t))}">${esc(t)}</span>`).join("");
+function tagHelp(t) {
+  return { CREATOR: "Ví tạo coin (Early Smart Money)", CREATOR_GROUP: "Thuộc nhóm phát hành (cụm chứa creator)", DEV: "Ví tạo coin trên luồng New Coins (dev)",
+    DEPTH: "Cohort DEPTH", STANK: "Cohort STANK", INSIDERS: "Cohort INSIDERS", HUB: "Hub: ≥ 100 giao dịch, ≥ 1 giao dịch/phút (không mở rộng)",
+    EXCHANGE: "Sàn (nhãn đã biết)", FEE: "Ví phí (nhãn đã biết)" }[t] || (/^E\d+$/.test(t) ? "Chủ thể Early Smart Money " + t : t);
+}
+const asset = (a) => a === "FEE" ? `<span class="bd co" title="Ví này trả phí giao dịch cho ví kia (cùng ký một giao dịch): quan hệ, không phải chuyển tiền">TRẢ PHÍ HỘ</span>` : a === "SOL" ? "SOL" : `<a class="mono" href="${SOLSCAN.tok(a)}" target="_blank" rel="noopener" title="${a}">${short(a, 4)}</a>`;
+const amt = (e) => e.asset === "SOL" ? fmt(e.amount, 4) + " SOL" : e.asset === "FEE" ? `phí ${fmt(e.amount, 6)} SOL` : fmt(e.amount, 2);
+const tlink = (w, jid) => `<span class="addr"><a href="#/trace/${jid}/${w}" title="${w}">${short(w, 5)}</a><span class="copy" data-copy="${w}" title="Chép">⧉</span><a class="ext" href="${SOLSCAN.acc(w)}" target="_blank" rel="noopener">↗</a></span>`;
+const sigLinks = (sigs) => (sigs || []).filter(Boolean).slice(0, 3).map((g) => `<a class="ext" href="${SOLSCAN.tx(g)}" target="_blank" rel="noopener" title="${g}">${g.slice(0, 6)}↗</a>`).join(" ");
+
+async function viewTrace(arg, a2, a3) {
+  clearInterval(T.timer);
+  if (arg && arg !== "new") return viewTraceJob(Number(arg), a2);
+  const st = await tapi("status");
+  if (st.off) return setMain(`<section class="panel"><div class="warnbox">Truy vết ví đang tắt trên máy chủ này (${esc(st.note || "")}). Không có lệnh gọi RPC nào được thực hiện.</div></section>`);
+  const js = await tapi("jobs");
+  const pre = arg === "new" && a2 ? a2 : "";
+  const cols = [
+    { k: "id", t: "#", num: true }, { k: "root", t: "Ví gốc", sort: false, f: (r) => walletLink(r.root) },
+    { k: "status", t: "Trạng thái", f: (r) => `<span class="bd ${r.status === "done" ? "in" : r.status === "running" ? "cr" : "id"}">${esc(r.status)}</span>${r.note ? `<span class="sub">${esc(r.note)}</span>` : ""}` },
+    { k: "hops", t: "Tầng / chiều", f: (r) => `${r.hops} · ${esc({ both: "hai chiều", in: "tiền vào", out: "tiền ra" }[r.direction])}` },
+    { k: "nodes", t: "Ví", num: true, f: (r) => `${r.nodes}${r.todo ? `<span class="sub">${r.todo} chờ</span>` : ""}` },
+    { k: "calls", t: "Lượt RPC", num: true }, { k: "created", t: "Tạo", f: (r) => `<span class="small">${utc(r.created)}</span>` }];
+  setMain(`
+    <section class="panel"><header><h2>Truy vết ví</h2><span class="grow"></span><span class="small muted">${fmt(st.calls_today, 0)} / ${fmt(st.day_cap, 0)} lượt RPC hôm nay · ${st.running} đang chạy</span></header>
+      <form id="tf" class="tools">
+        <input type="search" id="tw" placeholder="Địa chỉ ví bất kỳ (base58)…" value="${esc(pre)}" required pattern="[1-9A-HJ-NP-Za-km-z]{32,44}">
+        <select id="th" title="Số tầng">${[1, 2, 3].map((v) => `<option value="${v}" ${v === 2 ? "selected" : ""}>${v} tầng</option>`).join("")}</select>
+        <select id="td"><option value="both">Hai chiều</option><option value="in">Chỉ tiền vào (nguồn vốn)</option><option value="out">Chỉ tiền ra</option></select>
+        <label class="chk">SOL tối thiểu <input id="tm" type="number" min="0" step="0.01" value="0.1" style="width:70px"></label>
+        <label class="chk">Giao dịch/ví <input id="ts" type="number" min="5" max="100" value="40" style="width:60px"></label>
+        <button class="btn primary">Bắt đầu truy vết</button></form>
+      <div class="note">Đọc chữ ký và giao dịch của ví (chỉ đọc, không ký, không gửi), ghi mọi lần chuyển SOL / token vào và ra; ví đối tác được đọc tiếp đến số tầng đã chọn.
+        Sàn và hub (≥ 100 giao dịch, ≥ 1/phút) chỉ hiển thị, không mở rộng. Mỗi dòng tiền kèm chữ ký giao dịch để đối chiếu trên Solscan.
+        Ví tìm được là ví <b>có liên quan</b> theo bằng chứng on-chain, không phải kết luận cùng chủ.</div></section>
+    <section class="panel"><header><h2>Các lần truy vết</h2><span class="grow"></span><span class="count">${js.jobs.length}</span></header>
+      ${js.jobs.length ? table("tr-jobs", cols, js.jobs, { href: (r) => `#/trace/${r.id}`, sort: "id" }) : `<div class="empty">Chưa có lần truy vết nào</div>`}</section>`, () => viewTrace(arg, a2, a3));
+  $("#tf").onsubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const r = await tapi("start", "", { wallet: $("#tw").value.trim(), hops: Number($("#th").value), direction: $("#td").value, min_sol: Number($("#tm").value), sigs: Number($("#ts").value) });
+      location.hash = `#/trace/${r.job.id}`;
+    } catch (err) { toast("Không bắt đầu được: " + err.message); }
+  };
+}
+
+async function viewTraceJob(id, focus) {
+  clearInterval(T.timer);
+  const d = await tapi("job", "id=" + id + (focus ? "&focus=" + focus : ""));
+  if (d.off) return viewTrace();
+  const j = d.job, nodes = d.nodes;
+  const byState = nodes.reduce((m, n) => (m[n.state] = (m[n.state] || 0) + 1, m), {});
+  const running = j.status === "running";
+  const sumAsset = (dir) => d.edges.filter((e) => e.asset === "SOL" && (dir === "in" ? e.dst === j.root : e.src === j.root)).reduce((a, e) => a + e.amount, 0);
+  const nodeCols = [
+    { k: "hop", t: "Tầng", num: true }, { k: "wallet", t: "Ví", sort: false, f: (r) => tlink(r.wallet, id) },
+    { k: "tags", t: "Hệ thống đã biết", sort: false, f: (r) => `<div class="bds">${tagBadges(r.tags)}${r.esm_class ? clsBadge(r.esm_class) : ""}</div>${r.creator_of ? `<span class="sub">tạo coin: ${esc(r.creator_of.join(", "))}</span>` : ""}${r.dev_coins ? `<span class="sub">dev ${r.dev_coins} coin: ${esc((r.dev_symbols || []).join(", "))}</span>` : ""}`, sv: (r) => (r.tags || []).length },
+    { k: "via", t: "Tìm thấy qua", sort: false, f: (r) => r.via ? `${short(r.via, 4)} ${sigLinks([r.via_sig])}` : `<span class="bd cr">VÍ GỐC</span>` },
+    { k: "state", t: "Trạng thái", f: (r) => `<span class="bd ${r.state === "done" ? "in" : r.state === "todo" ? "cr" : "id"}">${esc(r.state)}</span>${r.reason ? `<span class="sub">${esc(r.reason)}</span>` : ""}` },
+    { k: "flows", t: "Dòng tiền / tx đọc", num: true, f: (r) => `${r.flows || 0} / ${r.tx_read || 0}` },
+    { k: "newest_ts", t: "Giao dịch đã đọc", f: (r) => r.newest_ts ? `<span class="small">${utc(r.oldest_ts)} →<br>${utc(r.newest_ts)}</span>` : "–" }];
+  const flowCols = [
+    { k: "ts", t: "Thời điểm (UTC)", f: (r) => `<span class="mono small">${utc(r.ts)}</span>` },
+    { k: "src", t: "Từ", sort: false, f: (r) => tlink(r.src, id) }, { k: "dst", t: "Đến", sort: false, f: (r) => tlink(r.dst, id) },
+    { k: "asset", t: "Tài sản", f: (r) => asset(r.asset) }, { k: "amount", t: "Lượng", num: true, f: amt },
+    { k: "sig", t: "Chữ ký giao dịch", sort: false, f: (r) => `<a class="mono small" href="${SOLSCAN.tx(r.sig)}" target="_blank" rel="noopener" title="${r.sig}">${short(r.sig, 8)} ↗</a>` }];
+  const matchCols = [
+    { k: "wallet", t: "Ví đã biết", sort: false, f: (r) => tlink(r.wallet, id) + (r.label ? `<span class="sub">${esc(r.label)}</span>` : "") },
+    { k: "tags", t: "Khớp với", sort: false, f: (r) => `<div class="bds">${tagBadges(r.tags)}</div>${r.creator_of ? `<span class="sub">tạo coin: ${esc(r.creator_of.join(", "))}</span>` : ""}` },
+    { k: "hops", t: "Số bước", num: true, f: (r) => r.path.length, sv: (r) => r.path.length },
+    { k: "path", t: "Đường đi của tiền (từ ví gốc)", sort: false, f: (r) => r.path.map((p) => `<div class="small">${short(p.from, 4)} → ${short(p.to, 4)} · ${p.asset === "SOL" ? fmt(p.amount, 3) + " SOL" : p.asset === "FEE" ? "trả phí hộ" : fmt(p.amount, 0) + " " + short(p.asset, 3)}${p.n > 1 ? ` (${p.n} lần)` : ""} ${sigLinks(p.sigs)}</div>`).join("") }];
+  const histCols = [
+    { k: "ts", t: "Thời điểm (UTC)", f: (r) => `<span class="mono small">${utc(r.ts)}</span>` },
+    { k: "kind", t: "Loại", f: (r) => `<span class="bd ${r.kind === "BUY" || r.kind === "CREATE" ? "in" : r.kind === "SELL" ? "cg" : "ch"}">${esc(r.kind)}</span>` },
+    { k: "mint", t: "Token", f: (r) => asset(r.mint) }, { k: "tokens", t: "Lượng token", num: true, f: (r) => fmt(Number(r.tokens), 0) },
+    { k: "sol", t: "SOL", num: true, f: (r) => fmt(r.sol, 4) },
+    { k: "sig", t: "Chữ ký", sort: false, f: (r) => `<a class="mono small" href="${SOLSCAN.tx(r.sig)}" target="_blank" rel="noopener">${short(r.sig, 8)} ↗</a>` }];
+  setMain(`
+    <div class="crumbs"><a href="#/trace">Truy vết ví</a> › <span class="mono">#${id} ${short(j.root, 6)}</span></div>
+    <section class="panel"><div class="hdr"><h1>${esc(j.root)}</h1><span class="copy" data-copy="${j.root}">⧉</span><a class="ext" href="${SOLSCAN.acc(j.root)}" target="_blank" rel="noopener">solscan ↗</a>
+        <span class="grow"></span>${running ? `<span class="pill good"><span class="dot"></span>ĐANG ĐỌC</span><button class="btn small" id="tstop">Dừng</button>` : `<span class="bd ${j.status === "done" ? "in" : "id"}">${esc(j.status)}</span>`}
+        <a class="btn small" href="#/wallet/${j.root}">Dữ liệu Early Smart Money</a></div>
+      <div class="small muted">${j.hops} tầng · ${esc({ both: "hai chiều", in: "tiền vào", out: "tiền ra" }[j.direction])} · SOL ≥ ${fmt(j.min_sol, 3)} · ${j.sigs} giao dịch/ví · tạo ${utc(j.created)}${j.note ? " · " + esc(j.note) : ""}</div></section>
+    <section class="kpis k6">
+      ${kpi("Ví trong truy vết", nodes.length, Object.entries(byState).map(([k, v]) => `${v} ${k}`).join(" · "))}
+      ${kpi("Ví đối tác (lá)", d.leaves.length, "dưới ngưỡng / ngoài số tầng")}
+      ${kpi("Dòng tiền", fmt(d.flows_total, 0), `${d.edges.length} cạnh đã gộp`)}
+      ${kpi("SOL vào ví gốc", fmt(sumAsset("in"), 3), "trong giao dịch đã đọc", "sm good")}
+      ${kpi("SOL ra từ ví gốc", fmt(sumAsset("out"), 3), "trong giao dịch đã đọc", "sm bad")}
+      ${kpi("Khớp hệ thống", d.matches.length, `${fmt(d.rpc_calls, 0)} lượt RPC`, d.matches.length ? "sm warn" : "sm")}</section>
+    <section class="panel"><header><h2>Đối chiếu với DEV / Creator, cohort STANK / DEPTH / INSIDERS, chủ thể ESM</h2><span class="grow"></span><span class="count">${d.matches.length}</span></header>
+      ${d.matches.length ? table("tr-m-" + id, matchCols, d.matches, { per: 20 }) : `<div class="empty">Chưa thấy ví nào trong truy vết trùng với dữ liệu hệ thống đã có${running ? " (đang đọc tiếp)" : ""}.</div>`}</section>
+    <section class="panel"><header><h2>Quan hệ ví</h2><span class="grow"></span><span class="small muted">bấm một ví để xem lịch sử giao dịch của nó</span></header>${traceGraph(d, id)}</section>
+    <section class="panel"><header><h2>Dòng tiền SOL / token</h2><span class="grow"></span><span class="count">${d.flows.length}${d.flows_total > d.flows.length ? " / " + d.flows_total : ""}</span></header>
+      ${d.flows.length ? table("tr-f-" + id, flowCols, d.flows, { sort: "ts", per: 50 }) : `<div class="empty">Chưa có dòng tiền nào${running ? " (đang đọc)" : ""}.</div>`}</section>
+    <section class="panel"><header><h2>Lịch sử giao dịch: <span class="mono">${short(d.history.wallet, 6)}</span></h2><span class="grow"></span><span class="count">${d.history.trades.length}</span></header>
+      ${d.history.trades.length ? table("tr-h-" + id + d.history.wallet, histCols, d.history.trades, { sort: "ts", per: 30 }) : `<div class="empty">Không có lệnh mua / bán / chuyển token trong các giao dịch đã đọc${d.history.wallet !== j.root ? " (ví này chỉ được đọc khi ở tầng chưa phải tầng cuối)" : ""}.</div>`}</section>
+    <section class="panel"><header><h2>Các ví</h2><span class="grow"></span><span class="count">${nodes.length}</span></header>${table("tr-n-" + id, nodeCols, nodes, { sort: "hop", dir: 1, per: 40 })}</section>`,
+    () => viewTraceJob(id, focus));
+  const stop = $("#tstop");
+  if (stop) stop.onclick = async () => { await tapi("stop", "id=" + id, {}); viewTraceJob(id, focus); };
+  $$("[data-node]").forEach((g) => g.onclick = () => location.hash = `#/trace/${id}/${g.dataset.node}`);
+  if (running) T.timer = setInterval(() => { if (location.hash.startsWith(`#/trace/${id}`)) viewTraceJob(id, focus); else clearInterval(T.timer); }, 4000);
+}
+
+function traceGraph(d, id) {
+  // columns = hop (leaves one column further); a node's colour = what the system already knows about it
+  const hop = {}; d.nodes.forEach((n) => hop[n.wallet] = n.hop);
+  const maxHop = Math.max(0, ...d.nodes.map((n) => n.hop));
+  const deg = {}; d.edges.forEach((e) => { deg[e.src] = (deg[e.src] || 0) + 1; deg[e.dst] = (deg[e.dst] || 0) + 1; });
+  const leaves = d.leaves.slice().sort((a, b) => (deg[b.wallet] || 0) - (deg[a.wallet] || 0) || (b.tags || []).length - (a.tags || []).length).slice(0, 40);
+  const all = d.nodes.concat(leaves.map((l) => ({ ...l, hop: maxHop + 1, leaf: true })));
+  const cols = {}; all.forEach((n) => (cols[n.hop] = cols[n.hop] || []).push(n));
+  const W = Math.max(640, (maxHop + 2) * 240), rowH = 26;
+  const H = Math.max(160, Math.max(...Object.values(cols).map((c) => c.length)) * rowH + 40);
+  const pos = {};
+  Object.entries(cols).forEach(([h, c]) => c.forEach((n, i) => pos[n.wallet] = { x: 70 + Number(h) * ((W - 160) / Math.max(1, maxHop + 1)), y: 30 + i * rowH }));
+  const color = (n) => (n.tags || []).some((t) => ["CREATOR", "CREATOR_GROUP", "DEV"].includes(t)) ? "var(--bad)" : (n.tags || []).some((t) => ["DEPTH", "STANK", "INSIDERS"].includes(t)) ? "var(--accent)"
+    : n.entity ? "#f59a92" : (n.tags || []).some((t) => ["HUB", "EXCHANGE", "FEE"].includes(t)) ? "var(--dim)" : n.hop === 0 ? "var(--good)" : "var(--muted)";
+  const lines = d.edges.filter((e) => pos[e.src] && pos[e.dst]).map((e) => {
+    const a = pos[e.src], b = pos[e.dst], sol = e.asset === "SOL", fee = e.asset === "FEE";
+    const w = sol ? Math.min(5, 0.8 + Math.log10(1 + e.amount) * 2) : 1.2;
+    return `<path d="M${a.x},${a.y} C${(a.x + b.x) / 2},${a.y} ${(a.x + b.x) / 2},${b.y} ${b.x},${b.y}" fill="none" stroke="${sol ? "var(--good)" : fee ? "var(--warn)" : "#b48cff"}" ${fee ? 'stroke-dasharray="4 3"' : ""} stroke-opacity=".55" stroke-width="${w.toFixed(1)}" marker-end="url(#ah)"><title>${short(e.src, 4)} → ${short(e.dst, 4)} · ${sol ? fmt(e.amount, 4) + " SOL" : fee ? "trả phí hộ" : fmt(e.amount, 2) + " " + short(e.asset, 3)} · ${e.n} lần · ${(e.sigs || []).join(" ")}</title></path>`;
+  }).join("");
+  const dots = all.filter((n) => pos[n.wallet]).map((n) => { const p = pos[n.wallet];
+    return `<g data-node="${n.wallet}" style="cursor:pointer"><circle cx="${p.x}" cy="${p.y}" r="${n.hop === 0 ? 8 : 6}" fill="${color(n)}" ${n.leaf ? 'fill-opacity=".45"' : ""}/>
+      <text x="${p.x + 11}" y="${p.y + 4}" font-size="11" font-family="var(--mono)" fill="var(--text)">${short(n.wallet, 4)}${(n.tags || []).length ? " · " + esc(n.tags.slice(0, 2).join(",")) : ""}</text><title>${n.wallet}</title></g>`; }).join("");
+  const heads = Object.keys(cols).map((h) => `<text x="${pos[cols[h][0].wallet].x - 10}" y="14" font-size="11" fill="var(--dim)">${Number(h) > maxHop ? "đối tác (lá)" : h === "0" ? "ví gốc" : "tầng " + h}</text>`).join("");
+  return `<div style="overflow:auto;max-height:640px"><svg width="${W}" height="${H}" role="img" aria-label="Đồ thị quan hệ ví">
+    <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs>
+    ${heads}${lines}${dots}</svg></div>
+    <div class="note"><span style="color:var(--good)">━</span> SOL (độ dày theo lượng) · <span style="color:#b48cff">━</span> token · <span style="color:var(--warn)">┅</span> trả phí hộ · chấm đỏ = DEV / creator / CREATOR_GROUP · xanh = cohort DEPTH / STANK / INSIDERS · hồng = chủ thể ESM · xám = sàn / hub.${d.leaves.length > leaves.length ? ` Hiển thị ${leaves.length}/${d.leaves.length} ví lá nhiều liên kết nhất; đầy đủ ở bảng Dòng tiền.` : ""}</div>`;
+}

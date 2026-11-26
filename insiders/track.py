@@ -227,6 +227,20 @@ MIGRATIONS = [
         snipe5 INTEGER, dev_sold INTEGER, buy_sol REAL, sell_sol REAL, signals TEXT, migrated INTEGER, PRIMARY KEY (mint, horizon));
     CREATE INDEX IF NOT EXISTS nco_h ON nc_obs (horizon, t);
     """,
+    # v8 (wallet trace): a trace job from any wallet, SOL / token flows both ways over several hops. New tables only:
+    # the flows themselves go into the existing `edges` table (kind 'trace'), the wallet's trades into `wallet_trades`.
+    """
+    CREATE TABLE IF NOT EXISTS trace_job (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, root TEXT, hops INTEGER, direction TEXT, min_sol REAL, sigs INTEGER,
+        max_nodes INTEGER, call_cap INTEGER, calls INTEGER DEFAULT 0, status TEXT, note TEXT, created REAL, updated REAL,
+        version TEXT);
+    CREATE INDEX IF NOT EXISTS trj_root ON trace_job (root, created);
+    CREATE TABLE IF NOT EXISTS trace_node (
+        job INTEGER, wallet TEXT, hop INTEGER, via TEXT, via_sig TEXT, state TEXT, reason TEXT, sigs_read INTEGER DEFAULT 0,
+        tx_read INTEGER DEFAULT 0, flows INTEGER DEFAULT 0, oldest_ts REAL, newest_ts REAL, updated REAL, tries INTEGER DEFAULT 0,
+        PRIMARY KEY (job, wallet));
+    CREATE INDEX IF NOT EXISTS trn_todo ON trace_node (state, job, hop);
+    """,
 ]
 
 

@@ -265,11 +265,11 @@ def test_a_failing_migration_leaves_the_old_schema_and_rows(tmp_path, monkeypatc
     with pytest.raises(sqlite3.OperationalError):
         T.Store(p)
     con = sqlite3.connect(p)
-    assert con.execute("PRAGMA user_version").fetchone()[0] == 7
+    assert con.execute("PRAGMA user_version").fetchone()[0] == 8
     assert con.execute("SELECT name FROM mints").fetchall() == [("ONE",)]
     assert not con.execute("SELECT 1 FROM sqlite_master WHERE name='fine'").fetchall()    # all or nothing
     con.close()
-    assert (tmp_path / "insiders_track.db.v7.bak").exists()
+    assert (tmp_path / "insiders_track.db.v8.bak").exists()
 
 
 def test_v1_database_with_data_migrates_to_v4_and_keeps_everything(tmp_path):
@@ -285,7 +285,7 @@ def test_v1_database_with_data_migrates_to_v4_and_keeps_everything(tmp_path):
     con.close()
     st = T.Store(p)
     after = B.table_rows(p)
-    assert st.version() == 7 and all(after[t] == n for t, n in before.items())
+    assert st.version() == 8 and all(after[t] == n for t, n in before.items())
     assert st.mint("M")["newest_sig"] == "CP" and st.mint("M")["pages"] == 7
     assert {"gaps", "rpc_usage", "wallets", "wallet_queue", "wallet_sigs", "wallet_trades", "wallet_pnl"} <= set(after)
 
