@@ -152,6 +152,8 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
             path = self.path.split("?", 1)[0]
             if path == "/healthz":                           # counts only: no address, no alert content
                 h = dict(health)
+                h["proc"] = {**proc_mem(), "started": round(_START), "uptime_s": round(time.time() - _START),
+                             "previous_run": getattr(esm, "previous_run", None) if esm is not None else None}
                 if (health.get("storage") or {}).get("state_dir"):    # disk numbers now, not at start (G0 watch)
                     h["storage"] = {**health["storage"], **disk(Path(health["storage"]["state_dir"]))}
                 w = getattr(svc, "watcher", None)
@@ -620,6 +622,58 @@ def start_esm_worker(sdir: Path):
     return w
 
 
+_START = time.time()
+
+
+def proc_mem() -> dict:
+    """Memory of this process in MB (Linux /proc; peak from getrusage), numbers only."""
+    out = {}
+    try:
+        for line in Path("/proc/self/status").read_text().splitlines():
+            if line.startswith(("VmRSS:", "VmHWM:")):
+                out["rss_mb" if line.startswith("VmRSS") else "peak_mb"] = round(int(line.split()[1]) / 1024, 1)
+    except OSError:
+        pass
+    try:
+        import resource
+        out.setdefault("peak_mb", round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024, 1))
+    except (ImportError, OSError):
+        pass
+    try:
+        lim = Path("/sys/fs/cgroup/memory.max").read_text().strip()
+        if lim.isdigit():
+            out["limit_mb"] = round(int(lim) / 1048576)
+        cur = Path("/sys/fs/cgroup/memory.current").read_text().strip()
+        if cur.isdigit():
+            out["cgroup_mb"] = round(int(cur) / 1048576, 1)
+    except OSError:
+        pass
+    return out
+
+
+def start_heartbeat(store) -> None:
+    """Every minute: time + memory into settings 'proc_heartbeat' (the last 120 minutes). After a crash the next start
+    shows the previous run's last minutes on /healthz (previous_run): how far memory climbed before it died."""
+    import threading
+    prev = store.get("proc_heartbeat") or []
+    store.previous_run = {"last_beat": prev[-1] if prev else None, "beats": len(prev),
+                          "rss_max_mb": max((b.get("rss_mb") or 0 for b in prev), default=None),
+                          "rss_last10_mb": [b.get("rss_mb") for b in prev[-10:]]}
+    store.put("proc_heartbeat", [])
+
+    def beat():
+        buf = []
+        while True:
+            m = proc_mem()
+            buf = (buf + [{"t": round(time.time()), **m}])[-120:]
+            try:
+                store.put("proc_heartbeat", buf)
+            except Exception:                                   # never stops the service
+                pass
+            time.sleep(60)
+    threading.Thread(target=beat, daemon=True, name="heartbeat").start()
+
+
 def disk(sdir: Path) -> dict:
     """Disk of the state directory in GB, and the size of the database + its backups (numbers only, for /healthz)."""
     import shutil
@@ -809,6 +863,7 @@ def serve(host: str = "127.0.0.1", port: int = 8780, watch: bool = True, svc: In
     health["newcoins"] = nc is not None
     if esm is not None:
         esm.worker = start_esm_worker(sdir) if started or os.environ.get("INSIDER_ESM") == "1" else None
+        start_heartbeat(esm)
     httpd = ThreadingHTTPServer((host, port), make_handler(svc, code, health, callers, esm, nc))
     print(f"[insiders] http://{host}:{port} · state {sdir} (durable {durable}) · watch {bool(started)}", flush=True)
     return httpd
