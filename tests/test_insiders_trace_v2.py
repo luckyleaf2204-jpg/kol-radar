@@ -355,3 +355,57 @@ def test_add_coin_request_is_validated_queued_once_and_marked_done_after_researc
     assert st.q("SELECT status FROM esm_pending_mint WHERE symbol='NEWC'")[0]["status"] == "DONE"
     assert "NEWC" not in [p["symbol"] for p in E.pending_mints(st)]       # never shown as an unverified mint
     assert S.nc_get(None, st, "/api/nc/wallets", "")[1]["count"] == E.load_wallet_db()["count"]
+
+
+# --------------------------------------------------------------------- watched wallets: balances (2026-11-27)
+def test_balances_never_show_zero_for_unknown_and_keep_the_last_value_on_errors(tmp_path):
+    from insiders.portfolio import Balances
+    st = T.Store(tmp_path / "db.sqlite")
+    calls = []
+
+    def rpc(m, p):
+        calls.append(m)
+        if len(calls) > 1:
+            raise RuntimeError("HTTP 429")
+        return {"value": [None, {"lamports": 2_500_000_000, "owner": "11111111111111111111111111111111"},
+                          {"lamports": 10_000_000, "owner": "Vault1111111111111111111111111111111111111"}]}
+    b = Balances(st, lambda: [D23, CKZ, ER9], rpc, sol_usd=lambda: 200.0)
+    assert b.get(D23)["status"] == "never" and b.get(D23)["sol"] is None          # unknown is not 0
+    b.refresh()
+    assert len(calls) == 1                                                         # 3 wallets, one call (100 a call)
+    assert b.get(D23) | {"t": 0} == {"sol": 0.0, "t": 0, "status": "empty", "owner": None, "usd": 0.0, "program": False}
+    assert b.get(CKZ)["sol"] == 2.5 and b.get(CKZ)["usd"] == 500.0 and not b.get(CKZ)["program"]
+    assert b.get(ER9)["program"]                                                   # owned by another program: a vault
+    b.refresh()                                                                    # the RPC fails: last value kept, marked stale
+    assert b.get(CKZ)["sol"] == 2.5 and b.get(CKZ)["status"] == "stale"
+    assert Balances(st, lambda: [], rpc).get(CKZ)["sol"] == 2.5                   # saved: survives a restart
+
+
+def test_token_lookups_are_cached_and_budgeted(tmp_path, monkeypatch):
+    from insiders import portfolio as PF
+    monkeypatch.setattr(PF, "TOKENS_PER_HOUR", 1)
+    st = T.Store(tmp_path / "db.sqlite")
+    n = []
+
+    def rpc(m, p):
+        n.append(m)
+        return {"value": 1_000_000_000} if m == "getBalance" else {"value": []}
+    b = PF.Balances(st, lambda: [], rpc, prices=PF.Prices(get=lambda u: {}), sol_usd=lambda: 100.0)
+    assert b.tokens(CKZ)["status"] == "ok" and b.tokens(CKZ)["sol"] == 1.0 and len(n) == 3   # second read: cache
+    assert b.tokens(ER9)["status"] == "budget"                                                # over the hourly budget
+
+
+def test_add_a_wallet_by_hand(tmp_path):
+    from insiders import site as S
+    from insiders.newcoins import SmartBook
+    st = T.Store(tmp_path / "db.sqlite")
+    E.import_research(st, _folder(tmp_path))
+    assert S.nc_watch(st, b'{"wallet": "bad"}')[0] == 400
+    assert S.nc_watch(st, json.dumps({"wallet": SIX, "label": "ví bạn gửi"}).encode())[0] == 200
+    assert S.nc_watch(st, json.dumps({"wallet": SIX}).encode())[0] == 409
+    b = SmartBook(st)
+    b.refresh(1e9)
+    if SIX not in (E.load_wallet_db() or {}).get("wallets", {}):
+        assert b.smart[SIX]["sources"] == ["manual"]
+    code, d = S.nc_get(None, st, "/api/nc/wallet", f"/api/nc/wallet?w={SIX}")
+    assert code == 200 and d["wallet"] == SIX and d["balance"] == {"status": "off"}

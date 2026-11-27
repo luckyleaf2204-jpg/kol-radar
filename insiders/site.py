@@ -218,6 +218,8 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                                      **{k: m.get(k) for k in ("creates", "trades_tracked", "active_coins", "queue", "dropped", "signals",
                                                               "discovery_latency_s", "signal_latency_s", "smart_watchlist", "smart_v2",
                                                               "wal_checkpoint")}}
+                if nc is not None and getattr(nc[0], "balances", None):  # watched wallets' balances: counts only
+                    h["balances"] = nc[0].balances.stat
                 if esm is not None and getattr(esm, "seed_info", None):   # research seed: version + import counts only
                     h["esm_seed"] = {**esm.seed_info, "coin_requests": esm.q(
                         "SELECT COUNT(*) AS n FROM esm_pending_mint WHERE status IN ('REQUESTED', 'RUNNING')")[0]["n"]}
@@ -331,6 +333,8 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                 return self._json(*res) if res else self._json(404, {"error": "route"})
             if path == "/api/nc/request":                     # "Thêm coin": queued for the research pipeline
                 return self._json(*nc_request(esm, body))
+            if path == "/api/nc/watch":                       # "Thêm ví": a wallet watched from now on
+                return self._json(*nc_watch(esm, body, nc))
             if path == "/api/insiders/pause":                 # "Tạm dừng" / "Bật lại quét" (?on=1 pause | ?on=0 resume)
                 from urllib.parse import parse_qs, urlsplit
                 v = getattr(getattr(svc, "watcher", None), "vip", None)
@@ -425,7 +429,7 @@ def nc_get(nc, store, path: str, raw: str) -> tuple[int, object]:
             limit = max(1, min(1000, int(q.get("limit") or 400)))
         except ValueError:
             return 400, {"error": "number"}
-        return 200, {"coins": N.coins(st, age, limit), "now": time.time(), "sol_usd": eng.sol_usd if eng else None}
+        return 200, {"coins": N.coins(st, age, limit, eng.book if eng else None), "now": time.time(), "sol_usd": eng.sol_usd if eng else None}
     if name == "report":
         from insiders.nc_report import report
         return 200, report(st)
@@ -452,12 +456,75 @@ def nc_get(nc, store, path: str, raw: str) -> tuple[int, object]:
         ws += [{"wallet": w, "sources": e["sources"], "cohort": None, "label": "tự truy vết trên server", "early_coins": e["early_coins"],
                 "max_buy_sol": e["max_buy_sol"], "independence": e["independence"], "added": None,
                 "coins_24h": (live.get(w) or {}).get("coins", 0), "last_buy": (live.get(w) or {}).get("last_t")} for w, e in auto.items()]
+        manual = [r for r in st.q("SELECT wallet, evidence, added FROM esm_flag WHERE flag='WATCH' AND ref='manual'") if r["wallet"] not in db["wallets"]]
+        ws += [{"wallet": r["wallet"], "sources": ["manual"], "cohort": None, "label": (json.loads(r["evidence"] or "{}") or {}).get("label") or "thêm tay",
+                "early_coins": [], "max_buy_sol": None, "independence": (eng.book.independence(r["wallet"]) if eng else "INSUFFICIENT_DATA"),
+                "added": time.strftime("%Y-%m-%d", time.gmtime(r["added"] or 0)), "coins_24h": 0, "last_buy": None} for r in manual]
         by = dict(db.get("by_source") or {})
         if auto:
             by["auto"] = len(auto)
-        return 200, {"count": len(ws), "watching": len(eng.book.smart) if eng else None, "by_source": by,
+        if manual:
+            by["manual"] = len(manual)
+        try:
+            days = max(1, min(90, int(q.get("days") or 7)))
+        except ValueError:
+            days = 7
+        act: dict[str, dict] = {}
+        ids_all = [x["wallet"] for x in ws]
+        for i in range(0, len(ids_all), 500):                    # watched trades are kept (smart=1): buys >= 1 SOL, every sell
+            part = ids_all[i:i + 500]
+            for r in st.q(f"SELECT wallet, SUM(CASE WHEN buy=1 THEN sol ELSE 0 END) AS bought, SUM(CASE WHEN buy=0 THEN sol ELSE 0 END) AS sold, "
+                          f"COUNT(DISTINCT mint) AS coins, MAX(t) AS last_t FROM nc_trade WHERE wallet IN ({','.join('?' * len(part))}) "
+                          f"AND smart=1 AND t >= ? GROUP BY wallet", (*part, time.time() - days * 86400)):
+                act[r["wallet"]] = r
+            for r in st.q(f"SELECT wallet, MAX(t) AS last_t FROM nc_trade WHERE wallet IN ({','.join('?' * len(part))}) GROUP BY wallet", part):
+                act.setdefault(r["wallet"], {})["last_any"] = r["last_t"]
+        links: dict[str, int] = {}
+        for r in st.q("SELECT a, b FROM esm_link WHERE strength='STRONG'"):
+            links[r["a"]] = links.get(r["a"], 0) + 1
+            links[r["b"]] = links.get(r["b"], 0) + 1
+        bal = getattr(eng, "balances", None) if eng else None
+        from insiders.scan import on_curve
+        for x in ws:
+            a = act.get(x["wallet"]) or {}
+            x.update(bought=round(a.get("bought") or 0, 3), sold=round(a.get("sold") or 0, 3), coins_period=a.get("coins") or 0,
+                     last_trade=a.get("last_any") or a.get("last_t"), links=links.get(x["wallet"], 0), program=not on_curve(x["wallet"]),
+                     balance=bal.get(x["wallet"]) if bal else {"status": "off", "sol": None, "usd": None, "t": None})
+        return 200, {"count": len(ws), "watching": len(eng.book.smart) if eng else None, "by_source": by, "days": days,
+                     "balances": dict(bal.stat) if bal else None, "sol_usd": eng.sol_usd if eng else None,
                      "coins": db.get("coins") or {}, "rules": db.get("rules"), "updated": db.get("updated"),
                      "min_live_sol": N.SMART_MIN_LIVE_SOL, "active_24h": sum(1 for x in ws if x["coins_24h"]), "wallets": ws}
+    if name == "wallet":
+        w = q.get("w") or ""
+        if not _ADDR.fullmatch(w):
+            return 400, {"error": "wallet"}
+        from insiders.esm import load_wallet_db
+        from insiders.scan import KNOWN_LABELS, on_curve
+        book = eng.book if eng else None
+        entry = ((load_wallet_db() or {}).get("wallets") or {}).get(w) or (book.smart.get(w) if book else None) or {}
+        bal = getattr(eng, "balances", None) if eng else None
+        trades = st.q("SELECT t.mint, t.sig, t.buy, t.sol, t.tokens, t.price, t.t, t.smart, c.symbol, c.t_create FROM nc_trade t "
+                      "LEFT JOIN nc_coin c ON c.mint=t.mint WHERE t.wallet=? ORDER BY t.t DESC LIMIT 300", (w,))
+        research = st.q("SELECT c.symbol, w.mint, w.bucket, w.first_buy_min, w.first_buy_sig, w.sol_in, w.sol_out, w.rise_x, w.roles, w.points "
+                        "FROM esm_window_wallet w JOIN esm_coin c ON c.mint=w.mint WHERE w.wallet=? ORDER BY c.t_create", (w,))
+        lk = []
+        for r in st.q("SELECT * FROM esm_link WHERE a=? OR b=? ORDER BY strength DESC LIMIT 80", (w, w)):
+            other = r["b"] if r["a"] == w else r["a"]
+            lk.append({"other": other, "signal": r["signal"], "strength": r["strength"], "coin": r["coin"], "sig": r["sig"],
+                       "evidence": json.loads(r["evidence"] or "null"), "watched": bool(book and other in book.smart)})
+        fund = st.q("SELECT src, dst, asset, amount, ts, sig FROM edges WHERE kind IN ('research_sol', 'research_token') AND (dst=? OR src=?) "
+                    "ORDER BY amount DESC LIMIT 60", (w, w))
+        for e in fund:
+            other = e["src"] if e["dst"] == w else e["dst"]
+            e.update(dir="in" if e["dst"] == w else "out", other=other, label=(KNOWN_LABELS.get(other) or (None,))[0], program=not on_curve(other),
+                     watched=bool(book and other in book.smart))
+        flags = [{"flag": f["flag"], "ref": f["ref"], "evidence": json.loads(f["evidence"] or "null")}
+                 for f in st.q("SELECT flag, ref, evidence FROM esm_flag WHERE wallet=?", (w,))]
+        return 200, {"wallet": w, "entry": entry, "independence": book.independence(w) if book else "INSUFFICIENT_DATA",
+                     "program": not on_curve(w), "watched": bool(book and w in book.smart),
+                     "balance": bal.get(w) if bal else {"status": "off"}, "tokens": bal.tokens(w) if bal and q.get("tokens") == "1" else None,
+                     "trades": trades, "research": [{**r, "roles": json.loads(r["roles"] or "[]")} for r in research],
+                     "links": lk, "funding": fund, "flags": flags, "sol_usd": eng.sol_usd if eng else None}
     if name == "requests":                                      # coins the user asked to research (table esm_pending_mint)
         rows = st.q("SELECT symbol, status, candidates, note, updated FROM esm_pending_mint "
                     "WHERE status IN ('REQUESTED', 'RUNNING', 'DONE', 'REJECTED') ORDER BY updated DESC")
@@ -517,6 +584,27 @@ def nc_request(store, body: bytes) -> tuple[int, object]:
     store.x("INSERT INTO esm_pending_mint VALUES (?,?,?,?,?)",
             (sym, "REQUESTED", json.dumps([{"mint": mint}]), "thêm trên trang New Coins", time.time()))
     return 200, {"symbol": sym, "mint": mint, "status": "REQUESTED"}
+
+
+def nc_watch(store, body: bytes, nc=None) -> tuple[int, object]:
+    """POST /api/nc/watch {wallet, label}: a wallet added by hand (esm_flag WATCH / manual). Read on the next watchlist
+    refresh (10 min at most; the book is refreshed at once here when the stream runs)."""
+    from insiders.track import valid_mint
+    if store is None:
+        return 503, {"error": "esm_off"}
+    try:
+        d = json.loads(body or b"{}")
+        w, label = str(d.get("wallet") or "").strip(), str(d.get("label") or "").strip()[:60]
+    except (ValueError, AttributeError):
+        return 400, {"error": "json"}
+    if not valid_mint(w):
+        return 400, {"error": "wallet", "message": "địa chỉ ví không hợp lệ"}
+    if store.q("SELECT 1 FROM esm_flag WHERE wallet=? AND flag='WATCH' AND ref='manual'", (w,)):
+        return 409, {"error": "exists", "message": "ví này đã được thêm"}
+    store.x("INSERT INTO esm_flag VALUES (?,?,?,?,?)", (w, "WATCH", "manual", json.dumps({"label": label}, ensure_ascii=False), time.time()))
+    if nc:
+        nc[0].book.loaded = 0                                   # picked up on the next engine round
+    return 200, {"wallet": w, "label": label}
 
 
 _PI = None
@@ -864,6 +952,15 @@ def serve(host: str = "127.0.0.1", port: int = 8780, watch: bool = True, svc: In
     if esm is not None:
         esm.worker = start_esm_worker(sdir) if started or os.environ.get("INSIDER_ESM") == "1" else None
         start_heartbeat(esm)
+    if nc is not None and (os.environ.get("WATCH_BALANCES") or "1") != "0":   # SOL of every watched wallet, 4 calls / 10 min
+        import threading
+        from insiders.portfolio import Balances
+        from insiders.track import Store
+        from insiders.watch import Rpc
+        eng = nc[0]
+        eng.balances = Balances(Store(sdir / "insiders_track.db"), lambda: list(eng.book.smart), Rpc(gap_s=0.3),
+                                sol_usd=lambda: eng.sol_usd)
+        threading.Thread(target=eng.balances.run_forever, args=(threading.Event(),), daemon=True, name="balances").start()
     httpd = ThreadingHTTPServer((host, port), make_handler(svc, code, health, callers, esm, nc))
     print(f"[insiders] http://{host}:{port} · state {sdir} (durable {durable}) · watch {bool(started)}", flush=True)
     return httpd

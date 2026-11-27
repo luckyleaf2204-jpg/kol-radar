@@ -176,3 +176,27 @@ input[type=search] { width: 100%; }
 .toast { position: fixed; right: 20px; bottom: 20px; background: var(--bg2); border: 1px solid var(--amber); color: var(--tx); padding: 12px 16px; border-radius: 10px;
   transform: translateY(160%); transition: transform .25s; z-index: 50; max-width: 440px; }
 .toast.on { transform: none; }
+
+/* two screens: NEW COINS | VÍ THEO DÕI */
+.tabs { display: flex; gap: 4px; background: var(--card); border: 1px solid var(--line2); border-radius: 10px; padding: 3px; }
+.tabs button { background: transparent; border: 0; color: var(--mut); font: 700 12px var(--mono); letter-spacing: .08em; padding: 7px 14px; border-radius: 7px; cursor: pointer; }
+.tabs button.on { background: var(--acc); color: #06080b; }
+.wline { font-size: 12px; color: var(--green); margin-top: 2px; } .wline b { color: var(--green); }
+.tl { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 10px 0 4px; }
+.tl > div { background: var(--card); border: 1px solid var(--line2); border-radius: 8px; padding: 7px 8px; display: grid; gap: 2px; font-size: 13px; }
+.tl .k { font: 600 9px var(--mono); color: var(--dim); letter-spacing: .06em; } .tl b { font: 700 14px var(--mono); }
+.wt { width: 100%; border-collapse: collapse; font-size: 13px; }
+.wt th { text-align: left; font: 600 10px var(--mono); color: var(--dim); letter-spacing: .06em; text-transform: uppercase; padding: 10px 12px; border-bottom: 1px solid var(--line2); position: sticky; top: 0; background: var(--bg2); }
+.wt td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; } .wt tr[data-w] { cursor: pointer; } .wt tr[data-w]:hover { background: var(--cardh); }
+.wt th.r, .wt td.r { text-align: right; } .mono { font-family: var(--mono); }
+.na { color: var(--dim); } .old { color: var(--amber); }
+.bd.ind { color: var(--green); border-color: rgba(31, 209, 138, .4); } .bd.pl { color: var(--amber); border-color: rgba(255, 181, 71, .4); } .bd.na { color: var(--dim); }
+.adds { margin: 0 0 12px; background: var(--card); border: 1px solid var(--line2); border-radius: 10px; padding: 10px 12px; }
+.adds summary { cursor: pointer; color: var(--acc); font-weight: 600; } .adds form { margin-top: 10px; }
+#wview select, .wq2 { background: var(--card); border: 1px solid var(--line2); border-radius: 8px; padding: 7px 9px; color: var(--tx); }
+#wview .bar { flex-wrap: wrap; gap: 8px; } #wview .list { overflow: auto; }
+@media (max-width: 760px) {
+  .tabs button { padding: 6px 8px; font-size: 11px; } .tl { grid-template-columns: repeat(2, 1fr); }
+  .wt th:nth-child(5), .wt td:nth-child(5), .wt th:nth-child(8), .wt td:nth-child(8), .wt th:nth-child(6), .wt td:nth-child(6) { display: none; }
+  .wt td, .wt th { padding: 8px 6px; }
+}

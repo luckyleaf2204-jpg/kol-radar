@@ -13,11 +13,10 @@
   <header class="hd">
     <div class="brand">KOL<span>-</span>RADAR</div>
     <div id="live" class="live off"><i></i><b>…</b></div>
-    <div class="ctx">NEW COINS · SOLANA</div>
+    <nav class="tabs" id="tabs"><button data-view="coins">NEW COINS</button><button data-view="wallets">VÍ THEO DÕI</button></nav>
     <div class="grow"></div>
     <div class="menu"><button id="mbtn" class="ghost" aria-haspopup="true">Nghiên cứu ▾</button>
       <div id="mlist" class="pop" hidden>
-        <a href="#wallets" id="wal">Ví theo dõi &amp; thêm coin</a>
         <a href="/early/">Early Smart Money</a>
         <a href="/dashboard/">Dashboard Insiders cũ</a>
         <a href="/callers/">Smart Caller Hunter</a>
@@ -25,7 +24,7 @@
       </div></div>
   </header>
   <main class="wrap">
-    <section class="main">
+    <section class="main" id="cview">
       <div class="tiles" id="tiles"></div>
       <div class="bar">
         <div class="chips" id="sig"></div>
@@ -47,6 +46,7 @@
         <div id="empty" class="emptyst"></div>
       </div>
     </section>
+    <section class="main" id="wview" hidden></section>
     <aside id="side" class="side" hidden></aside>
   </main>
   <div id="toast" class="toast"></div>

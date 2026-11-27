@@ -181,3 +181,111 @@ class Portfolio:
             except Exception as e:
                 self.error = f"{type(e).__name__}: {str(e)[:80]}"
             stop.wait(max(5.0, every_s - (time.time() - t0)))
+
+
+# ---------------------------------------------------------------------------------------------- watched wallets (2026-11-27)
+SYSTEM = "11111111111111111111111111111111"
+BAL_EVERY_S = int(os.environ.get("WATCH_BAL_EVERY_S") or 600)         # SOL balances of every watched wallet
+TOKENS_TTL_S = int(os.environ.get("WATCH_TOKENS_TTL_S") or 600)       # one wallet's token holdings are reused this long
+TOKENS_PER_HOUR = int(os.environ.get("WATCH_TOKENS_PER_HOUR") or 120)  # token lookups at most (3 RPC calls each)
+
+
+class Balances:
+    """Current balances of the watched wallets, cheap and honest.
+
+    SOL: getMultipleAccounts, 100 wallets a call (370 wallets = 4 calls) every BAL_EVERY_S. An account the chain does
+    not know holds 0 SOL (status 'empty': a fact, not a guess); a wallet never read is 'never' (shown as unknown, never
+    as 0); a failed read keeps the last value and marks it 'stale' with the time it was read. The owner program is
+    kept: an account owned by another program than the System program is a program / vault account, not a person.
+    Tokens: read only when a wallet is opened (getTokenAccountsByOwner on both token programs + Jupiter prices), cached
+    TOKENS_TTL_S, at most TOKENS_PER_HOUR lookups an hour. Saved in settings 'wallet_balances' (survives restarts)."""
+
+    def __init__(self, store, wallets_fn, rpc, prices: Prices | None = None, sol_usd=lambda: None, now=time.time):
+        self.s, self.wallets_fn, self.rpc, self.now, self.sol_usd = store, wallets_fn, rpc, now, sol_usd
+        self.prices = prices or Prices(now=now)
+        self.sol: dict[str, dict] = store.get("wallet_balances") or {}
+        self.tok: dict[str, dict] = {}
+        self.lookups: list[float] = []
+        self.stat = {"updated": None, "calls": 0, "error": None, "wallets": 0}
+
+    def refresh(self) -> dict:
+        ws = list(dict.fromkeys(self.wallets_fn()))
+        now = self.now()
+        for i in range(0, len(ws), 100):
+            part = ws[i:i + 100]
+            try:
+                res = self.rpc("getMultipleAccounts", [part, {"encoding": "base64", "dataSlice": {"offset": 0, "length": 0}}]) or {}
+                self.stat["calls"] += 1
+            except RuntimeError as e:
+                self.stat["error"] = str(e)[:120]
+                for w in part:
+                    if w in self.sol:
+                        self.sol[w]["status"] = "stale"
+                continue
+            for w, acc in zip(part, res.get("value") or []):
+                if acc is None:
+                    self.sol[w] = {"sol": 0.0, "t": now, "status": "empty", "owner": None}
+                else:
+                    self.sol[w] = {"sol": round(int(acc.get("lamports") or 0) / 1e9, 6), "t": now, "status": "ok",
+                                   "owner": None if acc.get("owner") == SYSTEM else acc.get("owner")}
+        self.stat.update(updated=now, wallets=len(ws))
+        try:
+            self.s.put("wallet_balances", self.sol)
+        except Exception as e:                                  # never stops the service
+            self.stat["error"] = f"save: {type(e).__name__}"
+        return self.sol
+
+    def get(self, w: str) -> dict:
+        b = self.sol.get(w)
+        if not b:
+            return {"status": "never", "sol": None, "usd": None, "t": None, "program": False}
+        px = self.sol_usd()
+        return {**b, "usd": round(b["sol"] * px, 2) if px and b.get("sol") is not None else None, "program": bool(b.get("owner"))}
+
+    def tokens(self, w: str) -> dict:
+        """Token holdings of one wallet, worth >= 0.01 SOL or unpriced (shown apart). Cached; budgeted."""
+        now = self.now()
+        c = self.tok.get(w)
+        if c and now - c["t"] < TOKENS_TTL_S:
+            return c
+        self.lookups = [t for t in self.lookups if now - t < 3600]
+        if len(self.lookups) >= TOKENS_PER_HOUR:
+            return c or {"status": "budget", "t": None, "tokens": [], "note": "đã đủ lượt tra token trong giờ này, thử lại sau"}
+        self.lookups.append(now)
+        try:
+            sol, toks = holdings(self.rpc, w)
+            self.stat["calls"] += 3
+        except RuntimeError as e:
+            return c or {"status": "error", "t": None, "tokens": [], "note": str(e)[:120]}
+        self.sol[w] = {**(self.sol.get(w) or {"owner": None}), "sol": round(sol, 6), "t": now, "status": "ok"}
+        self.prices.refresh({m for m, _ in toks} | {SOL})
+        px = self.sol_usd() or self.prices.usd.get(SOL)
+        out, unpriced, total = [], 0, 0.0
+        for m, amt in toks:
+            if m == SOL:
+                continue
+            p = self.prices.usd.get(m) or (1.0 if m in STABLE else None)
+            meta = self.prices.meta.get(m, {})
+            usd = amt * p if p else None
+            if usd is None:
+                unpriced += 1
+                continue
+            if px and usd < 0.01 * px:
+                continue
+            total += usd
+            out.append({"mint": m, "symbol": STABLE.get(m) or meta.get("symbol"), "amount": amt, "usd": round(usd, 2),
+                        "sol": round(usd / px, 4) if px else None})
+        out.sort(key=lambda x: -x["usd"])
+        c = {"status": "ok", "t": now, "tokens": out[:60], "tokens_usd": round(total, 2), "unpriced": unpriced,
+             "sol": round(sol, 6), "sol_usd": round(sol * px, 2) if px else None,
+             "total_usd": round(total + (sol * px if px else 0), 2) if px else None}
+        self.tok[w] = c
+        return c
+
+    def run_forever(self, stop: threading.Event, every_s: int = BAL_EVERY_S) -> None:
+        while not stop.is_set():
+            try:
+                self.refresh()
+            except Exception as e:                              # never stops: shown on /healthz
+                self.stat["error"] = f"{type(e).__name__}: {str(e)[:100]}"
+            stop.wait(every_s if self.stat.get("wallets") else 15)   # the watchlist is not loaded yet at start: retry soon

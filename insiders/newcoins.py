@@ -129,9 +129,11 @@ class SmartBook:
         self.loaded = now
         try:
             from insiders import esm_view as V
+            from insiders.esm import load_wallet_db
             if not self.s.q("SELECT 1 FROM esm_coin LIMIT 1"):
                 return
-            r = V.radar(self.s, False, min_score=4)
+            wdb = load_wallet_db()
+            r = {"smart": []} if wdb else V.radar(self.s, False, min_score=4)   # the file IS the list: no ranking pass (RAM)
             info = {}
             for e in self.s.q("SELECT wallet, entity, class FROM esm_wallet_entity"):
                 info[e["wallet"]] = {"class": e["class"], "entity": e["entity"], "flags": []}
@@ -146,14 +148,17 @@ class SmartBook:
                                         "network": [f for f in (info.get(x["wallet"]) or {}).get("flags", [])
                                                     if f.split(":")[0] in ("PASS_THROUGH", "BATCH_SPLIT")]}
                           for x in r["smart"] if not x["creator_of"] and big(x)}
-            from insiders.esm import load_wallet_db
-            wdb = load_wallet_db()
             if wdb:                                                  # the ONE watchlist file (insiders/wallet_db.json)
                 self.smart = {w: {"rank": e.get("rank") if e.get("rank") is not None else e.get("cohort"), "multi": bool(e.get("multi")),
                                   "why": (e.get("why") or [f"ví {e.get('cohort')} (nghiên cứu cũ)"])[:3], "creator_of": [],
                                   "cohort": e.get("cohort"), "sources": e.get("sources"), "independence": self.independence(w),
                                   "network": [f for f in (info.get(w) or {}).get("flags", []) if f.split(":")[0] in ("PASS_THROUGH", "BATCH_SPLIT")]}
                               for w, e in wdb["wallets"].items() if "CREATOR_GROUP" not in (info.get(w) or {}).get("flags", [])}
+            for f in self.s.q("SELECT wallet, evidence FROM esm_flag WHERE flag='WATCH' AND ref='manual'"):   # added on the page
+                if f["wallet"] not in self.smart:
+                    lab = (json.loads(f["evidence"] or "{}") or {}).get("label") or ""
+                    self.smart[f["wallet"]] = {"rank": "THÊM TAY", "multi": False, "why": [f"thêm tay{': ' + lab if lab else ''}"], "creator_of": [],
+                                               "cohort": None, "sources": ["manual"], "independence": self.independence(f["wallet"]), "network": []}
             for w, e in auto_wallets(self.s).items():                # coins traced by the server worker
                 if w not in self.smart:
                     self.smart[w] = {k: e[k] for k in ("rank", "multi", "why", "creator_of", "cohort", "sources", "independence")} | {
@@ -175,6 +180,14 @@ class SmartBook:
         i = self.info.get(w) or {}
         lv = [f.split(":", 1)[1] for f in i.get("flags", []) if f.startswith("INDEPENDENCE:")]
         return lv[0] if lv else i.get("class") or "INSUFFICIENT_DATA"
+
+    def groups(self, wallets) -> dict:
+        """Owner groups among wallets (same grouping as MULTI_WALLET) and how many are verified independent: a wallet
+        with INSUFFICIENT_DATA is its own group but is never called independent."""
+        gs = {self.group(w) for w in wallets}
+        return {"groups": len(gs), "verified_independent": sum(1 for w in wallets if self.independence(w) == "INDEPENDENT"),
+                "linked": sum(1 for w in wallets if self.independence(w) in ("LIKELY_SAME_ENTITY", "POSSIBLE_LINK")),
+                "unverified": sum(1 for w in wallets if self.independence(w) == "INSUFFICIENT_DATA")}
 
     def group(self, w: str) -> str:
         """Owner / bot group id when known, else the wallet itself (independence check for MULTI_WALLET). Unchanged
@@ -607,7 +620,7 @@ class Stream:
 
 
 # ---------------------------------------------------------------------------------------------- read side (page)
-def coins(store, max_age_s: int = WINDOW_S, limit: int = 400) -> list[dict]:
+def coins(store, max_age_s: int = WINDOW_S, limit: int = 400, book: "SmartBook | None" = None) -> list[dict]:
     now = time.time()
     rows = store.q("SELECT mint, name, symbol, creator, platform, t_create, seen_at, price, mc_sol, liq_sol, buyers, smart, buy_sol, sell_sol, "
                    "trades, dev_sol, dev_sold, first_buy_t, first_buy_seen, signals, closed FROM nc_coin WHERE t_create >= ? "
@@ -619,10 +632,21 @@ def coins(store, max_age_s: int = WINDOW_S, limit: int = 400) -> list[dict]:
             e = json.loads(s["evidence"] or "{}")
             ev[s["mint"]] = {"wallets": [{k: w.get(k) for k in ("wallet", "rank", "multi", "why")} for w in e.get("wallets", [])][:3],
                              "last": e.get("last")}
+    watched = {}
+    if sm:                                                       # only coins a watched wallet bought: a few rows, indexed
+        for t in store.q(f"SELECT mint, wallet, t, price, sol, sig FROM nc_trade WHERE smart=1 AND buy=1 AND mint IN ({','.join('?' * len(sm))}) "
+                         "ORDER BY t", sm):
+            watched.setdefault(t["mint"], []).append(t)
     for r in rows:
         r["signals"] = json.loads(r["signals"] or "[]")
         if r["mint"] in ev:
             r["smart_ev"] = ev[r["mint"]]
+        ws = watched.get(r["mint"])
+        if ws:
+            first = ws[0]
+            r["watch"] = {"wallets": len({t["wallet"] for t in ws}), "first_t": first["t"], "first_sig": first["sig"],
+                          "first_sol": round(first["sol"], 4), "first_mc_sol": round(first["price"] * P.SUPPLY, 1) if first["price"] else None,
+                          "sol": round(sum(t["sol"] for t in ws), 4), **(book.groups({t["wallet"] for t in ws}) if book else {})}
     return rows
 
 
@@ -643,6 +667,8 @@ def coin_detail(store, mint: str, book: SmartBook | None = None) -> dict | None:
             w["buys"] += 1
             w["sol_in"] += t["sol"]
             w["tokens"] += t["tokens"]
+            if t["smart"]:
+                w["watched_then"] = True                      # a watched wallet when it bought (even if no longer listed)
         else:
             w["sells"] += 1
             w["sol_out"] += t["sol"]
@@ -659,6 +685,22 @@ def coin_detail(store, mint: str, book: SmartBook | None = None) -> dict | None:
                  sol_in=round(w["sol_in"], 4), sol_out=round(w["sol_out"], 4), held_pct=round(max(0.0, w["tokens"]) / P.SUPPLY * 100, 3))
         buyers.append(w)
     buyers.sort(key=lambda w: (w["first_t"], w["first_slot"] or 0))
+    for w in buyers:
+        if w["smart"] and book:
+            w["independence"] = book.independence(w["wallet"])
+            w["group"] = book.group(w["wallet"])
+    watched = [w for w in buyers if w["smart"] or w.get("watched_then")]
+    c["timeline"] = {"t_create": c["t_create"], "seen_at": c["seen_at"], "detect_s": round(c["seen_at"] - c["t_create"], 2) if c["seen_at"] else None,
+                     "first_buy_t": c["first_buy_t"], "first_buy_s": round(c["first_buy_t"] - c["t_create"], 1) if c["first_buy_t"] else None,
+                     "first_buy_seen_s": round(c["first_buy_seen"] - c["first_buy_t"], 2) if c.get("first_buy_seen") and c["first_buy_t"] else None,
+                     "early15": sum(1 for w in buyers if w["sec"] < 900 and not w["dev"]),
+                     "partial": time.time() - c["t_create"] > KEEP_TRADES_S,   # older than the trade retention: only watched trades left
+                     "watched": len(watched), "watched_first_s": watched[0]["sec"] if watched else None,
+                     "watched_first_mc_sol": None, **(book.groups({w["wallet"] for w in watched}) if book and watched else {})}
+    if watched:
+        t0 = next((t for t in trades if t["wallet"] == watched[0]["wallet"] and t["buy"]), None)
+        if t0 and t0["price"]:
+            c["timeline"]["watched_first_mc_sol"] = round(t0["price"] * P.SUPPLY, 1)
     c["buyers_list"] = buyers
     c["trades_list"] = trades[-200:][::-1]
     c["dev_history"] = dev_history(store, c["creator"], mint)

@@ -100,6 +100,11 @@ function firstBuy(c) {
   const d = c.first_buy_t - c.t_create;
   return d < 1 ? "mua đầu: cùng giây tạo coin (xem panel)" : `mua đầu sau ${fmt(d, 0)}s`;
 }
+function watchLine(c) {
+  const w = c.watch;
+  const g = w.groups !== undefined ? ` · ${w.groups} nhóm chủ · ${w.verified_independent} độc lập đã xác minh${w.unverified ? ` · ${w.unverified} chưa xác minh` : ""}` : "";
+  return `<b>${w.wallets} ví theo dõi</b>${g} · ví đầu vào sau ${fmt(w.first_t - c.t_create, 0)}s${w.first_mc_sol ? ` lúc MC ${usd(w.first_mc_sol)}` : ""} · ${usd(w.sol)} vào`;
+}
 function reason(c) {
   const e = c.smart_ev;
   if (!e || !e.wallets || !e.wallets.length) return "";
@@ -148,7 +153,7 @@ function row(c) {
   return `<div class="${cls}" data-m="${c.mint}">
     <div class="cn"><div class="sym">${esc(c.symbol || "?")}${two(c) ? ` <span class="twob">${c.smart} VÍ THEO DÕI</span>` : ""}</div>
       <div class="nm">${esc(c.name)} · <span class="age" data-t="${c.t_create}">${age(now() - c.t_create)}</span></div>
-      <div class="fb">${firstBuy(c)}</div>${F.sig === "FOCUS" && c.smart_ev ? `<div class="why">${reason(c)}</div>` : ""}
+      <div class="fb">${firstBuy(c)}</div>${c.watch ? `<div class="wline">${watchLine(c)}</div>` : ""}${F.sig === "FOCUS" && c.smart_ev ? `<div class="why">${reason(c)}</div>` : ""}
       ${F.sig === "FOCUS" ? (S.det[c.mint] && S.det[c.mint].d ? socials(S.det[c.mint].d, true) : `<div class="soc"><span class="no">đang tải X / dev…</span></div>`) : ""}</div>
     <div class="sgc"><span class="pr ${p}">${TXT[p]}</span></div>
     <div class="num" data-l="MC">${mc}</div><div class="num ${c.liq_sol ? "" : "z"}" data-l="Liq">${usd(c.liq_sol)}</div><div class="num ${vol ? "" : "z"}" data-l="Vol">${usd(vol)}</div>
@@ -227,10 +232,22 @@ function evidence(s) {
   if (s.kind === "HIGH_ALERT") return esc(e.why || "");
   return "";
 }
+function timeline(c) {
+  const t = c.timeline || {};
+  const tm = (x) => x ? new Date(x * 1000).toLocaleTimeString("vi-VN", { hour12: false }) : "–";
+  return `<div class="tl">
+    <div><span class="k">TẠO</span><b>${tm(t.t_create)}</b><a href="https://solscan.io/tx/${esc(c.create_sig || "")}" target="_blank" rel="noopener">tx ↗</a></div>
+    <div><span class="k">MUA ĐẦU</span><b>${t.first_buy_s === null || t.first_buy_s === undefined ? "–" : "+" + fmt(t.first_buy_s, 1) + "s"}</b></div>
+    <div><span class="k">HỆ THỐNG THẤY</span><b>${t.detect_s === null || t.detect_s === undefined ? "–" : "+" + fmt(t.detect_s, 1) + "s"}</b></div>
+    <div><span class="k">VÍ THEO DÕI ĐẦU</span><b>${t.watched_first_s === null || t.watched_first_s === undefined ? "–" : "+" + fmt(t.watched_first_s, 0) + "s"}</b>${t.watched_first_mc_sol ? `<span class="k">MC ${usd(t.watched_first_mc_sol)}</span>` : ""}</div>
+  </div>
+  <div class="sub">${t.partial ? '<span class="old">Coin cũ hơn thời gian lưu giao dịch: chỉ còn lệnh của ví theo dõi, số ví mua không đầy đủ.</span><br>' : ""}${fmt(t.early15, 0)} ví mua trong 15 phút đầu · ${fmt(t.watched, 0)} ví theo dõi${t.groups !== undefined ? ` · <b>${t.groups} nhóm chủ sở hữu</b> (${t.verified_independent} độc lập đã xác minh, ${t.linked} có liên kết, ${t.unverified} chưa đủ dữ liệu)` : ""}</div>`;
+}
 function buyerRow(w, c) {
   const tags = [];
   if (w.dev) tags.push(`<span class="bd dev">CREATOR</span>`);
-  if (w.smart) tags.push(`<span class="bd sm">SMART #${w.smart.rank}${w.smart.multi ? " ĐA COIN" : ""}</span>`);
+  if (w.smart) tags.push(`<span class="bd sm">${w.smart.cohort ? esc(w.smart.cohort) : "#" + esc(w.smart.rank)}${w.smart.multi ? " ĐA COIN" : ""}</span>`);
+  if (w.independence) tags.push(`<span class="bd ${IND[w.independence] || ""}">${esc(INDT[w.independence] || w.independence)}</span>`);
   if (w.cls) tags.push(`<span class="bd ${CLS[w.cls] || "id"}">${esc(w.cls)}</span>`);
   if (w.entity) tags.push(`<span class="bd">${esc(w.entity)}</span>`);
   for (const f of w.flags || []) tags.push(`<span class="bd ${f === "CREATOR_GROUP" ? "cg" : f.startsWith("COORD") ? "co" : ""}">${esc(f.replace("COORDINATED_PATTERN", "BOT"))}</span>`);
@@ -261,6 +278,7 @@ async function refreshSide() {
     <div class="addr">${esc(c.mint)}</div>
     <div class="links"><a href="https://pump.fun/coin/${c.mint}" target="_blank" rel="noopener">pump.fun ↗</a><a href="https://dexscreener.com/solana/${c.mint}" target="_blank" rel="noopener">DexScreener ↗</a>
       <a href="https://solscan.io/token/${c.mint}" target="_blank" rel="noopener">Solscan ↗</a><a href="https://solscan.io/account/${c.creator}" target="_blank" rel="noopener">creator ${short(c.creator)} ↗</a></div>
+    ${timeline(c)}
     <div class="grid4">${[["MC", c.mc_sol === null ? "–" : usd(c.mc_sol)], ["Liq", usd(c.liq_sol)], ["Buyers", c.buyers], ["Smart", sm.length],
       ["Vào (mua)", usd(c.buy_sol)], ["Ra (bán)", usd(c.sell_sol)], ["Creator mua", usd(c.dev_sol)], ["Mua trong tx/slot tạo", `${inTx}/${inSlot}`]]
       .map(([k, v]) => `<div><div class="k">${k}</div><div class="v">${v}</div></div>`).join("")}</div>
@@ -303,68 +321,122 @@ async function showReport() {
     <div class="note">Số liệu tích lũy từ lúc bật đợt quan sát. Cần 3–7 ngày trước khi kết luận; nhóm có ít mẫu (n nhỏ) chưa có ý nghĩa thống kê.</div>`;
   $("#cx").onclick = closeSide;
 }
-// ---------------------------------------------------------------- watched wallets + "Thêm coin"
-const SRC = { DEPTH: "DEPTH", STANK: "STANK", INSIDERS: "INSIDERS" };
-const RQ = { REQUESTED: "Chờ truy vết", RUNNING: "Đang chạy", DONE: "Xong: ví đã vào danh sách", REJECTED: "Không chạy được" };
-async function showWallets() {
-  $("#mlist").hidden = true; S.open = null; $("#side").hidden = false;
-  $("#side").innerHTML = `<button class="ghost x" id="cx">Đóng ✕</button><h2>Ví theo dõi</h2><div class="sub">Đang tải…</div>`;
-  $("#cx").onclick = closeSide;
-  const [w, rq] = await Promise.all([api("/api/nc/wallets"), api("/api/nc/requests")]);
-  S.wal = w;
+// ---------------------------------------------------------------- VÍ THEO DÕI (second screen)
+const IND = { INDEPENDENT: "ind", POSSIBLE_LINK: "pl", LIKELY_SAME_ENTITY: "cg", INSUFFICIENT_DATA: "na" };
+const INDT = { INDEPENDENT: "ĐỘC LẬP", POSSIBLE_LINK: "CÓ THỂ LIÊN KẾT", LIKELY_SAME_ENTITY: "CÙNG CHỦ", INSUFFICIENT_DATA: "CHƯA ĐỦ DỮ LIỆU" };
+const RQ = { REQUESTED: "Chờ truy vết", RUNNING: "Đang chạy", DONE: "Xong", REJECTED: "Không chạy được" };
+const GRP = [["", "Tất cả"], ["DEPTH", "DEPTH"], ["STANK", "STANK"], ["INSIDERS", "INSIDERS"], ["coin", "Ví coin nghiên cứu"], ["auto", "Tự truy vết"], ["manual", "Thêm tay"]];
+const WV = Object.assign({ g: "", days: 7, q: "", sort: "sol" }, LS.get("nc.wv", {}));
+const tmAgo = (t) => t ? age(now() - t) + " trước" : "–";
+function balCell(b) {
+  if (!b || b.status === "off") return `<span class="na">tắt</span>`;
+  if (b.status === "never") return `<span class="na" title="chưa đọc được số dư">chưa đọc</span>`;
+  const v = b.status === "empty" ? `<b>0</b> <span class="na">đã rút hết</span>` : `<b>${fmt(b.sol, 2)}</b>`;
+  return `${v}${b.usd ? `<div class="why">$${fmt(b.usd, 0)}</div>` : ""}<div class="why ${b.status === "stale" ? "old" : ""}">${b.status === "stale" ? "cũ · " : ""}${tmAgo(b.t)}</div>`;
+}
+function srcTags(x) {
+  return x.sources.map((t) => `<span class="bd ${["DEPTH", "STANK", "INSIDERS"].includes(t) ? "co" : t === "manual" ? "dev" : "sm"}">${esc(t.replace("coin:", "").replace("auto:", "AUTO "))}</span>`).join("");
+}
+function setView(v) {
+  S.view = v;
+  $("#cview").hidden = v !== "coins"; $("#wview").hidden = v !== "wallets";
+  $$("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.view === v));
+  if (v === "wallets") { history.replaceState(null, "", "#wallets"); loadWallets(); } else if (location.hash === "#wallets") history.replaceState(null, "", location.pathname);
+}
+async function loadWallets() {
+  let w, rq;
+  try { [w, rq] = await Promise.all([api(`/api/nc/wallets?days=${WV.days}`), api("/api/nc/requests")]); } catch (e) { return; }
+  S.wal = w; S.req = rq.requests || [];
+  drawWallets();
+}
+function drawWallets() {
+  const w = S.wal; if (!w) return;
   const bs = w.by_source || {};
-  const reqRows = (rq.requests || []).map((r) => `<tr><td><b>${esc(r.symbol)}</b><div class="addr">${esc(r.mint || "")}</div></td>
-    <td>${esc(RQ[r.status] || r.status)}${r.note ? `<div class="why">${esc(r.note)}</div>` : ""}${r.progress && r.status === "RUNNING" ?
-      `<div class="why">${fmt(r.progress.calls, 0)} lệnh RPC${r.progress.t_create && r.progress.state === "WAIT" ?
-        ` · xong lúc ~${new Date((r.progress.t_create + 7200) * 1000).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}` : ""}</div>` : ""}</td>
-    <td class="r">${r.updated ? age(now() - r.updated) : "–"}</td></tr>`).join("");
-  $("#side").innerHTML = `<button class="ghost x" id="cx">Đóng ✕</button><h2>Ví theo dõi</h2>
-    <div class="sub">Đang theo dõi <b>${fmt(w.watching ?? w.count, 0)}</b> ví. Lệnh mua live chỉ tính từ ${fmt(w.min_live_sol, 2)} SOL. ${fmt(w.active_24h, 0)} ví đã mua coin mới trong 24 giờ qua.</div>
-    <div class="wtiles">${["DEPTH", "STANK", "INSIDERS"].map((k) => `<div><b>${fmt(bs[k] || 0, 0)}</b><span>${k}</span></div>`).join("")}
-      <div><b>${fmt((bs.coin || 0) + (bs.auto || 0), 0)}</b><span>ví lớn của coin${bs.auto ? ` (${fmt(bs.auto, 0)} tự truy vết)` : ""}</span></div></div>
-    <div class="why">Coin đã truy vết: ${Object.keys(w.coins || {}).map(esc).join(", ") || "–"}</div>
-    <h3>Thêm coin để truy vết</h3>
-    <form id="rqf" class="rqf"><input id="rqm" placeholder="Địa chỉ mint" autocomplete="off"><input id="rqs" placeholder="Tên (VD: STANK)" maxlength="16" autocomplete="off">
-      <button>Thêm</button></form>
-    <div id="rqmsg" class="why">Server tự truy vết: tìm giao dịch tạo coin → chờ hết 120 phút đầu → giải mã giao dịch → chấm ví → truy nguồn tiền ví lớn. Xong thì ví lớn tự vào danh sách theo dõi (ví cũ giữ nguyên). Coin cũ, nhiều giao dịch có thể mất vài giờ.</div>
-    ${reqRows ? `<table class="bt"><thead><tr><th>Coin</th><th>Trạng thái</th><th class="r">Cập nhật</th></tr></thead><tbody>${reqRows}</tbody></table>` : ""}
-    <h3>Danh sách ví <button class="ghost" id="wcsv" style="float:right;padding:2px 10px">Tải CSV</button></h3>
-    <input id="wq" type="search" placeholder="Tìm địa chỉ ví, nguồn hoặc coin…" class="wq">
-    <table class="bt"><thead><tr><th>Ví</th><th>Nguồn</th><th class="r">Mua lớn nhất</th><th class="r">24 giờ</th></tr></thead><tbody id="wrows"></tbody></table>
-    <div class="note">Nguồn: DEPTH / STANK / INSIDERS = nghiên cứu cũ; coin:SYM = ví mua ≥ 5 SOL khi vào sớm coin đó (hoặc vào sớm ≥ 2 coin với ≥ 1 SOL). "24 giờ" = số coin mới ví đã mua (≥ ${fmt(w.min_live_sol, 2)} SOL).</div>`;
-  $("#cx").onclick = closeSide;
-  const draw = () => {
-    const q = ($("#wq").value || "").trim().toLowerCase();
-    const list = w.wallets.filter((x) => !q || `${x.wallet} ${x.sources.join(" ")} ${x.label || ""}`.toLowerCase().includes(q))
-      .sort((a, b) => (b.coins_24h - a.coins_24h) || ((b.max_buy_sol || 0) - (a.max_buy_sol || 0)));
-    $("#wrows").innerHTML = list.slice(0, 400).map((x) => `<tr><td><a href="https://solscan.io/account/${x.wallet}" target="_blank" rel="noopener">${short(x.wallet, 5)}</a>
-      <div class="why">${esc(x.independence || "")}${x.label ? " · " + esc(x.label) : ""}</div></td>
-      <td>${x.sources.map((t) => `<span class="bd ${SRC[t] ? "co" : "sm"}">${esc(t.replace("coin:", ""))}</span>`).join(" ")}</td>
-      <td class="r">${x.max_buy_sol ? fmt(x.max_buy_sol, 1) + " SOL" : "–"}</td><td class="r">${x.coins_24h || "–"}</td></tr>`).join("") +
-      (list.length > 400 ? `<tr><td colspan="4" class="why">… ${list.length - 400} ví nữa: gõ để tìm</td></tr>` : "");
-  };
-  draw();
-  $("#wq").oninput = draw;
-  $("#wcsv").onclick = () => {
-    const lines = [["wallet", "sources", "cohort_label", "early_coins", "max_buy_sol", "independence", "added", "coins_24h"].join(",")]
-      .concat(w.wallets.map((x) => [x.wallet, x.sources.join(" "), `"${(x.label || "").replace(/"/g, "'")}"`, x.early_coins.join(" "),
-        x.max_buy_sol ?? "", x.independence || "", x.added || "", x.coins_24h].join(",")));
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8" }));
-    a.download = "vi_theo_doi.csv"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-  };
-  $("#rqf").onsubmit = async (e) => {
-    e.preventDefault();
-    const r = await fetch("/api/nc/request", { method: "POST", headers: { "X-Access-Code": S.code, "Content-Type": "application/json" },
-      body: JSON.stringify({ mint: $("#rqm").value.trim(), symbol: $("#rqs").value.trim() }) });
+  const inG = (x) => !WV.g || x.sources.some((t) => t === WV.g || t.startsWith(WV.g + ":"));
+  const q = WV.q.toLowerCase();
+  const list = w.wallets.filter((x) => inG(x) && (!q || `${x.wallet} ${x.sources.join(" ")} ${x.label || ""}`.toLowerCase().includes(q)));
+  const key = { sol: (x) => (x.balance && x.balance.sol) || -1, act: (x) => x.bought + x.sold, last: (x) => x.last_trade || 0, links: (x) => x.links }[WV.sort];
+  list.sort((a, b) => key(b) - key(a));
+  const totSol = list.reduce((t, x) => t + ((x.balance && x.balance.sol) || 0), 0);
+  const read = list.filter((x) => x.balance && ["ok", "empty", "stale"].includes(x.balance.status)).length;
+  const reqRows = (S.req || []).slice(0, 8).map((r) => `<tr><td><b>${esc(r.symbol)}</b></td><td>${esc(RQ[r.status] || r.status)}<div class="why">${esc(r.note || "")}${r.progress && r.status === "RUNNING" ? ` · ${fmt(r.progress.calls, 0)} lệnh RPC` : ""}</div></td><td class="r">${r.updated ? tmAgo(r.updated) : "–"}</td></tr>`).join("");
+  $("#wview").innerHTML = `
+    <div class="tiles">${[["DEPTH", bs.DEPTH], ["STANK", bs.STANK], ["INSIDERS", bs.INSIDERS], ["VÍ COIN", (bs.coin || 0) + (bs.auto || 0)], ["THÊM TAY", bs.manual || 0]]
+      .map(([k, v]) => `<div class="tile"><div class="k">${k}</div><div class="v">${fmt(v || 0, 0)}</div><div class="s">ví</div></div>`).join("")}
+      <div class="tile sm"><div class="k">SOL ĐANG GIỮ</div><div class="v">${fmt(totSol, 0)}</div><div class="s">${read}/${list.length} ví đã đọc số dư${w.balances && w.balances.updated ? " · " + tmAgo(w.balances.updated) : ""}</div></div></div>
+    <div class="bar"><div class="chips">${GRP.map(([v, t]) => `<button data-g="${v}" class="${WV.g === v ? "on" : ""}">${t}</button>`).join("")}</div><div class="grow"></div>
+      <select id="wdays">${[1, 7, 30].map((d) => `<option value="${d}" ${WV.days == d ? "selected" : ""}>${d} ngày</option>`).join("")}</select>
+      <select id="wsort">${[["sol", "SOL nhiều nhất"], ["act", "Giao dịch nhiều"], ["last", "Mới giao dịch"], ["links", "Nhiều liên kết"]].map(([v, t]) => `<option value="${v}" ${WV.sort === v ? "selected" : ""}>${t}</option>`).join("")}</select>
+      <input id="wq" type="search" placeholder="Tìm ví, nhóm…" value="${esc(WV.q)}" class="wq2"></div>
+    <details class="adds"><summary>＋ Thêm ví / thêm coin để truy vết</summary>
+      <form id="wadd" class="rqf"><input id="wa" placeholder="Địa chỉ ví" autocomplete="off"><input id="wl" placeholder="Ghi chú (tuỳ chọn)" maxlength="60" autocomplete="off"><button>Thêm ví</button></form>
+      <form id="rqf" class="rqf" style="margin-top:8px"><input id="rqm" placeholder="Mint coin" autocomplete="off"><input id="rqs" placeholder="Tên coin" maxlength="16" autocomplete="off"><button>Thêm coin</button></form>
+      <div id="rqmsg" class="why">Coin thêm vào: server tự truy vết (Helius), ví lớn của coin đạt luật sẽ tự vào danh sách.</div>
+      ${reqRows ? `<table class="bt"><tbody>${reqRows}</tbody></table>` : ""}</details>
+    <div class="list"><table class="wt"><thead><tr><th>Ví</th><th>Nhóm</th><th class="r">SOL hiện có</th><th class="r">Mua / bán (${WV.days} ngày)</th><th class="r">Coin</th><th class="r">Gần nhất</th><th>Độc lập</th><th class="r">Liên kết</th></tr></thead>
+      <tbody>${list.slice(0, 500).map((x) => `<tr data-w="${x.wallet}">
+        <td><a class="mono" href="https://solscan.io/account/${x.wallet}" target="_blank" rel="noopener">${short(x.wallet, 5)}</a>${x.program ? ` <span class="bd na">VAULT</span>` : ""}<div class="why">${esc(x.label || x.why || "")}</div></td>
+        <td>${srcTags(x)}</td><td class="r">${balCell(x.balance)}</td>
+        <td class="r">${x.bought || x.sold ? `${fmt(x.bought, 2)} / ${fmt(x.sold, 2)}` : `<span class="na">–</span>`}</td>
+        <td class="r">${x.coins_period || "–"}${x.early_coins.length ? `<div class="why">${x.early_coins.length} coin NC</div>` : ""}</td>
+        <td class="r">${x.last_trade ? tmAgo(x.last_trade) : "–"}</td>
+        <td><span class="bd ${IND[x.independence] || ""}">${esc(INDT[x.independence] || x.independence || "–")}</span></td>
+        <td class="r">${x.links || "–"}</td></tr>`).join("")}</tbody></table>
+      ${list.length > 500 ? `<div class="why" style="padding:10px">… ${list.length - 500} ví nữa: dùng ô tìm</div>` : ""}
+      <div class="note" style="padding:10px 14px">SOL hiện có = số dư thật trên chain (đọc ${w.balances ? "mỗi 10 phút" : "—"}), khác với SOL đã mua. "0 · đã rút hết" = tài khoản không còn trên chain. "chưa đọc" = chưa lấy được, không phải 0. Mua / bán: lệnh New Coins của ví theo dõi (mua ≥ 1 SOL, mọi lệnh bán). VAULT = tài khoản chương trình, không phải ví người.</div></div>`;
+  $$("#wview .chips button").forEach((b) => b.onclick = () => { WV.g = b.dataset.g; LS.set("nc.wv", WV); drawWallets(); });
+  $("#wdays").onchange = (e) => { WV.days = Number(e.target.value); LS.set("nc.wv", WV); loadWallets(); };
+  $("#wsort").onchange = (e) => { WV.sort = e.target.value; LS.set("nc.wv", WV); drawWallets(); };
+  let tm; $("#wq").oninput = (e) => { clearTimeout(tm); tm = setTimeout(() => { WV.q = e.target.value.trim(); drawWallets(); $("#wq").focus(); }, 250); };
+  $("#wview tbody").onclick = (e) => { if (e.target.closest("a")) return; const r = e.target.closest("tr[data-w]"); if (r) openWallet(r.dataset.w); };
+  const post = async (url, body, msg) => {
+    const r = await fetch(url, { method: "POST", headers: { "X-Access-Code": S.code, "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const d = await r.json().catch(() => ({}));
-    if (r.ok) { toast(`Đã thêm <b>${esc(d.symbol)}</b> vào hàng chờ truy vết`); showWallets(); }
-    else $("#rqmsg").innerHTML = `<span style="color:var(--red)">${esc(d.message || d.error || "lỗi " + r.status)}</span>`;
+    if (r.ok) { toast(msg(d)); loadWallets(); } else $("#rqmsg").innerHTML = `<span style="color:var(--red)">${esc(d.message || d.error || "lỗi " + r.status)}</span>`;
   };
+  $("#wadd").onsubmit = (e) => { e.preventDefault(); post("/api/nc/watch", { wallet: $("#wa").value.trim(), label: $("#wl").value.trim() }, (d) => `Đã thêm ví <b>${short(d.wallet, 5)}</b> vào danh sách theo dõi`); };
+  $("#rqf").onsubmit = (e) => { e.preventDefault(); post("/api/nc/request", { mint: $("#rqm").value.trim(), symbol: $("#rqs").value.trim() }, (d) => `Đã thêm <b>${esc(d.symbol)}</b> vào hàng chờ truy vết`); };
+}
+async function openWallet(w) {
+  S.open = null; $("#side").hidden = false;
+  $("#side").innerHTML = `<button class="ghost x" id="cx">Đóng ✕</button><h2>${short(w, 6)}</h2><div class="sub">Đang tải số dư và lịch sử…</div>`;
+  $("#cx").onclick = closeSide;
+  let d;
+  try { d = await api(`/api/nc/wallet?w=${w}&tokens=1`); } catch (e) { return; }
+  const e = d.entry || {}, tk = d.tokens, b = d.balance || {};
+  const indWhy = (d.flags.find((f) => f.flag === "INDEPENDENCE") || {}).evidence;
+  const net = d.flags.filter((f) => ["PASS_THROUGH", "BATCH_SPLIT", "COORDINATED_PATTERN"].includes(f.flag));
+  $("#side").innerHTML = `<button class="ghost x" id="cx">Đóng ✕</button>
+    <h2>${short(w, 6)}</h2><div class="addr">${w}</div>
+    <div class="links"><a href="https://solscan.io/account/${w}" target="_blank" rel="noopener">Solscan ↗</a><a href="https://gmgn.ai/sol/address/${w}" target="_blank" rel="noopener">GMGN ↗</a></div>
+    <div style="margin:8px 0">${(e.sources || []).length ? srcTags({ sources: e.sources }) : ""} <span class="bd ${IND[d.independence] || ""}">${esc(INDT[d.independence] || d.independence)}</span>${d.program ? ` <span class="bd na">VAULT (tài khoản chương trình)</span>` : ""}</div>
+    ${e.cohort_label ? `<div class="sub">${esc(e.cohort_label)}</div>` : ""}
+    <div class="grid4">${[["SOL hiện có", b.status === "never" ? "chưa đọc" : b.status === "empty" ? "0 (đã rút)" : fmt(b.sol, 3)], ["Giá trị SOL", b.usd ? "$" + fmt(b.usd, 0) : "–"],
+      ["Token (giá trị)", tk && tk.status === "ok" ? "$" + fmt(tk.tokens_usd, 0) : tk ? esc(tk.note || tk.status) : "–"], ["Tổng tài sản", tk && tk.total_usd ? "$" + fmt(tk.total_usd, 0) : "–"]]
+      .map(([k, v]) => `<div><div class="k">${k}</div><div class="v">${v}</div></div>`).join("")}</div>
+    <div class="why">Số dư đọc ${tmAgo(b.t)}${tk && tk.t ? ` · token đọc ${tmAgo(tk.t)}` : ""}${tk && tk.unpriced ? ` · ${tk.unpriced} token không có giá (không tính)` : ""}</div>
+    ${tk && tk.tokens && tk.tokens.length ? `<h3>Token đang giữ</h3><table class="bt"><tbody>${tk.tokens.slice(0, 20).map((t) => `<tr><td><a href="https://dexscreener.com/solana/${t.mint}" target="_blank" rel="noopener">${esc(t.symbol || short(t.mint, 4))}</a></td><td class="r">${fmt(t.amount, 0)}</td><td class="r">$${fmt(t.usd, 0)}</td></tr>`).join("")}</tbody></table>` : ""}
+    <h3>Mức độc lập (truy vết V2)</h3>
+    <div class="sub">${esc((indWhy && (indWhy.why || indWhy.note)) || (d.independence === "INSUFFICIENT_DATA" ? "Chưa truy vết nguồn tiền của ví này: chưa đủ dữ liệu để nói độc lập hay cùng chủ (không bao giờ được coi là độc lập)." : ""))}${indWhy && indWhy.funders_exchange && indWhy.funders_exchange.length ? ` · nguồn từ sàn: ${indWhy.funders_exchange.map(esc).join(", ")}` : ""}</div>
+    ${net.length ? `<div class="sub">${net.map((f) => `<span class="bd co">${esc(f.flag)}</span> ${esc(f.ref || "")}`).join("<br>")}</div>` : ""}
+    ${d.links.length ? `<h3>Ví liên quan (${d.links.length})</h3><table class="bt"><tbody>${d.links.slice(0, 30).map((l) => `<tr><td><a href="#" data-w="${l.other}">${short(l.other, 5)}</a>${l.watched ? ` <span class="bd sm">THEO DÕI</span>` : ""}</td>
+      <td><span class="bd ${l.strength === "STRONG" ? "cg" : "pl"}">${esc(l.signal)}</span></td><td>${l.sig ? `<a href="https://solscan.io/tx/${esc(l.sig)}" target="_blank" rel="noopener">bằng chứng ↗</a>` : esc(l.coin || "")}</td></tr>`).join("")}</tbody></table>` : ""}
+    ${d.funding.length ? `<h3>Dòng tiền đã truy (${d.funding.length})</h3><table class="bt"><tbody>${d.funding.slice(0, 25).map((f) => `<tr><td>${f.dir === "in" ? "← nhận từ" : "→ gửi tới"} <a href="#" data-w="${f.other}">${short(f.other, 4)}</a>${f.label ? ` <span class="bd">${esc(f.label)}</span>` : ""}${f.program ? ` <span class="bd na">vault</span>` : ""}${f.watched ? ` <span class="bd sm">THEO DÕI</span>` : ""}</td>
+      <td class="r">${fmt(f.amount, 3)} ${f.asset === "SOL" ? "SOL" : "token"}</td><td><a href="https://solscan.io/tx/${esc(f.sig || "")}" target="_blank" rel="noopener">tx ↗</a></td></tr>`).join("")}</tbody></table>` : ""}
+    ${d.research.length ? `<h3>Coin nghiên cứu đã vào sớm</h3><table class="bt"><tbody>${d.research.map((r) => `<tr><td>${esc(r.symbol)}</td><td>phút ${fmt(r.first_buy_min, 1)}</td><td class="r">${r.sol_in === null ? "–" : fmt(r.sol_in, 2) + " SOL"}</td><td class="r">${r.rise_x ? fmt(r.rise_x, 1) + "x" : "–"}</td><td><a href="https://solscan.io/tx/${esc(r.first_buy_sig || "")}" target="_blank" rel="noopener">tx ↗</a></td></tr>`).join("")}</tbody></table>` : ""}
+    <h3>Lịch sử mua bán coin mới (${d.trades.length})</h3>
+    ${d.trades.length ? `<table class="bt"><tbody>${d.trades.slice(0, 120).map((t) => `<tr><td>${t.symbol ? `<a href="#" data-m="${t.mint}">${esc(t.symbol)}</a>` : short(t.mint, 4)}</td><td>${t.buy ? '<span class="bd sm">MUA</span>' : '<span class="bd tx">BÁN</span>'}</td>
+      <td class="r">${fmt(t.sol, 3)} SOL</td><td class="r">${tmAgo(t.t)}${t.t_create ? `<div class="why">+${fmt(t.t - t.t_create, 0)}s sau tạo</div>` : ""}</td><td><a href="https://solscan.io/tx/${esc(t.sig)}" target="_blank" rel="noopener">tx ↗</a></td></tr>`).join("")}</tbody></table>`
+      : `<div class="why">Chưa ghi nhận giao dịch coin mới nào của ví này (hệ thống chỉ ghi lệnh mua ≥ 1 SOL của ví theo dõi và mọi lệnh bán, trong 120 phút đầu của coin).</div>`}`;
+  $("#cx").onclick = closeSide;
+  $$("#side a[data-w]").forEach((a) => a.onclick = (ev) => { ev.preventDefault(); openWallet(a.dataset.w); });
+  $$("#side a[data-m]").forEach((a) => a.onclick = (ev) => { ev.preventDefault(); setView("coins"); openCoin(a.dataset.m); });
 }
 controls(); bind();
 $("#rep").onclick = (e) => { e.preventDefault(); showReport(); };
-$("#wal").onclick = (e) => { e.preventDefault(); showWallets(); };
+$$("#tabs button").forEach((b) => b.onclick = () => setView(b.dataset.view));
+setView(location.hash === "#wallets" ? "wallets" : "coins");
+setInterval(() => { if (S.view === "wallets") loadWallets(); }, 60000);
 tick().then(() => { const h = location.hash.slice(1); if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(h)) openCoin(h); });
 setInterval(tick, 2500);
 setInterval(ages, 1000);
