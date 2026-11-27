@@ -409,3 +409,25 @@ def test_add_a_wallet_by_hand(tmp_path):
         assert b.smart[SIX]["sources"] == ["manual"]
     code, d = S.nc_get(None, st, "/api/nc/wallet", f"/api/nc/wallet?w={SIX}")
     assert code == 200 and d["wallet"] == SIX and d["balance"] == {"status": "off"}
+
+
+def test_watch_data_moves_from_one_instance_to_another_without_overwriting(tmp_path):
+    from insiders import site as S
+    a, b = T.Store(tmp_path / "a.db"), T.Store(tmp_path / "b.db")
+    E.import_research(a, _folder(tmp_path))
+    a.x("INSERT INTO nc_coin (mint, symbol, t_create) VALUES ('M1', 'ONE', 1)")
+    a.x("INSERT INTO nc_trade (mint, sig, wallet, buy, sol, t, smart) VALUES ('M1', 's1', ?, 1, 2.0, 5, 1)", (CKZ,))
+    a.x("INSERT INTO nc_trade (mint, sig, wallet, buy, sol, t, smart) VALUES ('M1', 's2', 'Other', 1, 0.1, 5, 0)")
+    a.x("INSERT INTO esm_flag VALUES (?, 'WATCH', 'manual', ?, 1)", (SIX, json.dumps({"label": "x"})))
+    a.x("INSERT INTO esm_flag VALUES (?, 'INDEPENDENCE', 'INDEPENDENT', '{}', 1)", (ER9,))
+    a.x("INSERT INTO esm_pending_mint VALUES ('RUN', 'RUNNING', '[]', 'x', 1)")
+    b.x("INSERT INTO esm_flag VALUES (?, 'INDEPENDENCE', 'LIKELY_SAME_ENTITY', '{}', 1)", (ER9,))   # the target's own level
+    dump = json.dumps(S.export_watch(a)).encode()
+    assert len(json.loads(dump)["tables"]["nc_trade"]) == 1                     # only the watched wallets' trades
+    code, r = S.import_watch(b, dump)
+    assert code == 200 and r["added"]["nc_trade"] == 1 and r["added"]["nc_coin"] == 1
+    assert b.q("SELECT ref FROM esm_flag WHERE wallet=? AND flag='INDEPENDENCE'", (ER9,))[0]["ref"] == "LIKELY_SAME_ENTITY"   # kept
+    assert b.q("SELECT 1 FROM esm_flag WHERE wallet=? AND flag='WATCH'", (SIX,))
+    assert b.q("SELECT status FROM esm_pending_mint WHERE symbol='RUN'")[0]["status"] == "REQUESTED"   # traced again here
+    assert S.import_watch(b, dump)[1]["added"]["nc_trade"] == 0                # twice = nothing new
+    assert S.import_watch(b, b'{"kind": "other"}')[0] == 400

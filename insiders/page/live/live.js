@@ -372,7 +372,11 @@ function drawWallets() {
       <form id="wadd" class="rqf"><input id="wa" placeholder="Địa chỉ ví" autocomplete="off"><input id="wl" placeholder="Ghi chú (tuỳ chọn)" maxlength="60" autocomplete="off"><button>Thêm ví</button></form>
       <form id="rqf" class="rqf" style="margin-top:8px"><input id="rqm" placeholder="Mint coin" autocomplete="off"><input id="rqs" placeholder="Tên coin" maxlength="16" autocomplete="off"><button>Thêm coin</button></form>
       <div id="rqmsg" class="why">Coin thêm vào: server tự truy vết (Helius), ví lớn của coin đạt luật sẽ tự vào danh sách.</div>
-      ${reqRows ? `<table class="bt"><tbody>${reqRows}</tbody></table>` : ""}</details>
+      ${reqRows ? `<table class="bt"><tbody>${reqRows}</tbody></table>` : ""}
+      <h3 style="margin-top:14px">Đồng bộ giữa web và PC</h3>
+      <div class="why">Trên trang nguồn (VD web Render) bấm <b>Tải dữ liệu ví về</b>; trên trang đích (PC) bấm <b>Nhập dữ liệu ví</b> và chọn file đó. Dữ liệu chỉ được <b>thêm</b>, không ghi đè.</div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="ghost" id="wexp">Tải dữ liệu ví về</button>
+        <label class="ghost" style="cursor:pointer">Nhập dữ liệu ví<input type="file" id="wimp" accept=".json,application/json" hidden></label></div></details>
     <div class="list"><table class="wt"><thead><tr><th>Ví</th><th>Nhóm</th><th class="r">SOL hiện có</th><th class="r">Mua / bán (${WV.days} ngày)</th><th class="r">Coin</th><th class="r">Gần nhất</th><th>Độc lập</th><th class="r">Liên kết</th></tr></thead>
       <tbody>${list.slice(0, 500).map((x) => `<tr data-w="${x.wallet}">
         <td><a class="mono" href="https://solscan.io/account/${x.wallet}" target="_blank" rel="noopener">${short(x.wallet, 5)}</a>${x.program ? ` <span class="bd na">VAULT</span>` : ""}<div class="why">${esc(x.label || x.why || "")}</div></td>
@@ -393,6 +397,20 @@ function drawWallets() {
     const r = await fetch(url, { method: "POST", headers: { "X-Access-Code": S.code, "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const d = await r.json().catch(() => ({}));
     if (r.ok) { toast(msg(d)); loadWallets(); } else $("#rqmsg").innerHTML = `<span style="color:var(--red)">${esc(d.message || d.error || "lỗi " + r.status)}</span>`;
+  };
+  $("#wexp").onclick = async () => {
+    const d = await api("/api/nc/export");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(d)], { type: "application/json" }));
+    a.download = `kol_radar_vi_${new Date().toISOString().slice(0, 10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+    toast(`Đã tải: ${d.tables.nc_trade.length} giao dịch ví theo dõi, ${d.tables.esm_coin.length} coin tự truy vết, ${d.tables.esm_flag.filter((f) => f.flag === "WATCH").length} ví thêm tay`);
+  };
+  $("#wimp").onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = await fetch("/api/nc/import", { method: "POST", headers: { "X-Access-Code": S.code, "Content-Type": "application/json" }, body: await f.text() });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok) { toast("Đã nhập: " + Object.entries(d.added).filter(([, n]) => n).map(([t, n]) => `${n} ${t}`).join(", ") || "không có gì mới"); setTimeout(loadWallets, 1500); }
+    else $("#rqmsg").innerHTML = `<span style="color:var(--red)">${esc(d.message || d.error || "lỗi " + r.status)}</span>`;
   };
   $("#wadd").onsubmit = (e) => { e.preventDefault(); post("/api/nc/watch", { wallet: $("#wa").value.trim(), label: $("#wl").value.trim() }, (d) => `Đã thêm ví <b>${short(d.wallet, 5)}</b> vào danh sách theo dõi`); };
   $("#rqf").onsubmit = (e) => { e.preventDefault(); post("/api/nc/request", { mint: $("#rqm").value.trim(), symbol: $("#rqs").value.trim() }, (d) => `Đã thêm <b>${esc(d.symbol)}</b> vào hàng chờ truy vết`); };

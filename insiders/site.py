@@ -335,6 +335,11 @@ def make_handler(svc: InsiderService, access_code: str | None, health: dict, cal
                 return self._json(*nc_request(esm, body))
             if path == "/api/nc/watch":                       # "Thêm ví": a wallet watched from now on
                 return self._json(*nc_watch(esm, body, nc))
+            if path == "/api/nc/import":                      # "Nhập dữ liệu ví": an export of another instance
+                if n > 262144:                                 # a large file: read the rest of it (64 MB at most)
+                    body += self.rfile.read(min(n, 64 * 1024 * 1024) - len(body))
+                    self.close_connection = n > 64 * 1024 * 1024
+                return self._json(*import_watch(esm, body, nc))
             if path == "/api/insiders/pause":                 # "Tạm dừng" / "Bật lại quét" (?on=1 pause | ?on=0 resume)
                 from urllib.parse import parse_qs, urlsplit
                 v = getattr(getattr(svc, "watcher", None), "vip", None)
@@ -525,6 +530,8 @@ def nc_get(nc, store, path: str, raw: str) -> tuple[int, object]:
                      "balance": bal.get(w) if bal else {"status": "off"}, "tokens": bal.tokens(w) if bal and q.get("tokens") == "1" else None,
                      "trades": trades, "research": [{**r, "roles": json.loads(r["roles"] or "[]")} for r in research],
                      "links": lk, "funding": fund, "flags": flags, "sol_usd": eng.sol_usd if eng else None}
+    if name == "export":                                        # "Tải dữ liệu ví về": everything about the watched wallets
+        return 200, export_watch(st)
     if name == "requests":                                      # coins the user asked to research (table esm_pending_mint)
         rows = st.q("SELECT symbol, status, candidates, note, updated FROM esm_pending_mint "
                     "WHERE status IN ('REQUESTED', 'RUNNING', 'DONE', 'REJECTED') ORDER BY updated DESC")
@@ -584,6 +591,67 @@ def nc_request(store, body: bytes) -> tuple[int, object]:
     store.x("INSERT INTO esm_pending_mint VALUES (?,?,?,?,?)",
             (sym, "REQUESTED", json.dumps([{"mint": mint}]), "thêm trên trang New Coins", time.time()))
     return 200, {"symbol": sym, "mint": mint, "status": "REQUESTED"}
+
+
+SYNC_TABLES = ("nc_coin", "nc_trade", "esm_coin", "esm_window_wallet", "esm_queue", "esm_flag", "esm_link", "esm_pending_mint", "edges")
+
+
+def export_watch(st) -> dict:
+    """The watched wallets' data of this instance, to move it to another one (Render -> PC): trades of watched wallets
+    (nc_trade smart=1) and their coins, the coins the worker traced (esm_coin source='worker' + their window wallets and
+    queue rows), the wallets added by hand / independence / funding flags, worker links, coin requests, traced edges."""
+    worker = [r["mint"] for r in st.q("SELECT mint FROM esm_coin WHERE source='worker'")]
+    qm = ",".join("?" * len(worker)) or "''"
+    trades = st.q("SELECT * FROM nc_trade WHERE smart=1")
+    mints = sorted({t["mint"] for t in trades})
+    coins = []
+    for i in range(0, len(mints), 500):
+        coins += st.q(f"SELECT * FROM nc_coin WHERE mint IN ({','.join('?' * len(mints[i:i + 500]))})", mints[i:i + 500])
+    return {"kind": "kol-radar-watch-export", "version": 1, "exported_at": time.time(), "tables": {
+        "nc_coin": coins, "nc_trade": trades,
+        "esm_coin": st.q(f"SELECT * FROM esm_coin WHERE mint IN ({qm})", worker),
+        "esm_window_wallet": st.q(f"SELECT * FROM esm_window_wallet WHERE mint IN ({qm})", worker),
+        "esm_queue": st.q("SELECT * FROM esm_queue WHERE state IN ('DONE', 'INSUFFICIENT_DATA')"),
+        "esm_flag": st.q("SELECT * FROM esm_flag WHERE flag IN ('WATCH', 'INDEPENDENCE', 'FUNDING_READ')"),
+        "esm_link": st.q("SELECT * FROM esm_link WHERE evidence LIKE '%worker%'"),
+        "esm_pending_mint": st.q("SELECT * FROM esm_pending_mint WHERE status IN ('REQUESTED', 'RUNNING', 'DONE', 'REJECTED')"),
+        "edges": [{k: v for k, v in e.items() if k != "id"} for e in st.q("SELECT * FROM edges WHERE kind LIKE 'research_%'")]}}
+
+
+def import_watch(st, body: bytes, nc=None) -> tuple[int, object]:
+    """POST /api/nc/import: an export of another instance, ADDED here (INSERT OR IGNORE: a row this instance already has is
+    kept as it is, so the research levels and the live data here are never overwritten). A request that was still running
+    there is queued again here (its partial work is not moved)."""
+    try:
+        d = json.loads(body or b"{}")
+    except ValueError:
+        return 400, {"error": "json", "message": "file không phải JSON"}
+    if not isinstance(d, dict) or d.get("kind") != "kol-radar-watch-export":
+        return 400, {"error": "kind", "message": "không phải file dữ liệu ví của KOL-Radar"}
+    out = {}
+    with st.lock:
+        db = st.db
+        for t in SYNC_TABLES:
+            rows = (d.get("tables") or {}).get(t) or []
+            cols = {r[1] for r in db.execute(f"PRAGMA table_info({t})")}
+            n = 0
+            for r in rows:
+                if not isinstance(r, dict):
+                    continue
+                if t == "esm_flag" and r.get("flag") == "INDEPENDENCE" and db.execute(
+                        "SELECT 1 FROM esm_flag WHERE wallet=? AND flag='INDEPENDENCE'", (r.get("wallet"),)).fetchone():
+                    continue                                    # one level per wallet: the one here is kept
+                if t == "esm_pending_mint" and r.get("status") == "RUNNING":
+                    r = {**r, "status": "REQUESTED", "note": "chuyển từ web: truy vết lại trên máy này"}
+                ks = [k for k in r if k in cols and k != "id"]
+                if not ks:
+                    continue
+                n += db.execute(f"INSERT OR IGNORE INTO {t} ({','.join(ks)}) VALUES ({','.join('?' * len(ks))})", [r[k] for k in ks]).rowcount
+            out[t] = n
+        db.commit()
+    if nc:
+        nc[0].book.loaded = 0                                   # the watchlist picks the new wallets up at once
+    return 200, {"added": out}
 
 
 def nc_watch(store, body: bytes, nc=None) -> tuple[int, object]:
