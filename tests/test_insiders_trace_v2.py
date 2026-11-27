@@ -431,3 +431,11 @@ def test_watch_data_moves_from_one_instance_to_another_without_overwriting(tmp_p
     assert b.q("SELECT status FROM esm_pending_mint WHERE symbol='RUN'")[0]["status"] == "REQUESTED"   # traced again here
     assert S.import_watch(b, dump)[1]["added"]["nc_trade"] == 0                # twice = nothing new
     assert S.import_watch(b, b'{"kind": "other"}')[0] == 400
+
+
+def test_the_asset_version_changes_when_the_new_coins_page_changes(monkeypatch):
+    from insiders import site as S
+    real = Path.read_bytes
+    before = S.asset_version()
+    monkeypatch.setattr(Path, "read_bytes", lambda self: real(self) + (b"//x" if self.name == "live.js" else b""))
+    assert S.asset_version() != before

@@ -45,10 +45,11 @@ STATIC = {"/": ("live/index.html", "text/html; charset=utf-8"), "/index.html": (
 
 
 def asset_version() -> str:
-    """Cache-busting tag for the page's own assets (changes whenever app.js / styles.css change)."""
+    """Cache-busting tag for the pages' own assets: changes whenever any of them changes (the New Coins / Early pages too;
+    it used to hash only the old dashboard's app.js / styles.css, so a browser kept an old live.js)."""
     import hashlib
     h = hashlib.sha1()
-    for n in ("app.js", "styles.css"):
+    for n in ("app.js", "styles.css", "live/live.js", "live/live.css", "live/index.html", "early/early.js", "early/early.css"):
         try:
             h.update((PAGE / n).read_bytes())
         except OSError:
